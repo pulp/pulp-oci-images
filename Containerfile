@@ -28,13 +28,13 @@ ENV BUILDAH_ISOLATION=chroot
 # glibc-langpack-en is needed to provide the en_US.UTF-8 locale, which Pulp
 # seems to need.
 #
-# python3-createrepo_c is needed for pulp_rpm
+# The last 5 lines (before clean) are needed until python3-createrepo_c gets an
+# RPM upgrade to 0.15.10. Until then, we install & build it from PyPI.
 RUN		dnf -y update && \
 		dnf -y install wget git && \
 		dnf -y install libxcrypt-compat && \
 		dnf -y install python3-psycopg2 && \
 		dnf -y install glibc-langpack-en && \
-		dnf -y install python3-createrepo_c && \
 		dnf -y install python3-libmodulemd && \
 		dnf -y install python3-libcomps && \
         dnf -y install postgresql && \
@@ -42,6 +42,11 @@ RUN		dnf -y update && \
         dnf -y install nginx && \
         dnf -y install redis && \
         dnf -y install python3-setuptools && \
+		dnf -y install libmodulemd-devel && \
+		dnf -y install libcomps-devel && \
+		dnf -y install ninja-build && \
+		dnf -y install 'dnf-command(builddep)' && \
+		dnf -y builddep createrepo_c && \
 		dnf clean all
 
 RUN     dnf -y install buildah --exclude container-selinux && \
