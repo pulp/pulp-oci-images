@@ -1,7 +1,7 @@
 FROM fedora:31
 ADD https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz /tmp/
-RUN tar xzf /tmp/s6-overlay-amd64.tar.gz -C /
-
+RUN tar xzf /tmp/s6-overlay-amd64.tar.gz -C / --exclude="./bin" && \
+    tar xzf /tmp/s6-overlay-amd64.tar.gz -C /usr ./bin
 # https://superuser.com/questions/959380/how-do-i-install-generate-all-locales-on-fedora
 # This may not be necessary anymore because Fedora 30, unlike CentOS 7, has
 # glibc subpackages like glibc-langpack-en.
@@ -62,7 +62,7 @@ RUN mkdir -p /etc/pulp
 
 RUN easy_install pip
 
-RUN pip3 install pulpcore pulp-file pulp-container pulp-ansible pulp-rpm pulp-maven
+RUN pip3 install --upgrade requests pulpcore pulp-file pulp-container pulp-ansible pulp-rpm pulp-maven
 
 RUN echo "/var/lib/pgsql true postgres 0600 0750" >> /etc/fix-attrs.d/postgres
 COPY pulpcore-content.run /etc/services.d/pulpcore-content/run
