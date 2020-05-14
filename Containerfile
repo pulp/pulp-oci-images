@@ -79,7 +79,9 @@ COPY pulpcore-worker@1.run /etc/services.d/pulpcore-worker@1/run
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY nginx.run /etc/services.d/nginx/run
 
-RUN ln /usr/local/lib/python3.7/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/conf.d/pulp_ansible
-RUN ln /usr/local/lib/python3.7/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/conf.d/pulp_container
+RUN mkdir -p /etc/nginx/pulp/
+
+RUN ln /usr/local/lib/python3.7/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
+RUN ln /usr/local/lib/python3.7/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
 
 ENTRYPOINT ["/init"]
