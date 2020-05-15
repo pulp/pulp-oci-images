@@ -1,0 +1,4 @@
+settings/
+containers/
+pgsql/
+pulp_storage/
