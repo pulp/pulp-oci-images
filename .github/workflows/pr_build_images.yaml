@@ -1,0 +1,14 @@
+name: Build OCI Images
+
+on:
+  - pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build the images
+        run: |
+          docker build . --file Containerfile --target ci-base --tag pulp/pulp-ci:latest
+          docker build . --file Containerfile --tag pulp/pulp-fedora31:latest
