@@ -59,6 +59,7 @@ RUN rpm -q python3-libcomps --queryformat=%{VERSION}-%{RELEASE} | grep -v 0.1.11
 RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
 
 RUN mkdir -p /etc/pulp
+RUN mkdir -p /var/lib/pulp/assets
 
 RUN easy_install pip
 
