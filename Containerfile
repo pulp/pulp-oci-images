@@ -73,7 +73,8 @@ COPY assets/redis.run /etc/services.d/redis/run
 COPY assets/pulpcore-worker@2.run /etc/services.d/pulpcore-worker@2/run
 COPY assets/pulpcore-resource-manager.run /etc/services.d/pulpcore-resource-manager/run
 COPY assets/pulpcore-api.run /etc/services.d/pulpcore-api/run
-COPY assets/postgres.prep /etc/cont-init.d/postgres
+COPY assets/000-postgres.prep /etc/cont-init.d/000-postgres
+COPY assets/zzz-postgres.prep /etc/cont-init.d/zzz-postgres
 COPY assets/pulpcore-worker@1.run /etc/services.d/pulpcore-worker@1/run
 COPY assets/nginx.conf /etc/nginx/nginx.conf
 COPY assets/nginx.run /etc/services.d/nginx/run
