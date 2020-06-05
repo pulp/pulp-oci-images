@@ -88,3 +88,5 @@ RUN ln /usr/local/lib/python3.7/site-packages/pulp_ansible/app/webserver_snippet
 RUN ln /usr/local/lib/python3.7/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
 
 ENTRYPOINT ["/init"]
+
+EXPOSE 80
