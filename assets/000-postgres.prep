@@ -105,11 +105,3 @@ foreground {
   s6-setuidgid postgres
   /usr/local/bin/django-admin migrate
 }
-
-foreground {
-  if { s6-echo "${PREFFIX} ${C133}shutdown service [${PG_PID}] postgres${C000}" }
-  redirfd -w 1 /dev/null
-  fdmove -c 2 1
-  s6-setuidgid postgres
-  pg_ctl -D ${PGDATA} stop
-}
