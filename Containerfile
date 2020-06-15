@@ -58,14 +58,25 @@ RUN rpm -q python3-libcomps --queryformat=%{VERSION}-%{RELEASE} | grep -v 0.1.11
 
 RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
 
-RUN mkdir -p /etc/pulp
-RUN mkdir -p /var/lib/pulp/assets
+RUN mkdir -p /etc/nginx/pulp \
+             /etc/pulp \
+             /etc/services.d/nginx \
+             /etc/services.d/postgresql \
+             /etc/services.d/pulpcore-api \
+             /etc/services.d/pulpcore-content \
+             /etc/services.d/pulpcore-resource-manager \
+             /etc/services.d/pulpcore-worker@1 \
+             /etc/services.d/pulpcore-worker@2 \
+             /etc/services.d/redis \
+             /var/lib/pgsql \
+             /var/lib/pulp/assets \
+             /var/run/pulpcore-resource-manager \
+             /var/run/pulpcore-worker-1 \
+             /var/run/pulpcore-worker-2
 
 RUN easy_install pip
 
 RUN echo "/var/lib/pgsql true postgres 0600 0750" >> /etc/fix-attrs.d/postgres
-
-RUN mkdir -p /etc/services.d/nginx /etc/services.d/postgresql /etc/services.d/redis /etc/services.d/pulpcore-worker@1 /etc/services.d/pulpcore-worker@2 /etc/services.d/pulpcore-resource-manager /etc/services.d/pulpcore-api /etc/services.d/pulpcore-content /var/lib/pgsql /var/run/pulpcore-worker-1 /var/run/pulpcore-worker-2 /var/run/pulpcore-resource-manager
 
 COPY assets/pulpcore-content.run /etc/services.d/pulpcore-content/run
 COPY assets/postgres.run /etc/services.d/postgresql/run
@@ -96,8 +107,6 @@ RUN pip3 install --upgrade \
   pulp-ansible==${PULP_ANSIBLE_VERSION} \
   pulp-rpm==${PULP_RPM_VERSION} \
   pulp-maven==${PULP_MAVEN_VERSION}
-
-RUN mkdir -p /etc/nginx/pulp/
 
 RUN ln /usr/local/lib/python3.7/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
 RUN ln /usr/local/lib/python3.7/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
