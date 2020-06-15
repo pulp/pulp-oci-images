@@ -1,0 +1,28 @@
+name: Build and publish OCI Images
+
+on:
+  push:
+    branches:
+      - master
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron: '0 1 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build the images
+        run: |
+          docker build . --file Containerfile --target ci-base --tag pulp/pulp-ci:latest
+          docker build . --file Containerfile --tag pulp/pulp-fedora31:latest
+      - name: Docker login
+        env:
+          DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
+          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
+        run: echo "$DOCKER_BOT_PASSWORD" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
+      - name: Push ci image to dockerhub
+        run: |
+           docker push docker.io/pulp/pulp-ci:latest
+           docker push docker.io/pulp/pulp-fedora31:latest

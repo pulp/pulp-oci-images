@@ -5,7 +5,7 @@ This directory contains assets and tooling for building Pulp 3 container image b
 # Build instructions
 
 `<docker build | buildah bud> -f Containerfile -t pulp-fedora31:latest .`
-`<docker build | buildah bud> -f Containerfile --target ci-base -t pulp-ci-fedora31:latest .`
+`<docker build | buildah bud> -f Containerfile --target ci-base -t pulp-ci:latest .`
 
 # Running instructions
 
