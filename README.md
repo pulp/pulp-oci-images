@@ -11,7 +11,7 @@ This directory contains assets and tooling for building Pulp 3 container image b
 
 ```bash
 $ mkdir settings pulp_storage pgsql containers
-$ echo "CONTENT_ORIGIN='$(hostname):8080'
+$ echo "CONTENT_ORIGIN='http://$(hostname):8080'
 ANSIBLE_API_HOSTNAME='http://$(hostname):8080'
 ANSIBLE_CONTENT_HOSTNAME='http://$(hostname):8080/pulp/content'
 TOKEN_AUTH_DISABLED=True" >> settings/settings.py
