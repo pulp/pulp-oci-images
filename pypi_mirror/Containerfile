@@ -1,0 +1,13 @@
+FROM pulp-ci
+
+ARG PULPCORE_VERSION=3.6.0
+ARG PULP_PYTHON_VERSION=3.0.0b11
+
+RUN pip3 install --upgrade \
+  requests \
+  pulpcore==${PULPCORE_VERSION} \
+  pulp-python==${PULP_PYTHON_VERSION}
+
+ENTRYPOINT ["/init"]
+
+EXPOSE 80
