@@ -15,8 +15,10 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build the images
         run: |
-          docker build . --file Containerfile --target ci-base --tag pulp/pulp-ci:latest
-          docker build . --file Containerfile --tag pulp/pulp-fedora31:latest
+          wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
+          docker build --file pulp_ci/Containerfile --tag pulp/pulp-ci:latest .
+          docker build --file pulp_fedora31/Containerfile --tag pulp/pulp-fedora31:latest .
+          docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
       - name: Docker login
         env:
           DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
@@ -24,5 +26,6 @@ jobs:
         run: echo "$DOCKER_BOT_PASSWORD" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
       - name: Push ci image to dockerhub
         run: |
-           docker push docker.io/pulp/pulp-ci:latest
-           docker push docker.io/pulp/pulp-fedora31:latest
+          docker push docker.io/pulp/pulp-ci:latest
+          docker push docker.io/pulp/pulp-fedora31:latest
+          docker push docker.io/pulp/pulp-galaxy_ng:latest
