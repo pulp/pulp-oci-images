@@ -74,7 +74,8 @@ RUN mkdir -p /etc/nginx/pulp \
              /var/run/pulpcore-worker-1 \
              /var/run/pulpcore-worker-2
 
-RUN easy_install pip
+# Fedora 31 ships with pip 19.1 but we need at least 19.3 to use libsolv's compiled bindings
+RUN pip install --upgrade pip
 
 RUN echo "/var/lib/pgsql true postgres 0600 0750" >> /etc/fix-attrs.d/postgres
 
