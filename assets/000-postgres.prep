@@ -67,10 +67,10 @@ if { s6-echo "${PREFFIX} ${C133}started service [${PG_PID}] postgres${C000}" }
 
 if { s6-echo "${PREFFIX} ${C130}wait for services startup...${C000}" }
 
-loopwhilex -x 0 foreground {
+foreground {
   s6-sleep -m 500
   s6-setuidgid postgres
-  pg_isready --quiet
+  loopwhilex -x 0 pg_isready --quiet
 }
 
 backtick -n ! {
