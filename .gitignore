@@ -2,3 +2,4 @@ settings/
 containers/
 pgsql/
 pulp_storage/
+s6-overlay-amd64.tar.gz
