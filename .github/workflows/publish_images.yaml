@@ -28,4 +28,4 @@ jobs:
         run: |
           docker push docker.io/pulp/pulp-ci:latest
           docker push docker.io/pulp/pulp-fedora31:latest
-          docker push docker.io/pulp/pulp-galaxy_ng:latest
+          docker push docker.io/pulp/pulp-galaxy-ng:latest
