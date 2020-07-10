@@ -33,6 +33,7 @@ ENV BUILDAH_ISOLATION=chroot
 # The last 5 lines (before clean) are needed until python3-createrepo_c gets an
 # RPM upgrade to 0.15.10. Until then, we install & build it from PyPI.
 RUN dnf -y update && \
+    dnf -y install openssl && \
     dnf -y install wget git && \
     dnf -y install libxcrypt-compat && \
     dnf -y install python3-psycopg2 && \
@@ -84,6 +85,7 @@ COPY assets/postgres.run /etc/services.d/postgresql/run
 COPY assets/redis.run /etc/services.d/redis/run
 COPY assets/pulpcore-worker@2.run /etc/services.d/pulpcore-worker@2/run
 COPY assets/pulpcore-resource-manager.run /etc/services.d/pulpcore-resource-manager/run
+COPY assets/pulpcore-api.prep /etc/cont-init.d/pulpcore-api
 COPY assets/pulpcore-api.run /etc/services.d/pulpcore-api/run
 COPY assets/000-postgres.prep /etc/cont-init.d/000-postgres
 COPY assets/zzz-postgres.prep /etc/cont-init.d/zzz-postgres
