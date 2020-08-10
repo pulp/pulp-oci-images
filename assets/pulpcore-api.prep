@@ -1,12 +1,12 @@
 #!/usr/bin/execlineb -P
 
 if -n {
-  ls /var/lib/pulp/cert
+  ls /etc/pulp/cert
 }
 foreground {
-  mkdir -p /var/lib/pulp/cert
+  mkdir -p /etc/pulp/cert
 }
 foreground {
-  openssl ecparam -genkey -name prime256v1 -noout -out /var/lib/pulp/cert/private.pem
+  openssl ecparam -genkey -name prime256v1 -noout -out /etc/pulp/cert/token_private_key.pem
 }
-openssl ec -in /var/lib/pulp/cert/private.pem -pubout -out /var/lib/pulp/cert/public.pem
+openssl ec -in /etc/pulp/cert/token_private_key.pem -pubout -out /etc/pulp/cert/token_public_key.pem
