@@ -14,3 +14,14 @@ jobs:
           docker build --file pulp_ci/Containerfile --tag pulp/pulp-ci:latest .
           docker build --file pulp_fedora31/Containerfile --tag pulp/pulp-fedora31:latest .
           docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+      - name: Test the images
+        run: |
+          mkdir settings
+          echo "CONTENT_ORIGIN='http://$(hostname):8080'" >> settings/settings.py
+          docker run --detach \
+                     --publish 8080:80 \
+                     --volume "/$(pwd)/settings:/etc/pulp:Z" \
+                     --device /dev/fuse \
+                     pulp/pulp-fedora31:latest
+          sleep 30
+          curl --fail localhost:8080/pulp/api/v3/status/
