@@ -1,16 +1,16 @@
 FROM pulp/pulp-ci:latest
 
-ARG PULPCORE_VERSION=3.4.1
-ARG PULP_CONTAINER_VERSION=2.0.0b2
-ARG PULP_ANSIBLE_VERSION=0.2.0b13
-ARG GALAXY_NG_VERSION=4.2.0a8
+ARG PULPCORE_VERSION="==3.4.1"
+ARG PULP_CONTAINER_VERSION="==2.0.0b2"
+ARG PULP_ANSIBLE_VERSION="==0.2.0b13"
+ARG GALAXY_NG_VERSION="==4.2.0a8"
 
 RUN pip3 install --upgrade --use-feature=2020-resolver \
   requests \
-  pulpcore==${PULPCORE_VERSION} \
-  pulp-container==${PULP_CONTAINER_VERSION} \
-  pulp-ansible==${PULP_ANSIBLE_VERSION} \
-  galaxy-ng==${GALAXY_NG_VERSION}
+  pulpcore${PULPCORE_VERSION} \
+  pulp-container${PULP_CONTAINER_VERSION} \
+  pulp-ansible${PULP_ANSIBLE_VERSION} \
+  galaxy-ng${GALAXY_NG_VERSION}
 
 RUN ln /usr/local/lib/python3.7/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
 RUN ln /usr/local/lib/python3.7/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf

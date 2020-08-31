@@ -1,20 +1,20 @@
 FROM pulp/pulp-ci:latest
 
-ARG PULPCORE_VERSION=3.6.0
-ARG PULP_FILE_VERSION=1.2.0
-ARG PULP_CONTAINER_VERSION=2.0.0
-ARG PULP_ANSIBLE_VERSION=0.2.0
-ARG PULP_RPM_VERSION=3.6.1
-ARG PULP_MAVEN_VERSION=0.1.0
+ARG PULPCORE_VERSION=""
+ARG PULP_FILE_VERSION=""
+ARG PULP_CONTAINER_VERSION=""
+ARG PULP_ANSIBLE_VERSION=""
+ARG PULP_RPM_VERSION=""
+ARG PULP_MAVEN_VERSION=""
 
 RUN pip3 install --upgrade --use-feature=2020-resolver \
   requests \
-  pulpcore==${PULPCORE_VERSION} \
-  pulp-file==${PULP_FILE_VERSION} \
-  pulp-container==${PULP_CONTAINER_VERSION} \
-  pulp-ansible==${PULP_ANSIBLE_VERSION} \
-  pulp-rpm==${PULP_RPM_VERSION} \
-  pulp-maven==${PULP_MAVEN_VERSION}
+  pulpcore${PULPCORE_VERSION} \
+  pulp-file${PULP_FILE_VERSION} \
+  pulp-container${PULP_CONTAINER_VERSION} \
+  pulp-ansible${PULP_ANSIBLE_VERSION} \
+  pulp-rpm${PULP_RPM_VERSION} \
+  pulp-maven${PULP_MAVEN_VERSION}
 
 RUN ln /usr/local/lib/python3.7/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
 RUN ln /usr/local/lib/python3.7/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
