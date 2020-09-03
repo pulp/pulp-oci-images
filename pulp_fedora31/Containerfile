@@ -4,6 +4,7 @@ ARG PULPCORE_VERSION=""
 ARG PULP_FILE_VERSION=""
 ARG PULP_CONTAINER_VERSION=""
 ARG PULP_ANSIBLE_VERSION=""
+ARG PULP_DEB_VERSION=""
 ARG PULP_RPM_VERSION=""
 ARG PULP_MAVEN_VERSION=""
 
@@ -13,6 +14,7 @@ RUN pip3 install --upgrade --use-feature=2020-resolver \
   pulp-file${PULP_FILE_VERSION} \
   pulp-container${PULP_CONTAINER_VERSION} \
   pulp-ansible${PULP_ANSIBLE_VERSION} \
+  pulp-deb${PULP_DEB_VERSION} \
   pulp-rpm${PULP_RPM_VERSION} \
   pulp-maven${PULP_MAVEN_VERSION}
 
