@@ -103,5 +103,5 @@ foreground {
   export DJANGO_SETTINGS_MODULE pulpcore.app.settings
   export PULP_CONTENT_ORIGIN localhost
   s6-setuidgid postgres
-  /usr/local/bin/django-admin migrate
+  /usr/local/bin/pulpcore-manager migrate
 }
