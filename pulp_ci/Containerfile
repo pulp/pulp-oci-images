@@ -95,4 +95,4 @@ COPY assets/nginx.run /etc/services.d/nginx/run
 
 ENTRYPOINT ["/init"]
 
-EXPOSE 80
+EXPOSE 80 24817
