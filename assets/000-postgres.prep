@@ -98,8 +98,6 @@ foreground {
 }
 
 foreground {
-  redirfd -w 1 /dev/null
-  redirfd -w 2 /dev/null
   export DJANGO_SETTINGS_MODULE pulpcore.app.settings
   export PULP_CONTENT_ORIGIN localhost
   s6-setuidgid postgres
