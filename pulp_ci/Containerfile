@@ -41,6 +41,7 @@ RUN dnf -y update && \
     dnf -y install python3-libmodulemd && \
     dnf -y install python3-libcomps && \
     dnf -y install postgresql && \
+    dnf -y install postgresql-contrib && \
     dnf -y install postgresql-server && \
     dnf -y install nginx && \
     dnf -y install redis && \
