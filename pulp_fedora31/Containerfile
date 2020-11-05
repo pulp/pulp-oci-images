@@ -7,6 +7,7 @@ ARG PULP_ANSIBLE_VERSION=""
 ARG PULP_DEB_VERSION=""
 ARG PULP_RPM_VERSION=""
 ARG PULP_MAVEN_VERSION=""
+ARG PULP_PYTHON_VERSION="==3.0.0b12"
 
 RUN pip3 install --upgrade --use-feature=2020-resolver \
   requests \
@@ -16,7 +17,8 @@ RUN pip3 install --upgrade --use-feature=2020-resolver \
   pulp-ansible${PULP_ANSIBLE_VERSION} \
   pulp-deb${PULP_DEB_VERSION} \
   pulp-rpm${PULP_RPM_VERSION} \
-  pulp-maven${PULP_MAVEN_VERSION}
+  pulp-maven${PULP_MAVEN_VERSION} \
+  pulp-python${PULP_PYTHON_VERSION}
 
 RUN ln /usr/local/lib/python3.7/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
 RUN ln /usr/local/lib/python3.7/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
