@@ -31,8 +31,17 @@ jobs:
                      --volume "/$(pwd)/settings:/etc/pulp:Z" \
                      --device /dev/fuse \
                      pulp/${{ matrix.test_image }}:latest
-          sleep 30
-          curl --fail localhost:8080/pulp/api/v3/status/
+          sleep 10
+          for _ in $(seq 10)
+          do
+            sleep 3
+            if curl --fail http://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1
+            then
+              echo "SUCCESS."
+              break
+            fi
+          done
+          curl --fail http://localhost:8080/pulp/api/v3/status/
       - name: Display log on error
         if: failure()
         run: docker logs pulp
