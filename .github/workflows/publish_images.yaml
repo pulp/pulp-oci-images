@@ -7,18 +7,33 @@ on:
   schedule:
     # * is a special character in YAML so you have to quote this string
     - cron: '0 1 * * *'
+  workflow_dispatch:
+    inputs:
+      pulpcore:
+        description: 'Pulpcore Y-release Version (e.g. 3.7)'
+        required: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Build the images
+      - name: Download s6-overlay
         run: |
           wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
-          docker build --file pulp_ci/Containerfile --tag pulp/pulp-ci:latest .
-          docker build --file pulp_fedora31/Containerfile --tag pulp/pulp-fedora31:latest .
-          docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+      - name: Build the images
+        run: |
+          version="${{ github.event.inputs.pulpcore }}"
+          if [ -z "$version" ]; then
+            version="latest"
+            docker build --file pulp_ci/Containerfile --tag pulp/pulp-ci:latest .
+            docker build --file pulp_fedora31/Containerfile --tag pulp/pulp-fedora31:latest .
+            docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+          else
+            version_req="$version.0"
+            docker build --file pulp_fedora31/Containerfile --tag pulp/pulp-fedora31:$version --build-arg PULPCORE_VERSION="~=$version_req" .
+            docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:$version --build-arg PULPCORE_VERSION="~=$version_req" .
+          fi
       - name: Docker login
         env:
           DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
@@ -26,6 +41,10 @@ jobs:
         run: echo "$DOCKER_BOT_PASSWORD" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
       - name: Push ci image to dockerhub
         run: |
-          docker push docker.io/pulp/pulp-ci:latest
-          docker push docker.io/pulp/pulp-fedora31:latest
-          docker push docker.io/pulp/pulp-galaxy-ng:latest
+          version="${{ github.event.inputs.pulpcore }}"
+          if [ -z "$version" ]; then
+            version="latest"
+            docker push docker.io/pulp/pulp-ci:latest
+          fi
+          docker push docker.io/pulp/pulp-fedora31:$version
+          docker push docker.io/pulp/pulp-galaxy-ng:$version
