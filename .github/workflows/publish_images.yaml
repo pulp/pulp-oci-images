@@ -23,14 +23,22 @@ jobs:
       - name: Download s6-overlay
         run: |
           wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
+      - name: Set version
+        run: |
+          if [ -n "${{ github.event.inputs.pulpcore }}" ]; then
+            version="${{ github.event.inputs.pulpcore }}"
+          else
+            version="${GITHUB_REF#refs/heads/}"
+          fi
+          echo "Building and publishing $version."
+          echo "VERSION=$version" >> $GITHUB_ENV
       - name: Build the images
         run: |
-          version="${GITHUB_REF#refs/heads/}"
-          if [ "$version" = "latest" ]; then
-            docker build --file pulp_fedora31/Containerfile --tag pulp/pulp-fedora31:latest .
+          if [ "$VERSION" = "latest" ]; then
+            docker build --file pulp_ci/Containerfile --tag pulp/pulp-ci:latest .
             docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
           fi
-          docker build --file pulp_fedora31/Containerfile --tag pulp/pulp-fedora31:$version .
+          docker build --file pulp_fedora31/Containerfile --tag pulp/pulp-fedora31:$VERSION .
       - name: Docker login
         env:
           DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
@@ -38,8 +46,8 @@ jobs:
         run: echo "$DOCKER_BOT_PASSWORD" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
       - name: Push ci image to dockerhub
         run: |
-          version="${GITHUB_REF#refs/heads/}"
-          docker push docker.io/pulp/pulp-fedora31:$version
-          if [ "$version" = "latest" ]; then
+          if [ "$VERSION" = "latest" ]; then
+            docker push docker.io/pulp/pulp-ci:latest
             docker push docker.io/pulp/pulp-galaxy-ng:latest
           fi
+          docker push docker.io/pulp/pulp-fedora31:$VERSION
