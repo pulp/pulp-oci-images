@@ -25,13 +25,14 @@ $ <docker build | buildah bud> --build_arg PULP_FILE_VERSION=">=1.0.0" --file pu
 
 # Releasing
 
-We maintain a container tag for every pulpcore y-release (e.g. 3.7, 3.8, ...). When a pulpcore
-z-release happens, we update the existing tag.
+We maintain a container tag for every pulpcore y-release (e.g. 3.7, 3.8, ...). When there's a
+pulpcore z-release, the existing y-release branch is built and published again.
 
 ## Pulpcore Y release
 
-* For a y-release, first create a new release branch in this pulp-oci-images repo.
-* Hardcore the pulpcore version in pulp_fedora31/Containerfile
+* For a y-release, first create a new release branch (e.g. 3.10) in this pulp-oci-images repo.
+* Update PULPCORE_VERSION in pulp_fedora31/Containerfile on the release branch (see
+  [here](https://github.com/pulp/pulp-oci-images/pull/43) as an example)
 * Kick off a new build at [the publish workflow](https://github.com/pulp/pulp-oci-images/actions?query=workflow%3A%22Build+and+publish+OCI+Images%22)
 
 ## Pulpcore Z release
