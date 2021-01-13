@@ -7,6 +7,7 @@ ARG PULP_CONTAINER_VERSION=""
 ARG PULP_DEB_VERSION=""
 ARG PULP_FILE_VERSION=""
 ARG PULP_MAVEN_VERSION=""
+ARG PULP_PYTHON_VERSION=""
 ARG PULP_RPM_VERSION=""
 
 RUN pip3 install --upgrade \
@@ -17,6 +18,7 @@ RUN pip3 install --upgrade \
   pulp-deb${PULP_DEB_VERSION} \
   pulp-file${PULP_FILE_VERSION} \
   pulp-maven${PULP_MAVEN_VERSION} \
+  pulp-python${PULP_PYTHON_VERSION} \
   pulp-rpm${PULP_RPM_VERSION} \
   requests
 
