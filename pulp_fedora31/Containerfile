@@ -9,7 +9,7 @@ ARG PULP_FILE_VERSION=""
 ARG PULP_MAVEN_VERSION=""
 ARG PULP_RPM_VERSION=""
 
-RUN pip3 install --upgrade --use-feature=2020-resolver \
+RUN pip3 install --upgrade \
   pulpcore${PULPCORE_VERSION} \
   pulp-ansible${PULP_ANSIBLE_VERSION} \
   pulp-certguard${PULP_CERTGUARD_VERSION} \
