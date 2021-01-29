@@ -38,6 +38,8 @@ jobs:
             docker build --file pulp_ci/Containerfile --tag pulp/pulp-ci:latest .
             docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
             docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+            # Be resilient if this fails
+            docker build --file pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
           fi
           docker build --file pulp_fedora31/Containerfile --tag pulp/pulp-fedora31:$VERSION .
           docker build --file pulp/Containerfile --tag pulp/pulp:$VERSION .
@@ -52,6 +54,8 @@ jobs:
             docker push docker.io/pulp/pulp-ci:latest
             docker push docker.io/pulp/pulp-ci-centos:latest
             docker push docker.io/pulp/pulp-galaxy-ng:latest
+            # Be resilient if this fails
+            docker push docker.io/pulp/pulp:nightly || true
           fi
           docker push docker.io/pulp/pulp-fedora31:$VERSION
           docker push docker.io/pulp/pulp:$VERSION
