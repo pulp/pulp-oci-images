@@ -1,0 +1,16 @@
+FROM pulp/pulp-ci-centos:latest
+
+RUN pip3 install --upgrade \
+  git+https://github.com/pulp/pulpcore@master \
+  git+https://github.com/pulp/pulp_ansible@master \
+  git+https://github.com/pulp/pulp-certguard@master \
+  git+https://github.com/pulp/pulp_container@master \
+  git+https://github.com/pulp/pulp_deb@main \
+  git+https://github.com/pulp/pulp_file@master \
+  git+https://github.com/pulp/pulp_maven@master \
+  git+https://github.com/pulp/pulp_python@master \
+  git+https://github.com/pulp/pulp_rpm@master \
+  requests
+
+RUN ln /usr/local/lib/python3.6/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
+RUN ln /usr/local/lib/python3.6/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf

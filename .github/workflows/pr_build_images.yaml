@@ -10,19 +10,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - test_type: pulp_fedora31
+          - ci_type: pulp_ci
+            ci_image: pulp-ci
+            test_type: pulp_fedora31
             test_image: pulp-fedora31
-          - test_type: pulp_galaxy_ng
+          - ci_type: pulp_ci_centos
+            ci_image: pulp-ci-centos
+            test_type: pulp_galaxy_ng
             test_image: pulp-galaxy-ng
-          - test_type: pulp
+          - ci_type: pulp_ci_centos
+            ci_image: pulp-ci-centos
+            test_type: pulp
             test_image: pulp
     steps:
       - uses: actions/checkout@v2
       - name: Build the images
         run: |
           wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
-          docker build --file pulp_ci/Containerfile --tag pulp/pulp-ci:latest .
-          docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
+          docker build --file ${{ matrix.ci_type }}/Containerfile --tag pulp/${{ matrix.ci_image }}:latest .
           docker build --file ${{ matrix.test_type }}/Containerfile --tag pulp/${{ matrix.test_image }}:latest .
       - name: Test the images
         run: |
