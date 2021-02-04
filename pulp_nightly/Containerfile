@@ -7,6 +7,7 @@ RUN pip3 install --upgrade \
   git+https://github.com/pulp/pulp_container@master \
   git+https://github.com/pulp/pulp_deb@main \
   git+https://github.com/pulp/pulp_file@master \
+  git+https://github.com/pulp/pulp_maven@master \
   git+https://github.com/pulp/pulp_python@master \
   git+https://github.com/pulp/pulp_rpm@master \
   requests
