@@ -10,10 +10,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - ci_type: pulp_ci
-            ci_image: pulp-ci
-            test_type: pulp_fedora31
-            test_image: pulp-fedora31
           - ci_type: pulp_ci_centos
             ci_image: pulp-ci-centos
             test_type: pulp_galaxy_ng
