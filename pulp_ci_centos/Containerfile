@@ -64,6 +64,7 @@ RUN mkdir -p /etc/nginx/pulp \
              /etc/services.d/redis \
              /var/lib/pgsql \
              /var/lib/pulp/assets \
+             /var/lib/pulp/media \
              /var/run/pulpcore-resource-manager \
              /var/run/pulpcore-worker-1 \
              /var/run/pulpcore-worker-2
