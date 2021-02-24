@@ -1,4 +1,4 @@
-FROM centos:8
+FROM registry.access.redhat.com/ubi8
 COPY s6-overlay-amd64.tar.gz /tmp
 
 RUN tar xzf /tmp/s6-overlay-amd64.tar.gz -C / --exclude="./bin" && \
