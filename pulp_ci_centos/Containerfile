@@ -61,13 +61,17 @@ RUN mkdir -p /etc/nginx/pulp \
              /etc/services.d/pulpcore-resource-manager \
              /etc/services.d/pulpcore-worker@1 \
              /etc/services.d/pulpcore-worker@2 \
+             /etc/services.d/new-pulpcore-worker@1 \
+             /etc/services.d/new-pulpcore-worker@2 \
              /etc/services.d/redis \
              /var/lib/pgsql \
              /var/lib/pulp/assets \
              /var/lib/pulp/media \
              /var/run/pulpcore-resource-manager \
              /var/run/pulpcore-worker-1 \
-             /var/run/pulpcore-worker-2
+             /var/run/pulpcore-worker-2 \
+             /var/run/new-pulpcore-worker-1 \
+             /var/run/new-pulpcore-worker-2
 
 RUN pip3 install --upgrade pip
 
@@ -76,13 +80,16 @@ RUN echo "/var/lib/pgsql true postgres 0600 0750" >> /etc/fix-attrs.d/postgres
 COPY assets/pulpcore-content.run /etc/services.d/pulpcore-content/run
 COPY assets/postgres.run /etc/services.d/postgresql/run
 COPY assets/redis.run /etc/services.d/redis/run
-COPY assets/pulpcore-worker@2.run /etc/services.d/pulpcore-worker@2/run
+COPY assets/pulpcore-worker.prep /etc/cont-init.d/pulpcore-worker
 COPY assets/pulpcore-resource-manager.run /etc/services.d/pulpcore-resource-manager/run
+COPY assets/pulpcore-worker@1.run /etc/services.d/pulpcore-worker@1/run
+COPY assets/pulpcore-worker@2.run /etc/services.d/pulpcore-worker@2/run
+COPY assets/new-pulpcore-worker@1.run /etc/services.d/new-pulpcore-worker@1/run
+COPY assets/new-pulpcore-worker@2.run /etc/services.d/new-pulpcore-worker@2/run
 COPY assets/pulpcore-api.prep /etc/cont-init.d/pulpcore-api
 COPY assets/pulpcore-api.run /etc/services.d/pulpcore-api/run
 COPY assets/000-postgres.prep /etc/cont-init.d/000-postgres
 COPY assets/zzz-postgres.prep /etc/cont-init.d/zzz-postgres
-COPY assets/pulpcore-worker@1.run /etc/services.d/pulpcore-worker@1/run
 COPY assets/nginx.conf /etc/nginx/nginx.conf
 COPY assets/nginx.run /etc/services.d/nginx/run
 
