@@ -1,0 +1,15 @@
+#!/usr/bin/execlineb -P
+
+ifte
+{
+  touch
+    /etc/services.d/pulpcore-resource-manager/down
+    /etc/services.d/pulpcore-worker@1/down
+    /etc/services.d/pulpcore-worker@2/down
+}
+{
+  touch
+    /etc/services.d/new-pulpcore-worker@1/down
+    /etc/services.d/new-pulpcore-worker@2/down
+}
+grep -q -e "USE_NEW_WORKER_TYPE\\s*=\\s*True" /etc/pulp/settings.py
