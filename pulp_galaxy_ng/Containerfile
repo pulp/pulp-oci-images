@@ -2,8 +2,8 @@ FROM pulp/pulp-ci-centos:latest
 
 ARG PULPCORE_VERSION=">=3.7,<3.9"
 ARG PULP_CONTAINER_VERSION="==2.1.0"
-ARG PULP_ANSIBLE_VERSION="==0.5.5"
-ARG GALAXY_NG_VERSION="==4.2.1"
+ARG PULP_ANSIBLE_VERSION="==0.5.8"
+ARG GALAXY_NG_VERSION="==4.2.3"
 
 RUN pip3 install --upgrade \
   requests \
