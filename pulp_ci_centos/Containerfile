@@ -33,6 +33,7 @@ RUN dnf -y install dnf-plugins-core && \
     dnf -y install wget git && \
     dnf -y install python3-psycopg2 && \
     dnf -y install glibc-langpack-en && \
+    dnf -y install python3-cryptography && \
     dnf -y install python3-libmodulemd && \
     dnf -y install python3-libcomps && \
     dnf -y install postgresql && \

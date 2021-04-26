@@ -9,4 +9,19 @@ foreground {
 foreground {
   openssl ecparam -genkey -name prime256v1 -noout -out /etc/pulp/certs/token_private_key.pem
 }
-openssl ec -in /etc/pulp/certs/token_private_key.pem -pubout -out /etc/pulp/certs/token_public_key.pem
+foreground {
+  openssl ec -in /etc/pulp/certs/token_private_key.pem -pubout -out /etc/pulp/certs/token_public_key.pem
+}
+foreground {
+  openssl genrsa -out /etc/pulp/certs/ca.key 2048
+}
+foreground {
+  openssl req -x509 -new -nodes -key /etc/pulp/certs/ca.key -subj "/CN=pulp/C=US/L=California" -out /etc/pulp/certs/ca.crt
+}
+foreground {
+  openssl genrsa -out /etc/pulp/certs/pulp_webserver.key 2048
+}
+foreground {
+  openssl req -new -key /etc/pulp/certs/pulp_webserver.key -subj "/CN=pulp/C=US/ST=California" -out /etc/pulp/certs/pulp_webserver.csr
+}
+openssl x509 -req -in /etc/pulp/certs/pulp_webserver.csr -CA /etc/pulp/certs/ca.crt -CAkey /etc/pulp/certs/ca.key -CAcreateserial -out /etc/pulp/certs/pulp_webserver.crt
