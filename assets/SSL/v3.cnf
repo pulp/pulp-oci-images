@@ -1,0 +1,9 @@
+[v3_req]
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = pulp
+DNS.2 = pulp.example.com
+DNS.3 = ci.pulp.com
+DNS.4 = galaxy
+DNS.5 = galaxy.example.com
+DNS.6 = ci.galaxy.com
