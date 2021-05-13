@@ -41,6 +41,8 @@ jobs:
             docker build --file pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
           fi
           docker build --file pulp/Containerfile --tag pulp/pulp:$VERSION .
+      - name: Test the images
+        run: assets/test.sh "pulp/pulp:$VERSION"
       - name: Docker login
         env:
           DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
