@@ -61,6 +61,7 @@ RUN mkdir -p /etc/nginx/pulp \
              /etc/services.d/pulpcore-resource-manager \
              /etc/services.d/pulpcore-worker@1 \
              /etc/services.d/pulpcore-worker@2 \
+             /etc/services.d/new-pulpcore-resource-manager \
              /etc/services.d/new-pulpcore-worker@1 \
              /etc/services.d/new-pulpcore-worker@2 \
              /etc/services.d/redis \
