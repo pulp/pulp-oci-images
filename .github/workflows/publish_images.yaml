@@ -24,20 +24,23 @@ jobs:
           echo "VERSION=$version" >> $GITHUB_ENV
       - name: Build the images
         run: |
+          # Apparently podman is slower to build the images
+          sed -i "s/podman/docker/g" .ci/assets/ansible/build_container.yaml
           if [ "$VERSION" = "latest" ]; then
-            docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
-            docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+            make build IMAGE=pulp_ci_centos TAG=latest
+            make build IMAGE=pulp_galaxy_ng TAG=latest
             # SSL
-            docker build --file pulp_ci_centos/SSL/Containerfile --tag pulp/pulp-ci-centos:https .
-            sed -i "s/latest/https/g" pulp_galaxy_ng/Containerfile
-            docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:https .
-            sed -i "s/latest/https/g" pulp/Containerfile
-            docker build --file pulp/Containerfile --tag pulp/pulp:https .
-            sed -i "s/https/latest/g" pulp/Containerfile
+            make build IMAGE=pulp_ci_centos TAG=https
+            make build IMAGE=pulp_galaxy_ng TAG=https
+            make build IMAGE=pulp TAG=https
             # Be resilient if this fails
-            docker build --file pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
+            make build IMAGE=pulp_nightly TAG=nightly || true
           fi
-          docker build --file pulp/Containerfile --tag pulp/pulp:$VERSION .
+          make build IMAGE=pulp TAG=$VERSION
+        env:
+          PY_COLORS: '1'
+          ANSIBLE_FORCE_COLOR: '1'
+        shell: bash
       - name: Test the images
         run: assets/test.sh "pulp/pulp:$VERSION"
       - name: Docker login

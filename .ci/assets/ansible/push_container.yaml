@@ -1,0 +1,21 @@
+---
+- hosts: localhost
+  vars:
+    container_cli: 'docker'
+  tasks:
+    - name: Check for podman
+      command: 'which podman'
+      register: podman_exists
+      ignore_errors: true
+
+    - set_fact:
+        container_cli: 'podman'
+      when: podman_exists is success
+
+    - name: Tag images
+      command: "{{ container_cli }} tag {{ item.name| replace('_', '-') }}:{{ item.tag }} docker.io/pulp/{{ item.name| replace('_', '-') }}:{{ item.tag }}"
+      with_items: "{{ pulp_images }}"
+
+    - name: Push images
+      command: "{{ container_cli }} push docker.io/pulp/{{ item.name| replace('_', '-') }}:{{ item.tag }}"
+      with_items: "{{ pulp_images }}"

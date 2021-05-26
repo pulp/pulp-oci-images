@@ -32,6 +32,9 @@ RUN dnf -y install dnf-plugins-core && \
     dnf -y install openssl && \
     dnf -y install wget git && \
     dnf -y install python3-psycopg2 && \
+{% if item.tag == 'https' %}
+    dnf -y install python3-cryptography && \
+{% endif %}
     dnf -y install glibc-langpack-en && \
     dnf -y install python3-libmodulemd && \
     dnf -y install python3-libcomps && \
@@ -90,11 +93,18 @@ COPY assets/pulpcore-worker@1.run /etc/services.d/pulpcore-worker@1/run
 COPY assets/pulpcore-worker@2.run /etc/services.d/pulpcore-worker@2/run
 COPY assets/new-pulpcore-worker@1.run /etc/services.d/new-pulpcore-worker@1/run
 COPY assets/new-pulpcore-worker@2.run /etc/services.d/new-pulpcore-worker@2/run
-COPY assets/pulpcore-api.prep /etc/cont-init.d/pulpcore-api
-COPY assets/pulpcore-api.run /etc/services.d/pulpcore-api/run
 COPY assets/000-postgres.prep /etc/cont-init.d/000-postgres
 COPY assets/zzz-postgres.prep /etc/cont-init.d/zzz-postgres
+{% if item.tag == 'https' -%}
+COPY assets/SSL/openssl.cnf /etc/ssl/pulp/openssl.cnf
+COPY assets/SSL/v3.cnf /etc/ssl/pulp/v3.cnf
+COPY assets/SSL/pulpcore-api.prep /etc/cont-init.d/pulpcore-api
+COPY assets/SSL/nginx.conf /etc/nginx/nginx.conf
+{% else -%}
+COPY assets/pulpcore-api.prep /etc/cont-init.d/pulpcore-api
 COPY assets/nginx.conf /etc/nginx/nginx.conf
+{% endif %}
+COPY assets/pulpcore-api.run /etc/services.d/pulpcore-api/run
 COPY assets/nginx.run /etc/services.d/nginx/run
 
 ENTRYPOINT ["/init"]

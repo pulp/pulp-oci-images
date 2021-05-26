@@ -1,8 +1,0 @@
-FROM pulp/pulp-ci-centos:latest
-
-RUN dnf -y install python3-cryptography
-
-COPY assets/SSL/openssl.cnf /etc/ssl/pulp/openssl.cnf
-COPY assets/SSL/v3.cnf /etc/ssl/pulp/v3.cnf
-COPY assets/SSL/pulpcore-api.prep /etc/cont-init.d/pulpcore-api
-COPY assets/SSL/nginx.conf /etc/nginx/nginx.conf

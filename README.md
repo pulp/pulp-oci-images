@@ -8,9 +8,9 @@ For instructions how to run and use this container, see [Pulp in One Container](
 
 ```bash
 $ wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
-$ <docker build | buildah bud> --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
-$ <docker build | buildah bud> --file pulp/Containerfile --tag pulp/pulp:latest .
-$ <docker build | buildah bud> --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+$ make build IMAGE=pulp_ci_centos TAG=latest
+$ make build IMAGE=pulp TAG=latest
+$ make build IMAGE=pulp_galaxy_ng TAG=latest
 ```
 
 ## Specifying versions

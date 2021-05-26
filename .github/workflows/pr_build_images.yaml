@@ -11,11 +11,9 @@ jobs:
       matrix:
         include:
           - ci_type: pulp_ci_centos
-            ci_image: pulp-ci-centos
             test_type: pulp_galaxy_ng
             test_image: pulp-galaxy-ng
           - ci_type: pulp_ci_centos
-            ci_image: pulp-ci-centos
             test_type: pulp
             test_image: pulp
     steps:
@@ -23,8 +21,11 @@ jobs:
       - name: Build the images
         run: |
           wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
-          docker build --file ${{ matrix.ci_type }}/Containerfile --tag pulp/${{ matrix.ci_image }}:latest .
-          docker build --file ${{ matrix.test_type }}/Containerfile --tag pulp/${{ matrix.test_image }}:latest .
+          # Apparently podman is slower to build the images
+          sed -i "s/podman/docker/g" .ci/assets/ansible/build_container.yaml
+          make build IMAGE=${{ matrix.ci_type }} TAG=latest
+          make build IMAGE=${{ matrix.test_type }} TAG=latest
+          docker images
       - name: Test the images
         run: assets/test.sh "pulp/${{ matrix.test_image }}:latest"
       - name: Display log on error
@@ -38,11 +39,9 @@ jobs:
       matrix:
         include:
           - ci_type: pulp_ci_centos
-            ci_image: pulp-ci-centos
             test_type: pulp_galaxy_ng
             test_image: pulp-galaxy-ng
           - ci_type: pulp_ci_centos
-            ci_image: pulp-ci-centos
             test_type: pulp
             test_image: pulp
     steps:
@@ -50,10 +49,15 @@ jobs:
       - name: Build the images
         run: |
           wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
-          docker build --file ${{ matrix.ci_type }}/Containerfile --tag pulp/${{ matrix.ci_image }}:latest .
-          docker build --file ${{ matrix.ci_type }}/SSL/Containerfile --tag pulp/${{ matrix.ci_image }}:https .
-          sed -i "s/latest/https/g" ${{ matrix.test_type }}/Containerfile
-          docker build --file ${{ matrix.test_type }}/Containerfile --tag pulp/${{ matrix.test_image }}:https .
+          # Apparently podman is slower to build the images
+          sed -i "s/podman/docker/g" .ci/assets/ansible/build_container.yaml
+          make build IMAGE=${{ matrix.ci_type }} TAG=https
+          make build IMAGE=${{ matrix.test_type }} TAG=https
+          docker images
+        env:
+          PY_COLORS: '1'
+          ANSIBLE_FORCE_COLOR: '1'
+        shell: bash
       - name: Test the images
         run: assets/test.sh "pulp/${{ matrix.test_image }}:https" https
       - name: Display log on error

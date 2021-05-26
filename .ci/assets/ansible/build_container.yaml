@@ -1,0 +1,32 @@
+# Ansible playbook to create the pulp containers image
+---
+- hosts: localhost
+  gather_facts: false
+  vars:
+    container_cli: 'docker'
+  tasks:
+    - name: Generate Containerfile from template
+      template:
+        src: "../../../{{ item.name }}/Containerfile.j2"
+        dest: "../../../{{ item.name }}/Containerfile_{{ item.tag }}"
+      with_items: "{{ pulp_images }}"
+
+    - name: Check for podman
+      command: 'which podman'
+      register: podman_exists
+      ignore_errors: true
+
+    - set_fact:
+        container_cli: 'podman'
+      when: podman_exists is success
+
+    - name: Build images
+      command: "{{ container_cli }} build -t {{ item.name| replace('_', '-') }}:{{ item.tag }} -f ../../../{{ item.name }}/Containerfile_{{ item.tag }} ../../.."
+      with_items: "{{ pulp_images }}"
+      retries: 2
+      register: result
+      until: result.rc == 0
+
+    - name: Tag images
+      command: "{{ container_cli }} tag {{ item.name| replace('_', '-') }}:{{ item.tag }} docker.io/pulp/{{ item.name| replace('_', '-') }}:{{ item.tag }}"
+      with_items: "{{ pulp_images }}"

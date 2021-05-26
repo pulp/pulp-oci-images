@@ -1,4 +1,4 @@
-FROM pulp/pulp-ci-centos:latest
+FROM pulp/pulp-ci-centos:{{ item.tag }}
 
 ARG PULPCORE_VERSION=">=3.11.2,<3.12"
 ARG PULP_CONTAINER_VERSION=">=2.5.2,<2.6"

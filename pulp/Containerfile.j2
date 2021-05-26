@@ -1,4 +1,4 @@
-FROM pulp/pulp-ci-centos:latest
+FROM pulp/pulp-ci-centos:{{ item.tag }}
 
 ARG PULPCORE_VERSION=""
 ARG PULP_ANSIBLE_VERSION=""
