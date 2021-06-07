@@ -2,7 +2,7 @@
 foreground {
   export DJANGO_SETTINGS_MODULE pulpcore.app.settings
   export PULP_CONTENT_ORIGIN localhost
-  /usr/local/bin/pulpcore-manager collectstatic --noinput --link
+  /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link
 }
 export DJANGO_SETTINGS_MODULE pulpcore.app.settings
 export PULP_SETTINGS /etc/pulp/settings.py
