@@ -1,4 +1,4 @@
-name: Build and publish OCI Images
+name: Publish OCI Images
 
 on:
   push:
@@ -14,7 +14,7 @@ on:
         required: true
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
