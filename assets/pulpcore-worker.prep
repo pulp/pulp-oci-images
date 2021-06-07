@@ -2,25 +2,14 @@
 
 ifte
 {
-  foreground
-  {
-    touch
-      /etc/services.d/pulpcore-resource-manager/down
-      /etc/services.d/pulpcore-worker@1/down
-      /etc/services.d/pulpcore-worker@2/down
-  }
-  if
-  {
-    grep -q -e "USE_NEW_WORKER_TYPE\\s*=\\s*True" /etc/pulp/settings.py
-  }
   touch
-    /etc/services.d/new-pulpcore-resource-manager/down
-    /etc/services.d/redis/down
+    /etc/services.d/pulpcore-resource-manager/down
+    /etc/services.d/pulpcore-worker@1/down
+    /etc/services.d/pulpcore-worker@2/down
 }
 {
   touch
-    /etc/services.d/new-pulpcore-resource-manager/down
     /etc/services.d/new-pulpcore-worker@1/down
     /etc/services.d/new-pulpcore-worker@2/down
 }
-python3 -c "import sys; from packaging.version import parse; from pulpcore.app.apps import PulpAppConfig; sys.exit(0 if parse(PulpAppConfig.version) >= parse('3.13.0.dev0') else 1)"
+grep -q -e "USE_NEW_WORKER_TYPE\\s*=\\s*True" /etc/pulp/settings.py
