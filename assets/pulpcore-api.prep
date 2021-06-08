@@ -1,10 +1,19 @@
 #!/usr/bin/execlineb -P
 
-if -n {
-  ls /etc/pulp/certs
+foreground {
+  if -n {
+    ls /etc/pulp/certs
+  }
+  mkdir -p /etc/pulp/certs
 }
 foreground {
-  mkdir -p /etc/pulp/certs
+  if -n {
+    ls /etc/pulp/certs/database_fields.symmetric.key
+  }
+  openssl rand -base64 32 > /etc/pulp/certs/database_fields.symmetric.key
+}
+if -n {
+  ls /etc/pulp/certs/token_private_key.pem
 }
 foreground {
   openssl ecparam -genkey -name prime256v1 -noout -out /etc/pulp/certs/token_private_key.pem
