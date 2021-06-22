@@ -8,28 +8,18 @@ on:
     # * is a special character in YAML so you have to quote this string
     - cron: '0 1 * * *'
   workflow_dispatch:
-    inputs:
-      pulpcore:
-        description: 'Release branch (e.g. 3.7)'
-        required: true
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.inputs.pulpcore }}
       - name: Download s6-overlay
         run: |
           wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
       - name: Set version
         run: |
-          if [ -n "${{ github.event.inputs.pulpcore }}" ]; then
-            version="${{ github.event.inputs.pulpcore }}"
-          else
-            version="${GITHUB_REF#refs/heads/}"
-          fi
+          version="${GITHUB_REF#refs/heads/}"
           echo "Building and publishing $version."
           echo "VERSION=$version" >> $GITHUB_ENV
       - name: Build the images
