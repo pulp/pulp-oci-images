@@ -17,7 +17,7 @@ docker run --detach \
            --device /dev/fuse \
            "$image"
 sleep 10
-for _ in $(seq 10)
+for _ in $(seq 20)
 do
   sleep 3
   if curl --fail http://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1

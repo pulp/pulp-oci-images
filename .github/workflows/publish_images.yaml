@@ -47,3 +47,6 @@ jobs:
             docker push docker.io/pulp/pulp:nightly || true
           fi
           docker push docker.io/pulp/pulp:$VERSION
+      - name: Display log on error
+        if: failure()
+        run: docker logs pulp
