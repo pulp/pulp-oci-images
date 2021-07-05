@@ -65,6 +65,7 @@ RUN mkdir -p /etc/nginx/pulp \
              /etc/services.d/new-pulpcore-worker@1 \
              /etc/services.d/new-pulpcore-worker@2 \
              /etc/services.d/redis \
+             /etc/ssl/pulp \
              /var/lib/pgsql \
              /var/lib/pulp/assets \
              /var/lib/pulp/media \

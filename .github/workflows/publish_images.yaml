@@ -27,6 +27,13 @@ jobs:
           if [ "$VERSION" = "latest" ]; then
             docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
             docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+            # SSL
+            docker build --file pulp_ci_centos/SSL/Containerfile --tag pulp/pulp-ci-centos:https .
+            sed -i "s/latest/https/g" pulp_galaxy_ng/Containerfile
+            docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:https .
+            sed -i "s/latest/https/g" pulp/Containerfile
+            docker build --file pulp/Containerfile --tag pulp/pulp:https .
+            sed -i "s/https/latest/g" pulp/Containerfile
             # Be resilient if this fails
             docker build --file pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
           fi
@@ -43,6 +50,9 @@ jobs:
           if [ "$VERSION" = "latest" ]; then
             docker push docker.io/pulp/pulp-ci-centos:latest
             docker push docker.io/pulp/pulp-galaxy-ng:latest
+            docker push docker.io/pulp/pulp-ci-centos:https
+            docker push docker.io/pulp/pulp-galaxy-ng:https
+            docker push docker.io/pulp/pulp:https
             # Be resilient if this fails
             docker push docker.io/pulp/pulp:nightly || true
           fi
