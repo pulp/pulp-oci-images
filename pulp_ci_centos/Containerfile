@@ -18,6 +18,9 @@ ENV PULP_SETTINGS=/etc/pulp/settings.py
 ENV _BUILDAH_STARTED_IN_USERNS=""
 ENV BUILDAH_ISOLATION=chroot
 
+# use python38
+RUN dnf -y module enable python38
+
 # glibc-langpack-en is needed to provide the en_US.UTF-8 locale, which Pulp
 # seems to need.
 #
