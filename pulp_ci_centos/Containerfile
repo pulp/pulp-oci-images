@@ -80,7 +80,7 @@ RUN mkdir -p /etc/nginx/pulp \
              /var/run/new-pulpcore-worker-1 \
              /var/run/new-pulpcore-worker-2
 
-RUN pip3 install --upgrade pip
+RUN pip3 install --upgrade pip packaging
 
 RUN echo "/var/lib/pgsql true postgres 0600 0750" >> /etc/fix-attrs.d/postgres
 
