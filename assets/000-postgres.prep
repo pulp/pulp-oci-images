@@ -26,6 +26,7 @@ backtick -n ! { pipeline { postgres --version } egrep -o "[0-9]{1,}\.[0-9]{1,}" 
 importas -u PGVERSION !
 define PGHOME "/var/lib/pgsql"
 define PGDATA "${PGHOME}/data"
+define PG_CONF_PATH "${PGDATA}/postgresql.conf"
 
 foreground {
 ifthenelse { s6-test -d "${PGDATA}/base" -a -f "${PGDATA}/PG_VERSION" }
@@ -51,6 +52,9 @@ ifthenelse { s6-test -d "${PGDATA}/base" -a -f "${PGDATA}/PG_VERSION" }
     s6-hiercopy /etc/postgresql/ ${PGDATA}/
   }
 }
+}
+foreground {
+  sed -i "s/max_connections = 100/max_connections = 1024/g" ${PG_CONF_PATH}
 }
 
 importas -u ? ?
