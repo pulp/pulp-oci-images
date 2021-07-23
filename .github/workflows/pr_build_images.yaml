@@ -30,3 +30,30 @@ jobs:
       - name: Display log on error
         if: failure()
         run: docker logs pulp
+
+  sslbuild:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ci_type: pulp_ci_centos
+            ci_image: pulp-ci-centos
+            test_type: pulp_galaxy_ng
+            test_image: pulp-galaxy-ng
+          - ci_type: pulp_ci_centos
+            ci_image: pulp-ci-centos
+            test_type: pulp
+            test_image: pulp
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build the images
+        run: |
+          wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
+          docker build --build-arg SCHEME="https" --file ${{ matrix.ci_type }}/Containerfile --tag pulp/${{ matrix.ci_image }}:https .
+          docker build --build-arg FROM_TAG="https" --file ${{ matrix.test_type }}/Containerfile --tag pulp/${{ matrix.test_image }}:https .
+      - name: Test the images
+        run: assets/test.sh "pulp/${{ matrix.test_image }}:https" https
+      - name: Display log on error
+        if: failure()
+        run: docker logs pulp

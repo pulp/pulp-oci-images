@@ -19,4 +19,34 @@ if -n {
 foreground {
   openssl ecparam -genkey -name prime256v1 -noout -out /etc/pulp/certs/token_private_key.pem
 }
-openssl ec -in /etc/pulp/certs/token_private_key.pem -pubout -out /etc/pulp/certs/token_public_key.pem
+foreground {
+  openssl ec -in /etc/pulp/certs/token_private_key.pem -pubout -out /etc/pulp/certs/token_public_key.pem
+}
+foreground {
+  openssl genrsa -out /etc/pulp/certs/pulp_webserver.key 2048
+}
+foreground {
+  openssl req -new -key /etc/pulp/certs/pulp_webserver.key -subj "/CN=pulp/C=US/ST=NC/L=Raleigh/O=Red Hat, Inc./OU=pnt" -out /etc/pulp/certs/pulp_webserver.csr -extensions v3_req -config /etc/ssl/pulp/openssl.cnf
+}
+foreground {
+  openssl x509 -req -days 365 -in /etc/pulp/certs/pulp_webserver.csr -signkey /etc/pulp/certs/pulp_webserver.key -out /etc/pulp/certs/pulp_webserver.crt -extensions v3_req -extfile /etc/ssl/pulp/v3.cnf
+}
+foreground {
+  cp /etc/pulp/certs/pulp_webserver.crt /etc/pki/tls/certs/pulp_webserver.crt
+}
+foreground {
+  cp /etc/pulp/certs/pulp_webserver.csr /etc/pki/tls/private/pulp_webserver.csr
+}
+foreground {
+  cp /etc/pulp/certs/pulp_webserver.key /etc/pki/tls/private/pulp_webserver.key
+}
+foreground {
+  update-ca-trust force-enable
+}
+foreground {
+  update-ca-trust extract
+}
+pipeline {
+  cat /etc/pulp/certs/pulp_webserver.crt
+}
+tee -a /etc/pki/tls/cert.pem

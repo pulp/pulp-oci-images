@@ -1,4 +1,5 @@
-FROM pulp/pulp-ci-centos:latest
+ARG FROM_TAG="latest"
+FROM pulp/pulp-ci-centos:${FROM_TAG}
 
 RUN pip3 install --upgrade \
   git+https://github.com/pulp/pulpcore@master \

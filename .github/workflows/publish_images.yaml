@@ -50,3 +50,49 @@ jobs:
       - name: Display log on error
         if: failure()
         run: docker logs pulp
+
+  ssl_publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download s6-overlay
+        run: |
+          wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
+      - name: Set version
+        run: |
+          version="${GITHUB_REF#refs/heads/}-https"
+          echo "Building and publishing $version."
+          echo "VERSION=$version" >> $GITHUB_ENV
+      - name: Build the images
+        run: |
+          docker build --build-arg SCHEME="https" --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:https .
+          if [ "$VERSION" = "latest-https" ]; then
+            docker build --build-arg FROM_TAG="https" --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:https .
+            docker build --build-arg FROM_TAG="https" --file pulp_galaxy_ng/Containerfile --tag pulp/pulp:https .
+          else
+            docker build --build-arg FROM_TAG="https" --file pulp/Containerfile --tag pulp/pulp:$VERSION .
+          fi
+      - name: Test the images
+        run: |
+          if [ "$VERSION" = "latest-https" ]; then
+            assets/test.sh "pulp/pulp:https" https
+          else
+            assets/test.sh "pulp/pulp:$VERSION" https
+          fi
+      - name: Docker login
+        env:
+          DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
+          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
+        run: echo "$DOCKER_BOT_PASSWORD" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
+      - name: Push ci image to dockerhub
+        run: |
+          if [ "$VERSION" = "latest-https" ]; then
+            docker push docker.io/pulp/pulp-ci-centos:https
+            docker push docker.io/pulp/pulp-galaxy-ng:https
+            docker push docker.io/pulp/pulp:https
+          else
+            docker push docker.io/pulp/pulp:$VERSION
+          fi
+      - name: Display log on error
+        if: failure()
+        run: docker logs pulp
