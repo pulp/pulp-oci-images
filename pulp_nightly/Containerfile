@@ -2,7 +2,7 @@ FROM pulp/pulp-ci-centos:latest
 
 RUN pip3 install --upgrade \
   git+https://github.com/pulp/pulpcore@master \
-  git+https://github.com/pulp/pulp_ansible@master \
+  git+https://github.com/pulp/pulp_ansible@main \
   git+https://github.com/pulp/pulp-certguard@master \
   git+https://github.com/pulp/pulp_container@master \
   git+https://github.com/pulp/pulp_deb@main \

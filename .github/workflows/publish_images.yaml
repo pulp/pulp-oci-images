@@ -40,13 +40,13 @@ jobs:
         run: echo "$DOCKER_BOT_PASSWORD" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
       - name: Push ci image to dockerhub
         run: |
+          docker push docker.io/pulp/pulp:$VERSION
           if [ "$VERSION" = "latest" ]; then
             docker push docker.io/pulp/pulp-ci-centos:latest
             docker push docker.io/pulp/pulp-galaxy-ng:latest
-            # Be resilient if this fails
-            docker push docker.io/pulp/pulp:nightly || true
+            # Let this be the last thing so it can indicate failure without breaking anything else
+            docker push docker.io/pulp/pulp:nightly
           fi
-          docker push docker.io/pulp/pulp:$VERSION
       - name: Display log on error
         if: failure()
         run: docker logs pulp
