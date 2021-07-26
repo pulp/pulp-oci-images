@@ -24,8 +24,8 @@ jobs:
           echo "VERSION=$version" >> $GITHUB_ENV
       - name: Build the images
         run: |
+          docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
           if [ "$VERSION" = "latest" ]; then
-            docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
             docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
             # Be resilient if this fails
             docker build --file pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
