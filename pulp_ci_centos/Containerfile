@@ -1,5 +1,7 @@
-ARG SCHEME="http"
 FROM centos:8
+# https://ryandaniels.ca/blog/docker-dockerfile-arg-from-arg-trouble/
+ARG SCHEME="http"
+
 COPY s6-overlay-amd64.tar.gz /tmp
 
 RUN tar xzf /tmp/s6-overlay-amd64.tar.gz -C / --exclude="./bin" && \
