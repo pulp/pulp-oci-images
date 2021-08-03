@@ -6,13 +6,6 @@ foreground {
   }
   mkdir -p /etc/pulp/certs
 }
-foreground {
-  if -n {
-    ls /etc/pulp/certs/database_fields.symmetric.key
-  }
-  redirfd -w 1 /etc/pulp/certs/database_fields.symmetric.key
-  openssl rand -base64 32
-}
 if -n {
   ls /etc/pulp/certs/token_private_key.pem
 }

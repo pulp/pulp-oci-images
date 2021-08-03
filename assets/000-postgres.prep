@@ -98,6 +98,20 @@ foreground {
 }
 
 foreground {
+  if -n {
+    ls /etc/pulp/certs
+  }
+  mkdir -p /etc/pulp/certs
+}
+foreground {
+  if -n {
+    ls /etc/pulp/certs/database_fields.symmetric.key
+  }
+  redirfd -w 1 /etc/pulp/certs/database_fields.symmetric.key
+  openssl rand -base64 32
+}
+
+foreground {
   export DJANGO_SETTINGS_MODULE pulpcore.app.settings
   export PULP_CONTENT_ORIGIN localhost
   s6-setuidgid postgres
