@@ -18,7 +18,7 @@ RUN pip3 install --upgrade \
   pulp-container${PULP_CONTAINER_VERSION} \
   pulp-deb${PULP_DEB_VERSION} \
   pulp-file${PULP_FILE_VERSION} \
-  pulp-maven${PULP_MAVEN_VERSION} \
+  #pulp-maven${PULP_MAVEN_VERSION} \
   pulp-python${PULP_PYTHON_VERSION} \
   pulp-rpm${PULP_RPM_VERSION} \
   requests
