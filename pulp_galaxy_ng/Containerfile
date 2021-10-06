@@ -1,16 +1,10 @@
 ARG FROM_TAG="latest"
 FROM pulp/pulp-ci-centos:${FROM_TAG}
 
-ARG PULPCORE_VERSION=">=3.11.2,<3.12"
-ARG PULP_CONTAINER_VERSION=">=2.5.2,<2.6"
-ARG PULP_ANSIBLE_VERSION="==0.7.3"
-ARG GALAXY_NG_VERSION="==4.3.1"
+ARG GALAXY_NG_VERSION=""
 
 RUN pip3 install --upgrade \
   requests \
-  pulpcore${PULPCORE_VERSION} \
-  pulp-container${PULP_CONTAINER_VERSION} \
-  pulp-ansible${PULP_ANSIBLE_VERSION} \
   galaxy-ng${GALAXY_NG_VERSION}
 
 RUN ln /usr/local/lib/python3.8/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
