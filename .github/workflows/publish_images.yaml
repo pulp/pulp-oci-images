@@ -68,7 +68,7 @@ jobs:
           docker build --build-arg SCHEME="https" --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:https .
           if [ "$VERSION" = "latest-https" ]; then
             docker build --build-arg FROM_TAG="https" --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:https .
-            docker build --build-arg FROM_TAG="https" --file pulp_galaxy_ng/Containerfile --tag pulp/pulp:https .
+            docker build --build-arg FROM_TAG="https" --file pulp/Containerfile --tag pulp/pulp:https .
           else
             docker build --build-arg FROM_TAG="https" --file pulp/Containerfile --tag pulp/pulp:$VERSION .
           fi
