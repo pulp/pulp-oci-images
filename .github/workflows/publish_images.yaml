@@ -22,6 +22,25 @@ jobs:
           version="${GITHUB_REF#refs/heads/}"
           echo "Building and publishing $version."
           echo "VERSION=$version" >> $GITHUB_ENV
+
+      - name: Dispatching
+        if: github.event_name == 'schedule'
+        run: |
+          for version in $(git ls-remote --heads https://github.com/pulp/pulp-oci-images.git | grep -o "3\.[[:digit:]]*" | sort -V | tail -3)
+            do
+              echo $version
+              echo "{\"ref\": \"${version}\"}" > data.json
+              cat data.json
+              curl \
+                -X POST \
+                -H "Accept: application/vnd.github.v3+json" \
+                -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+                https://api.github.com/repos/pulp/pulp-oci-images/actions/workflows/publish_images.yaml/dispatches \
+                -d @data.json
+            done
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+
       - name: Build the images
         run: |
           if [ "$VERSION" = "latest" ]; then
