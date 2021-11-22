@@ -11,6 +11,7 @@ ARG PULP_PYTHON_VERSION=""
 ARG PULP_RPM_VERSION="~=3.14.0"
 
 RUN pip3 install --upgrade \
+  "python-debian>=0.1.36,<0.1.42" \
   pulpcore${PULPCORE_VERSION} \
   pulp-ansible${PULP_ANSIBLE_VERSION} \
   pulp-certguard${PULP_CERTGUARD_VERSION} \
