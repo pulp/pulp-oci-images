@@ -69,10 +69,8 @@ RUN mkdir -p /etc/nginx/pulp \
              /etc/services.d/postgresql \
              /etc/services.d/pulpcore-api \
              /etc/services.d/pulpcore-content \
-             /etc/services.d/pulpcore-resource-manager \
              /etc/services.d/pulpcore-worker@1 \
              /etc/services.d/pulpcore-worker@2 \
-             /etc/services.d/new-pulpcore-resource-manager \
              /etc/services.d/new-pulpcore-worker@1 \
              /etc/services.d/new-pulpcore-worker@2 \
              /etc/services.d/redis \
@@ -81,7 +79,6 @@ RUN mkdir -p /etc/nginx/pulp \
              /var/lib/pgsql \
              /var/lib/pulp/assets \
              /var/lib/pulp/media \
-             /var/run/pulpcore-resource-manager \
              /var/run/pulpcore-worker-1 \
              /var/run/pulpcore-worker-2 \
              /var/run/new-pulpcore-worker-1 \
@@ -97,8 +94,6 @@ COPY assets/pulpcore-content.run /etc/services.d/pulpcore-content/run
 COPY assets/postgres.run /etc/services.d/postgresql/run
 COPY assets/redis.run /etc/services.d/redis/run
 COPY assets/pulpcore-worker.prep /etc/cont-init.d/pulpcore-worker
-COPY assets/pulpcore-resource-manager.run /etc/services.d/pulpcore-resource-manager/run
-COPY assets/new-pulpcore-resource-manager.run /etc/services.d/new-pulpcore-resource-manager/run
 COPY assets/pulpcore-worker@1.run /etc/services.d/pulpcore-worker@1/run
 COPY assets/pulpcore-worker@2.run /etc/services.d/pulpcore-worker@2/run
 COPY assets/new-pulpcore-worker@1.run /etc/services.d/new-pulpcore-worker@1/run
