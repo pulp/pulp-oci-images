@@ -96,6 +96,7 @@ COPY assets/v3.cnf /etc/ssl/pulp/v3.cnf
 COPY assets/pulpcore-content.run /etc/services.d/pulpcore-content/run
 COPY assets/postgres.run /etc/services.d/postgresql/run
 COPY assets/redis.run /etc/services.d/redis/run
+COPY assets/pulpcore-resource-manager.prep /etc/cont-init.d/pulpcore-resource-manager
 COPY assets/pulpcore-worker.prep /etc/cont-init.d/pulpcore-worker
 COPY assets/pulpcore-resource-manager.run /etc/services.d/pulpcore-resource-manager/run
 COPY assets/new-pulpcore-resource-manager.run /etc/services.d/new-pulpcore-resource-manager/run
