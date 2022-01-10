@@ -117,3 +117,15 @@ foreground {
   s6-setuidgid postgres
   /usr/local/bin/pulpcore-manager migrate
 }
+foreground {
+  s6-svc -r /var/run/s6/services/pulpcore-api
+}
+foreground {
+  s6-svc -r /var/run/s6/services/pulpcore-content
+}
+foreground {
+  s6-svc -r /var/run/s6/services/new-pulpcore-worker@1
+}
+foreground {
+  s6-svc -r /var/run/s6/services/new-pulpcore-worker@2
+}
