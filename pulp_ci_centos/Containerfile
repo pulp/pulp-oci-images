@@ -63,7 +63,8 @@ RUN dnf -y install dnf-plugins-core && \
 
 RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
 
-RUN mkdir -p /etc/nginx/pulp \
+RUN mkdir -p /database \
+             /etc/nginx/pulp \
              /etc/pulp \
              /etc/services.d/nginx \
              /etc/services.d/postgresql \
@@ -108,6 +109,7 @@ COPY assets/pulpcore-api.prep /etc/cont-init.d/pulpcore-api
 COPY assets/pulpcore-api.run /etc/services.d/pulpcore-api/run
 COPY assets/000-postgres.prep /etc/cont-init.d/000-postgres
 COPY assets/zzz-postgres.prep /etc/cont-init.d/zzz-postgres
+COPY assets/wait_on_database_migrations.sh /database/assets/wait_on_database_migrations.sh
 COPY assets/ssl_nginx.conf /nginx/ssl_nginx.conf
 COPY assets/nginx.conf /nginx/nginx.conf
 COPY assets/nginx.run /etc/services.d/nginx/run

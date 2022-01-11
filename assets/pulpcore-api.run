@@ -1,5 +1,8 @@
 #!/usr/bin/execlineb -S0
 foreground {
+  /database/assets/wait_on_database_migrations.sh
+}
+foreground {
   export DJANGO_SETTINGS_MODULE pulpcore.app.settings
   export PULP_CONTENT_ORIGIN localhost
   /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link

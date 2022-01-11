@@ -117,3 +117,7 @@ foreground {
   s6-setuidgid postgres
   /usr/local/bin/pulpcore-manager migrate
 }
+pipeline {
+  echo "ready"
+}
+tee /database/status
