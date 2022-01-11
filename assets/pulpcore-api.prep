@@ -1,6 +1,9 @@
 #!/usr/bin/execlineb -P
 
 foreground {
+  /database/assets/wait_on_database_migrations.sh
+}
+foreground {
   if -n {
     ls /etc/pulp/certs
   }
