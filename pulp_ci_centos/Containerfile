@@ -94,26 +94,12 @@ RUN echo "/var/lib/pgsql true postgres 0600 0750" >> /etc/fix-attrs.d/postgres
 
 COPY assets/openssl.cnf /etc/ssl/pulp/openssl.cnf
 COPY assets/v3.cnf /etc/ssl/pulp/v3.cnf
-COPY assets/pulpcore-content.run /etc/services.d/pulpcore-content/run
-COPY assets/postgres.run /etc/services.d/postgresql/run
-COPY assets/redis.run /etc/services.d/redis/run
-COPY assets/pulpcore-resource-manager.prep /etc/cont-init.d/pulpcore-resource-manager
-COPY assets/pulpcore-worker.prep /etc/cont-init.d/pulpcore-worker
-COPY assets/pulpcore-resource-manager.run /etc/services.d/pulpcore-resource-manager/run
-COPY assets/new-pulpcore-resource-manager.run /etc/services.d/new-pulpcore-resource-manager/run
-COPY assets/pulpcore-worker@1.run /etc/services.d/pulpcore-worker@1/run
-COPY assets/pulpcore-worker@2.run /etc/services.d/pulpcore-worker@2/run
-COPY assets/new-pulpcore-worker@1.run /etc/services.d/new-pulpcore-worker@1/run
-COPY assets/new-pulpcore-worker@2.run /etc/services.d/new-pulpcore-worker@2/run
-COPY assets/pulpcore-api.prep /etc/cont-init.d/pulpcore-api
-COPY assets/pulpcore-api.run /etc/services.d/pulpcore-api/run
-COPY assets/000-postgres.prep /etc/cont-init.d/000-postgres
-COPY assets/zzz-postgres.prep /etc/cont-init.d/zzz-postgres
 COPY assets/wait_on_database_migrations.sh /database/assets/wait_on_database_migrations.sh
 COPY assets/ssl_nginx.conf /nginx/ssl_nginx.conf
 COPY assets/nginx.conf /nginx/nginx.conf
-COPY assets/nginx.run /etc/services.d/nginx/run
 COPY assets/webserver.sh /nginx/webserver.sh
+COPY assets/services /etc/services.d
+COPY assets/init /etc/cont-init.d
 
 RUN /nginx/webserver.sh
 
