@@ -1,8 +1,5 @@
 #!/usr/bin/execlineb -P
 
-foreground {
-  /database/assets/wait_on_database_migrations.sh
-}
 ifte
 {
   touch
