@@ -1,0 +1,12 @@
+ARG FROM_TAG="latest"
+FROM pulp/pulp-ci-centos:${FROM_TAG}
+
+COPY assets/devel.sh /devel.sh
+
+COPY assets/nginx.conf /nginx/nginx.conf
+COPY assets/webserver.sh /nginx/webserver.sh
+
+RUN /devel.sh
+RUN ln /pulp_home/pulp_ansible/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf; \
+  ln /pulp_home/pulp_container/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf; \
+  ln /pulp_home/pulp_python/pulp_python/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_python.conf
