@@ -128,18 +128,17 @@ jobs:
           version="${GITHUB_REF#refs/heads/}"
           echo "Building and publishing $version."
           echo "VERSION=$version" >> $GITHUB_ENV
-
       - name: Build the images
         run: |
           if [ "$VERSION" = "latest" ]; then
-            docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
-            docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+            docker build --file pulp_ci_centos/Containerfile --tag ghcr.io/pulp/pulp-ci-centos:latest .
+            docker build --file pulp_galaxy_ng/Containerfile --tag ghcr.io/pulp/pulp-galaxy-ng:latest .
             # Be resilient if this fails
-            docker build --file pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
+            docker build --file pulp_nightly/Containerfile --tag ghcr.io/pulp/pulp:nightly . || true
           fi
-          docker build --file pulp/Containerfile --tag pulp/pulp:$VERSION .
+          docker build --file pulp/Containerfile --tag ghcr.io/pulp/pulp:$VERSION .
       - name: Test the images
-        run: assets/test.sh "pulp/pulp:$VERSION"
+        run: assets/test.sh "ghcr.io/pulp/pulp:$VERSION"
       - name: Docker login
         env:
           PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
