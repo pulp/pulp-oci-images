@@ -43,8 +43,8 @@ jobs:
 
       - name: Build the images
         run: |
+          docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
           if [ "$VERSION" = "latest" ]; then
-            docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
             docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
             # Be resilient if this fails
             docker build --file pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
@@ -130,8 +130,9 @@ jobs:
           echo "VERSION=$version" >> $GITHUB_ENV
       - name: Build the images
         run: |
+          docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
           if [ "$VERSION" = "latest" ]; then
-            docker build --file pulp_ci_centos/Containerfile --tag ghcr.io/pulp/pulp-ci-centos:latest .
+            docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:latest
             docker build --file pulp_galaxy_ng/Containerfile --tag ghcr.io/pulp/pulp-galaxy-ng:latest .
             # Be resilient if this fails
             docker build --file pulp_nightly/Containerfile --tag ghcr.io/pulp/pulp:nightly . || true
@@ -171,7 +172,8 @@ jobs:
           echo "VERSION=$version" >> $GITHUB_ENV
       - name: Build the images
         run: |
-          docker build --build-arg SCHEME="https" --file pulp_ci_centos/Containerfile --tag ghcr.io/pulp/pulp-ci-centos:https .
+          docker build --build-arg SCHEME="https" --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:https .
+          docker tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:https
           if [ "$VERSION" = "latest-https" ]; then
             docker build --build-arg FROM_TAG="https" --file pulp_galaxy_ng/Containerfile --tag ghcr.io/pulp/pulp-galaxy-ng:https .
             docker build --build-arg FROM_TAG="https" --file pulp/Containerfile --tag ghcr.io/pulp/pulp:https .
