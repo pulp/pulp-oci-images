@@ -20,6 +20,7 @@ RUN pip3 install --upgrade \
   pulp-maven${PULP_MAVEN_VERSION} \
   pulp-python${PULP_PYTHON_VERSION} \
   pulp-rpm${PULP_RPM_VERSION} \
+  click~=7.1.2 \
   requests
 
 RUN ln /usr/local/lib/python3.6/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
