@@ -7,11 +7,11 @@ ARG GALAXY_NG_VERSION="==4.2.1"
 
 RUN pip3 install --upgrade \
   requests \
+  click~=7.1.2 \
   pulpcore${PULPCORE_VERSION} \
   pulp-container${PULP_CONTAINER_VERSION} \
   pulp-ansible${PULP_ANSIBLE_VERSION} \
   galaxy-ng${GALAXY_NG_VERSION}
 
 RUN ln /usr/local/lib/python3.6/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
-RUN ln /usr/local/lib/python3.6/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
 RUN ln /usr/local/lib/python3.6/site-packages/galaxy_ng/app/webserver_snippets/nginx.conf /etc/nginx/pulp/galaxy_ng.conf
