@@ -70,12 +70,8 @@ RUN mkdir -p /database \
              /etc/services.d/postgresql \
              /etc/services.d/pulpcore-api \
              /etc/services.d/pulpcore-content \
-             /etc/services.d/pulpcore-resource-manager \
              /etc/services.d/pulpcore-worker@1 \
              /etc/services.d/pulpcore-worker@2 \
-             /etc/services.d/new-pulpcore-resource-manager \
-             /etc/services.d/new-pulpcore-worker@1 \
-             /etc/services.d/new-pulpcore-worker@2 \
              /etc/services.d/redis \
              /etc/ssl/pulp \
              /nginx \
@@ -84,9 +80,7 @@ RUN mkdir -p /database \
              /var/lib/pulp/media \
              /var/run/pulpcore-resource-manager \
              /var/run/pulpcore-worker-1 \
-             /var/run/pulpcore-worker-2 \
-             /var/run/new-pulpcore-worker-1 \
-             /var/run/new-pulpcore-worker-2
+             /var/run/pulpcore-worker-2
 
 RUN pip3 install --upgrade pip packaging
 
