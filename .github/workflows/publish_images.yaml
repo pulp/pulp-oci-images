@@ -24,11 +24,13 @@ jobs:
           echo "VERSION=$version" >> $GITHUB_ENV
       - name: Build the images
         run: |
+          docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
           if [ "$VERSION" = "latest" ]; then
-            docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
             docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
             # Be resilient if this fails
             docker build --file pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
+          else
+            docker tag pulp/pulp-ci-centos:latest pulp/pulp-ci-centos:$VERSION
           fi
           docker build --file pulp/Containerfile --tag pulp/pulp:$VERSION .
       - name: Test the images
@@ -41,8 +43,8 @@ jobs:
       - name: Push ci image to dockerhub
         run: |
           docker push docker.io/pulp/pulp:$VERSION
+          docker push docker.io/pulp/pulp-ci-centos:$VERSION
           if [ "$VERSION" = "latest" ]; then
-            docker push docker.io/pulp/pulp-ci-centos:latest
             docker push docker.io/pulp/pulp-galaxy-ng:latest
             # Let this be the last thing so it can indicate failure without breaking anything else
             docker push docker.io/pulp/pulp:nightly
@@ -71,6 +73,7 @@ jobs:
             docker build --build-arg FROM_TAG="https" --file pulp/Containerfile --tag pulp/pulp:https .
           else
             docker build --build-arg FROM_TAG="https" --file pulp/Containerfile --tag pulp/pulp:$VERSION .
+            docker tag pulp/pulp-ci-centos:https pulp/pulp-ci-centos:$VERSION
           fi
       - name: Test the images
         run: |
@@ -92,6 +95,7 @@ jobs:
             docker push docker.io/pulp/pulp:https
           else
             docker push docker.io/pulp/pulp:$VERSION
+            docker push docker.io/pulp/pulp-ci-centos:$VERSION
           fi
       - name: Display log on error
         if: failure()
@@ -111,12 +115,14 @@ jobs:
           echo "VERSION=$version" >> $GITHUB_ENV
       - name: Build the images
         run: |
+          docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
           if [ "$VERSION" = "latest" ]; then
-            docker build --file pulp_ci_centos/Containerfile --tag ghcr.io/pulp/pulp-ci-centos:latest .
+            docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:latest
             docker build --file pulp_galaxy_ng/Containerfile --tag ghcr.io/pulp/pulp-galaxy-ng:latest .
             # Be resilient if this fails
             docker build --file pulp_nightly/Containerfile --tag ghcr.io/pulp/pulp:nightly . || true
           fi
+          docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:$VERSION
           docker build --file pulp/Containerfile --tag ghcr.io/pulp/pulp:$VERSION .
       - name: Test the images
         run: assets/test.sh "ghcr.io/pulp/pulp:$VERSION"
@@ -128,8 +134,8 @@ jobs:
       - name: Push ci image to dockerhub
         run: |
           docker push ghcr.io/pulp/pulp:$VERSION
+          docker push ghcr.io/pulp/pulp-ci-centos:$VERSION
           if [ "$VERSION" = "latest" ]; then
-            docker push ghcr.io/pulp/pulp-ci-centos:latest
             docker push ghcr.io/pulp/pulp-galaxy-ng:latest
             # Let this be the last thing so it can indicate failure without breaking anything else
             docker push ghcr.io/pulp/pulp:nightly
@@ -152,7 +158,9 @@ jobs:
           echo "VERSION=$version" >> $GITHUB_ENV
       - name: Build the images
         run: |
-          docker build --build-arg SCHEME="https" --file pulp_ci_centos/Containerfile --tag ghcr.io/pulp/pulp-ci-centos:https .
+          docker build --build-arg SCHEME="https" --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:https .
+          docker tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:https
+          docker tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:$VERSION
           if [ "$VERSION" = "latest-https" ]; then
             docker build --build-arg FROM_TAG="https" --file pulp_galaxy_ng/Containerfile --tag ghcr.io/pulp/pulp-galaxy-ng:https .
             docker build --build-arg FROM_TAG="https" --file pulp/Containerfile --tag ghcr.io/pulp/pulp:https .
@@ -178,6 +186,7 @@ jobs:
             docker push ghcr.io/pulp/pulp-galaxy-ng:https
             docker push ghcr.io/pulp/pulp:https
           else
+            docker push ghcr.io/pulp/pulp-ci-centos:$VERSION
             docker push ghcr.io/pulp/pulp:$VERSION
           fi
       - name: Display log on error
