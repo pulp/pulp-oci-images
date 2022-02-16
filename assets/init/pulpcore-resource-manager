@@ -1,7 +1,0 @@
-#!/usr/bin/execlineb -P
-
-if
-{
-  python3 -c "import sys; from packaging.version import parse; from pulpcore.app.apps import PulpAppConfig; sys.exit(0 if parse(PulpAppConfig.version) >= parse('3.16.0') else 1)"
-}
-touch /etc/services.d/new-pulpcore-resource-manager/down
