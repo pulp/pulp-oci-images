@@ -44,16 +44,41 @@ jobs:
       - name: Build the images
         run: |
           docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
+          docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:latest
+          docker tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:latest
           if [ "$VERSION" = "latest" ]; then
             docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+            docker tag pulp/pulp-galaxy-ng:latest ghcr.io/pulp/pulp-galaxy-ng:latest
+            docker tag pulp/pulp-galaxy-ng:latest quay.io/pulp/all-in-one-galaxy:latest
+
             # Be resilient if this fails
             docker build --file pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
+            docker tag pulp/pulp:nightly ghcr.io/pulp/pulp:nightly || true
+            docker tag pulp/pulp:nightly quay.io/pulp/all-in-one-pulp:nightly || true
           else
             docker tag pulp/pulp-ci-centos:latest pulp/pulp-ci-centos:$VERSION
+            docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:$VERSION
+            docker tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:$VERSION
           fi
           docker build --file pulp/Containerfile --tag pulp/pulp:$VERSION .
+          docker tag pulp/pulp:latest ghcr.io/pulp/pulp:$VERSION
+          docker tag pulp/pulp:latest quay.io/pulp/all-in-one-pulp:$VERSION
       - name: Test the images
         run: assets/test.sh "pulp/pulp:$VERSION"
+      - name: Github login
+        env:
+          PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
+        run: echo "$PULP_GITHUB_TOKEN" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin ghcr.io
+      - name: Push ci image to github
+        run: |
+          docker push ghcr.io/pulp/pulp:$VERSION
+          docker push ghcr.io/pulp/pulp-ci-centos:$VERSION
+          if [ "$VERSION" = "latest" ]; then
+            docker push ghcr.io/pulp/pulp-galaxy-ng:latest
+            # Be resilient if this fails
+            docker push ghcr.io/pulp/pulp:nightly || true
+          fi
       - name: Docker login
         env:
           DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
@@ -65,8 +90,22 @@ jobs:
           docker push docker.io/pulp/pulp-ci-centos:$VERSION
           if [ "$VERSION" = "latest" ]; then
             docker push docker.io/pulp/pulp-galaxy-ng:latest
+            # Be resilient if this fails
+            docker push docker.io/pulp/pulp:nightly || true
+          fi
+      - name: Quay login
+        env:
+          QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
+          QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
+        run: echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
+      - name: Push ci image to quay
+        run: |
+          docker push quay.io/pulp/all-in-one-pulp:$VERSION
+          docker push quay.io/pulp/pulp-ci-centos:$VERSION
+          if [ "$VERSION" = "latest" ]; then
+            docker push quay.io/pulp/all-in-one-galaxy:latest
             # Let this be the last thing so it can indicate failure without breaking anything else
-            docker push docker.io/pulp/pulp:nightly
+            docker push quay.io/pulp/all-in-one-pulp:nightly
           fi
       - name: Display log on error
         if: failure()
@@ -87,12 +126,24 @@ jobs:
       - name: Build the images
         run: |
           docker build --build-arg SCHEME="https" --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:https .
+          docker tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:https
+          docker tag pulp/pulp-ci-centos:https quay.io/pulp/pulp-ci-centos:https
           if [ "$VERSION" = "latest-https" ]; then
             docker build --build-arg FROM_TAG="https" --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:https .
+            docker tag pulp/pulp-galaxy-ng:https ghcr.io/pulp/pulp-galaxy-ng:https
+            docker tag pulp/pulp-galaxy-ng:https quay.io/pulp/all-in-one-galaxy:https
+
             docker build --build-arg FROM_TAG="https" --file pulp/Containerfile --tag pulp/pulp:https .
+            docker tag pulp/pulp:https ghcr.io/pulp/pulp:https
+            docker tag pulp/pulp:https quay.io/pulp/all-in-one-pulp:https
           else
-            docker build --build-arg FROM_TAG="https" --file pulp/Containerfile --tag pulp/pulp:$VERSION .
             docker tag pulp/pulp-ci-centos:https pulp/pulp-ci-centos:$VERSION
+            docker tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:$VERSION
+            docker tag pulp/pulp-ci-centos:https quay.io/pulp/pulp-ci-centos:$VERSION
+
+            docker build --build-arg FROM_TAG="https" --file pulp/Containerfile --tag pulp/pulp:$VERSION .
+            docker tag pulp/pulp:$VERSION ghcr.io/pulp/pulp:$VERSION
+            docker tag pulp/pulp:$VERSION quay.io/pulp/all-in-one-pulp:$VERSION
           fi
       - name: Test the images
         run: |
@@ -100,6 +151,21 @@ jobs:
             assets/test.sh "pulp/pulp:https" https
           else
             assets/test.sh "pulp/pulp:$VERSION" https
+          fi
+      - name: Github login
+        env:
+          PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
+        run: echo "$PULP_GITHUB_TOKEN" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin ghcr.io
+      - name: Push ci image to github
+        run: |
+          if [ "$VERSION" = "latest-https" ]; then
+            docker push ghcr.io/pulp/pulp-ci-centos:https
+            docker push ghcr.io/pulp/pulp-galaxy-ng:https
+            docker push ghcr.io/pulp/pulp:https
+          else
+            docker push ghcr.io/pulp/pulp-ci-centos:$VERSION
+            docker push ghcr.io/pulp/pulp:$VERSION
           fi
       - name: Docker login
         env:
@@ -116,97 +182,20 @@ jobs:
             docker push docker.io/pulp/pulp:$VERSION
             docker push docker.io/pulp/pulp-ci-centos:$VERSION
           fi
-      - name: Display log on error
-        if: failure()
-        run: docker logs pulp
-
-  ghcr:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Download s6-overlay
-        run: |
-          wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
-      - name: Set version
-        run: |
-          version="${GITHUB_REF#refs/heads/}"
-          echo "Building and publishing $version."
-          echo "VERSION=$version" >> $GITHUB_ENV
-      - name: Build the images
-        run: |
-          docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
-          if [ "$VERSION" = "latest" ]; then
-            docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:latest
-            docker build --file pulp_galaxy_ng/Containerfile --tag ghcr.io/pulp/pulp-galaxy-ng:latest .
-            # Be resilient if this fails
-            docker build --file pulp_nightly/Containerfile --tag ghcr.io/pulp/pulp:nightly . || true
-          fi
-          docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:$VERSION
-          docker build --file pulp/Containerfile --tag ghcr.io/pulp/pulp:$VERSION .
-      - name: Test the images
-        run: assets/test.sh "ghcr.io/pulp/pulp:$VERSION"
-      - name: Docker login
+      - name: Quay login
         env:
-          PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
-        run: echo "$PULP_GITHUB_TOKEN" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin ghcr.io
-      - name: Push ci image to dockerhub
-        run: |
-          docker push ghcr.io/pulp/pulp:$VERSION
-          docker push ghcr.io/pulp/pulp-ci-centos:$VERSION
-          if [ "$VERSION" = "latest" ]; then
-            docker push ghcr.io/pulp/pulp-galaxy-ng:latest
-            # Let this be the last thing so it can indicate failure without breaking anything else
-            docker push ghcr.io/pulp/pulp:nightly
-          fi
-      - name: Display log on error
-        if: failure()
-        run: docker logs pulp
-
-  ssl_ghcr:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Download s6-overlay
-        run: |
-          wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
-      - name: Set version
-        run: |
-          version="${GITHUB_REF#refs/heads/}-https"
-          echo "Building and publishing $version."
-          echo "VERSION=$version" >> $GITHUB_ENV
-      - name: Build the images
-        run: |
-          docker build --build-arg SCHEME="https" --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:https .
-          docker tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:https
-          docker tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:$VERSION
-          if [ "$VERSION" = "latest-https" ]; then
-            docker build --build-arg FROM_TAG="https" --file pulp_galaxy_ng/Containerfile --tag ghcr.io/pulp/pulp-galaxy-ng:https .
-            docker build --build-arg FROM_TAG="https" --file pulp/Containerfile --tag ghcr.io/pulp/pulp:https .
-          else
-            docker build --build-arg FROM_TAG="https" --file pulp/Containerfile --tag ghcr.io/pulp/pulp:$VERSION .
-          fi
-      - name: Test the images
+          QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
+          QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
+        run: echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
+      - name: Push ci image to quay
         run: |
           if [ "$VERSION" = "latest-https" ]; then
-            assets/test.sh "ghcr.io/pulp/pulp:https" https
+            docker push quay.io/pulp/pulp-ci-centos:https
+            docker push quay.io/pulp/all-in-one-galaxy:https
+            docker push quay.io/pulp/all-in-one-pulp:https
           else
-            assets/test.sh "ghcr.io/pulp/pulp:$VERSION" https
-          fi
-      - name: Docker login
-        env:
-          PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
-        run: echo "$PULP_GITHUB_TOKEN" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin ghcr.io
-      - name: Push ci image to dockerhub
-        run: |
-          if [ "$VERSION" = "latest-https" ]; then
-            docker push ghcr.io/pulp/pulp-ci-centos:https
-            docker push ghcr.io/pulp/pulp-galaxy-ng:https
-            docker push ghcr.io/pulp/pulp:https
-          else
-            docker push ghcr.io/pulp/pulp-ci-centos:$VERSION
-            docker push ghcr.io/pulp/pulp:$VERSION
+            docker push quay.io/pulp/pulp-ci-centos:$VERSION
+            docker push quay.io/pulp/all-in-one-pulp:$VERSION
           fi
       - name: Display log on error
         if: failure()
