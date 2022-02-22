@@ -42,8 +42,8 @@ jobs:
             docker tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:$VERSION
           fi
           docker build --file pulp/Containerfile --tag pulp/pulp:$VERSION .
-          docker tag pulp/pulp:latest ghcr.io/pulp/pulp:$VERSION
-          docker tag pulp/pulp:latest quay.io/pulp/all-in-one-pulp:$VERSION
+          docker tag pulp/pulp:$VERSION ghcr.io/pulp/pulp:$VERSION
+          docker tag pulp/pulp:$VERSION quay.io/pulp/all-in-one-pulp:$VERSION
       - name: Test the images
         run: assets/test.sh "pulp/pulp:$VERSION"
       - name: Github login
