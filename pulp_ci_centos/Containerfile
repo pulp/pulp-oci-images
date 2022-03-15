@@ -66,13 +66,6 @@ RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
 RUN mkdir -p /database \
              /etc/nginx/pulp \
              /etc/pulp \
-             /etc/services.d/nginx \
-             /etc/services.d/postgresql \
-             /etc/services.d/pulpcore-api \
-             /etc/services.d/pulpcore-content \
-             /etc/services.d/pulpcore-worker@1 \
-             /etc/services.d/pulpcore-worker@2 \
-             /etc/services.d/redis \
              /etc/ssl/pulp \
              /nginx \
              /var/lib/pgsql \
