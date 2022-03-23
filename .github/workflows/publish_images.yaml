@@ -26,7 +26,7 @@ jobs:
       - name: Dispatching
         if: github.event_name == 'schedule'
         run: |
-          for version in $(git ls-remote --heads https://github.com/pulp/pulp-oci-images.git | grep -o "3\.[[:digit:]]*" | sort -V | tail -3)
+          for version in $(git ls-remote --heads https://github.com/pulp/pulp-oci-images.git | grep -o "3\.[[:digit:]]*" | sort -V | tail -5)
             do
               echo $version
               echo "{\"ref\": \"${version}\"}" > data.json
