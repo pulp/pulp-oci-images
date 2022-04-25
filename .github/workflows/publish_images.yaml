@@ -23,21 +23,20 @@ jobs:
           echo "Building and publishing $version."
           echo "VERSION=$version" >> $GITHUB_ENV
 
-      - name: Dispatching
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.8"
+
+      - name: Install python dependencies
         if: github.event_name == 'schedule'
         run: |
-          for version in $(git ls-remote --heads https://github.com/pulp/pulp-oci-images.git | grep -o "3\.[[:digit:]]*" | sort -V | tail -5)
-            do
-              echo $version
-              echo "{\"ref\": \"${version}\"}" > data.json
-              cat data.json
-              curl \
-                -X POST \
-                -H "Accept: application/vnd.github.v3+json" \
-                -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-                https://api.github.com/repos/pulp/pulp-oci-images/actions/workflows/publish_images.yaml/dispatches \
-                -d @data.json
-            done
+          echo ::group::PYDEPS
+          pip install gitpython requests packaging jinja2 pyyaml
+          echo ::endgroup::
+
+      - name: Dispatching
+        if: github.event_name == 'schedule'
+        run: python .ci/scripts/update_ci_branches.py
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
