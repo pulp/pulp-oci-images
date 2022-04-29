@@ -15,7 +15,7 @@ headers = {
     "Accept": "application/vnd.github.v3+json",
 }
 config = requests.get("https://raw.githubusercontent.com/pulp/pulpcore/main/template_config.yml").content
-initial_branch = safe_load(config["keep_ci_update_since_branch"])
+initial_branch = safe_load(config)["keep_ci_update_since_branch"]
 starting = branches.index(initial_branch)
 
 github_api = "https://api.github.com"
