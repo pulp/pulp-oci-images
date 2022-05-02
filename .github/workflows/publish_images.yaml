@@ -9,6 +9,11 @@ on:
     - cron: '0 1 * * *'
   workflow_dispatch:
 
+env:
+  COLORTERM: 'yes'
+  TERM: 'xterm-256color'
+  PYTEST_ADDOPTS: '--color=yes'
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -22,17 +27,62 @@ jobs:
           version="${GITHUB_REF#refs/heads/}"
           echo "Building and publishing $version."
           echo "VERSION=$version" >> $GITHUB_ENV
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.8"
+
+      - name: Install python dependencies
+        if: github.event_name == 'schedule'
+        run: |
+          echo ::group::PYDEPS
+          pip install gitpython requests packaging jinja2 pyyaml
+          echo ::endgroup::
+
+      - name: Dispatching
+        if: github.event_name == 'schedule'
+        run: python .ci/scripts/update_ci_branches.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+
       - name: Build the images
         run: |
           docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
+          docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:latest
+          docker tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:latest
           if [ "$VERSION" = "latest" ]; then
             docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+            docker tag pulp/pulp-galaxy-ng:latest ghcr.io/pulp/pulp-galaxy-ng:latest
+            docker tag pulp/pulp-galaxy-ng:latest quay.io/pulp/all-in-one-galaxy:latest
+
             # Be resilient if this fails
             docker build --file pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
+            docker tag pulp/pulp:nightly ghcr.io/pulp/pulp:nightly || true
+            docker tag pulp/pulp:nightly quay.io/pulp/all-in-one-pulp:nightly || true
+          else
+            docker tag pulp/pulp-ci-centos:latest pulp/pulp-ci-centos:$VERSION
+            docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:$VERSION
+            docker tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:$VERSION
           fi
           docker build --file pulp/Containerfile --tag pulp/pulp:$VERSION .
+          docker tag pulp/pulp:$VERSION ghcr.io/pulp/pulp:$VERSION
+          docker tag pulp/pulp:$VERSION quay.io/pulp/all-in-one-pulp:$VERSION
       - name: Test the images
         run: assets/test.sh "pulp/pulp:$VERSION"
+      - name: Github login
+        env:
+          PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
+        run: echo "$PULP_GITHUB_TOKEN" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin ghcr.io
+      - name: Push ci image to github
+        run: |
+          docker push ghcr.io/pulp/pulp:$VERSION
+          docker push ghcr.io/pulp/pulp-ci-centos:$VERSION
+          if [ "$VERSION" = "latest" ]; then
+            docker push ghcr.io/pulp/pulp-galaxy-ng:latest
+            # Be resilient if this fails
+            docker push ghcr.io/pulp/pulp:nightly || true
+          fi
       - name: Docker login
         env:
           DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
@@ -41,55 +91,26 @@ jobs:
       - name: Push ci image to dockerhub
         run: |
           docker push docker.io/pulp/pulp:$VERSION
+          docker push docker.io/pulp/pulp-ci-centos:$VERSION
           if [ "$VERSION" = "latest" ]; then
-            docker push docker.io/pulp/pulp-ci-centos:latest
             docker push docker.io/pulp/pulp-galaxy-ng:latest
-            # Let this be the last thing so it can indicate failure without breaking anything else
-            docker push docker.io/pulp/pulp:nightly
-          fi
-      - name: Display log on error
-        if: failure()
-        run: docker logs pulp
-
-  ghcr:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Download s6-overlay
-        run: |
-          wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
-      - name: Set version
-        run: |
-          version="${GITHUB_REF#refs/heads/}"
-          echo "Building and publishing $version."
-          echo "VERSION=$version" >> $GITHUB_ENV
-      - name: Build the images
-        run: |
-          docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
-          docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:latest
-          if [ "$VERSION" = "latest" ]; then
-            docker build --file pulp_galaxy_ng/Containerfile --tag ghcr.io/pulp/pulp-galaxy-ng:latest .
             # Be resilient if this fails
-            docker build --file pulp_nightly/Containerfile --tag ghcr.io/pulp/pulp:nightly . || true
+            docker push docker.io/pulp/pulp:nightly || true
           fi
-          docker build --file pulp/Containerfile --tag ghcr.io/pulp/pulp:$VERSION .
-      - name: Test the images
-        run: assets/test.sh "ghcr.io/pulp/pulp:$VERSION"
-      - name: Docker login
+      - name: Quay login
         env:
-          PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
-        run: echo "$PULP_GITHUB_TOKEN" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin ghcr.io
-      - name: Push ci image to dockerhub
+          QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
+          QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
+        run: echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
+      - name: Push ci image to quay
         run: |
-          docker push ghcr.io/pulp/pulp:$VERSION
+          docker push quay.io/pulp/all-in-one-pulp:$VERSION
+          docker push quay.io/pulp/pulp-ci-centos:$VERSION
           if [ "$VERSION" = "latest" ]; then
-            docker push ghcr.io/pulp/pulp-ci-centos:latest
-            docker push ghcr.io/pulp/pulp-galaxy-ng:latest
+            docker push quay.io/pulp/all-in-one-galaxy:latest
             # Let this be the last thing so it can indicate failure without breaking anything else
-            docker push ghcr.io/pulp/pulp:nightly
+            docker push quay.io/pulp/all-in-one-pulp:nightly
           fi
       - name: Display log on error
         if: failure()
         run: docker logs pulp
-
