@@ -59,6 +59,7 @@ RUN dnf -y install dnf-plugins-core && \
     dnf -y install cairo-devel cmake gobject-introspection-devel cairo-gobject-devel && \
     dnf -y install libcurl-devel libxml2-devel sqlite-devel file-devel && \
     dnf -y install ostree-libs ostree && \
+    dnf -y install skopeo && \
     dnf clean all
 
 RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
