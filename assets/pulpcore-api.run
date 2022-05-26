@@ -6,4 +6,4 @@ foreground {
 }
 export DJANGO_SETTINGS_MODULE pulpcore.app.settings
 export PULP_SETTINGS /etc/pulp/settings.py
-/usr/local/bin/gunicorn pulpcore.app.wsgi:application --bind "127.0.0.1:24817" --access-logfile -
+/usr/local/bin/gunicorn pulpcore.app.wsgi:application --bind "127.0.0.1:24817" --access-logfile - --access-logformat "pulp [%({correlation-id}o)s]: %(h)s %(l)s %(u)s %(t)s \"%(r)s\" %(s)s %(b)s \"%(f)s\" \"%(a)s\""
