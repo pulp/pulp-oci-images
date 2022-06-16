@@ -49,6 +49,8 @@ RUN dnf -y install dnf-plugins-core && \
     dnf -y install ninja-build && \
     dnf -y install 'dnf-command(builddep)' && \
     dnf -y builddep createrepo_c && \
+    dnf -y install podman && \
+    dnf -y install sudo && \
     dnf clean all
 
 RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
