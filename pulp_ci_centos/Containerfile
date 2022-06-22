@@ -63,6 +63,7 @@ RUN dnf -y install dnf-plugins-core && \
     dnf -y install skopeo && \
     dnf -y install podman && \
     dnf -y install sudo && \
+    dnf -y install zstd && \
     dnf clean all
 
 RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
