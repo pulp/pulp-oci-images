@@ -35,6 +35,7 @@ RUN dnf -y install dnf-plugins-core && \
     dnf config-manager --set-enabled powertools && \
     dnf -y module enable postgresql:12 && \
     dnf -y update && \
+    dnf -y install elfutils-debuginfod && \
     dnf -y install python38 python38-devel && \
     dnf -y install openssl && \
     dnf -y install openldap-devel && \
@@ -84,6 +85,8 @@ RUN pip3 install --upgrade pip packaging
 
 RUN echo "/var/lib/pgsql true postgres 0600 0750" >> /etc/fix-attrs.d/postgres
 
+ARG DEBUGINFOD_OPTIONS=""
+
 COPY assets/openssl.cnf /etc/ssl/pulp/openssl.cnf
 COPY assets/v3.cnf /etc/ssl/pulp/v3.cnf
 COPY assets/wait_on_database_migrations.sh /database/assets/wait_on_database_migrations.sh
@@ -92,9 +95,11 @@ COPY assets/nginx.conf /nginx/nginx.conf
 COPY assets/webserver.sh /nginx/webserver.sh
 COPY assets/services /etc/services.d
 COPY assets/init /etc/cont-init.d
+COPY --chmod=555 assets/start_script.sh /start_script.sh
 
 RUN /nginx/webserver.sh
 
-ENTRYPOINT ["/init"]
+ENV DEBUGINFOD_ENV=""
+ENTRYPOINT /start_script.sh "${DEBUGINFOD_ENV}"
 
 EXPOSE 80

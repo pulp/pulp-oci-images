@@ -7,6 +7,7 @@ env:
   COLORTERM: 'yes'
   TERM: 'xterm-256color'
   PYTEST_ADDOPTS: '--color=yes'
+  DOCKER_BUILDKIT: 1
 
 jobs:
   build:

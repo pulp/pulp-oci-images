@@ -1,1 +1,0 @@
-This container is the same as in pulp/Containerfile but with a debuginfod server running in the background

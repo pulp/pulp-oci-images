@@ -10,6 +10,10 @@ ARG PULP_FILE_VERSION=""
 ARG PULP_MAVEN_VERSION=""
 ARG PULP_PYTHON_VERSION=""
 ARG PULP_RPM_VERSION=""
+ARG PULP_CLI_VERSION=""
+# Additional debuginfod arguments such as -d DATABASE or -t SECONDS. See man debuginfod for the full argument list
+ARG DEBUGINFOD_OPTIONS=""
+ENV DEBUGINFOD_ENV=$DEBUGINFOD_OPTIONS
 
 RUN pip3 install --upgrade \
   pulpcore${PULPCORE_VERSION} \
@@ -21,6 +25,7 @@ RUN pip3 install --upgrade \
   pulp-maven${PULP_MAVEN_VERSION} \
   pulp-python${PULP_PYTHON_VERSION} \
   pulp-rpm${PULP_RPM_VERSION} \
+  pulp-cli${PULP_CLI_VERSION} \
   requests
 
 RUN ln /usr/local/lib/python3.8/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf

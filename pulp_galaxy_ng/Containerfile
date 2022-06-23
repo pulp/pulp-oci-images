@@ -2,6 +2,9 @@ ARG FROM_TAG="latest"
 FROM pulp/pulp-ci-centos:${FROM_TAG}
 
 ARG GALAXY_NG_VERSION=""
+# Additional debuginfod arguments such as -d DATABASE or -t SECONDS. See man debuginfod for the full argument list
+ARG DEBUGINFOD_OPTIONS=""
+ENV DEBUGINFOD_ENV=$DEBUGINFOD_OPTIONS
 
 RUN pip3 install --upgrade \
   requests \
