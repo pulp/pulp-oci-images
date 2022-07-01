@@ -78,11 +78,12 @@ RUN mkdir -p /database \
              /var/lib/pgsql \
              /var/lib/pulp/assets \
              /var/lib/pulp/media \
+             /var/lib/pulp/tmp \
              /var/run/pulpcore-resource-manager \
              /var/run/pulpcore-worker-1 \
              /var/run/pulpcore-worker-2
 
-RUN pip3 install --upgrade pip packaging
+RUN pip3 install --upgrade pip packaging setproctitle
 
 RUN echo "/var/lib/pgsql true postgres 0600 0750" >> /etc/fix-attrs.d/postgres
 
