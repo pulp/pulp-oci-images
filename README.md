@@ -7,7 +7,12 @@ For instructions how to run and use this container, see [Pulp in One Container](
 # Build instructions
 
 ```bash
-$ wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
+$ wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-x86_64.tar.xz
+$ wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-noarch.tar.xz
+$ wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-symlinks-arch.tar.xz
+$ wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-symlinks-noarch.tar.xz
+$ unxz s6-overlay*.tar.xz
+$ gzip s6-overlay*.tar
 $ <docker build | buildah bud> --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
 $ <docker build | buildah bud> --file pulp/Containerfile --tag pulp/pulp:latest .
 $ <docker build | buildah bud> --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .

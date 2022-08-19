@@ -27,7 +27,12 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build the images
         run: |
-          wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-x86_64.tar.xz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-noarch.tar.xz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-symlinks-arch.tar.xz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-symlinks-noarch.tar.xz
+          unxz s6-overlay*.tar.xz
+          gzip s6-overlay*.tar
           docker build --file ${{ matrix.ci_type }}/Containerfile --tag pulp/${{ matrix.ci_image }}:latest .
           docker build --file ${{ matrix.test_type }}/Containerfile --tag pulp/${{ matrix.test_image }}:latest .
       - name: Test the images
@@ -54,7 +59,12 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build the images
         run: |
-          wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-x86_64.tar.xz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-noarch.tar.xz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-symlinks-arch.tar.xz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-symlinks-noarch.tar.xz
+          unxz s6-overlay*.tar.xz
+          gzip s6-overlay*.tar
           docker build --build-arg SCHEME="https" --file ${{ matrix.ci_type }}/Containerfile --tag pulp/${{ matrix.ci_image }}:https .
           docker build --build-arg FROM_TAG="https" --file ${{ matrix.test_type }}/Containerfile --tag pulp/${{ matrix.test_image }}:https .
       - name: Test the images

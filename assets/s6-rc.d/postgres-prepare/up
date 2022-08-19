@@ -1,8 +1,6 @@
 #!/usr/bin/execlineb -S0
 
-backtick -n BASENAME { s6-basename ${0} }
-importas -u BASENAME BASENAME
-define PREFFIX "[cont-init.d] ${BASENAME}:"
+define PREFIX "[oneshot] postgres-prepare:"
 
 define C000 "\033[0m"
 define C030 "\033[0;30m"
@@ -33,22 +31,18 @@ ifthenelse { s6-test -d "${PGDATA}/base" -a -f "${PGDATA}/PG_VERSION" }
   backtick -n ! { redirfd -r 0 "${PGDATA}/PG_VERSION" s6-cat }
   importas -u PGDATA_VERSION !
   ifelse { s6-test "${PGDATA_VERSION}" = "${PGVERSION}" } {
-    if { s6-echo "${PREFFIX} ${C031}${PGDATA} exists but needs upgrade ${PGDATA_VERSION} != ${PGVERSION}${C000}" }
+    if { s6-echo "${PREFIX} ${C031}${PGDATA} exists but needs upgrade ${PGDATA_VERSION} != ${PGVERSION}${C000}" }
     exit 200
   }
 }
 {
   if {
-    if { s6-echo "${PREFFIX} ${C032}initdb --pgdata ${PGDATA}${C000}" }
+    if { s6-echo "${PREFIX} ${C032}initdb --pgdata ${PGDATA}${C000}" }
     #redirfd -w 1 /dev/null
     fdmove -c 2 1
     s6-setuidgid postgres
     backtick -D "C" -n LANG { printcontenv LANG }
     initdb --pgdata=${PGDATA}
-  }
-  if {
-    if { s6-echo "${PREFFIX} ${C032}s6-hiercopy /etc/postgresql/ ${PGDATA}/ ${C000}" }
-    s6-hiercopy /etc/postgresql/ ${PGDATA}/
   }
 }
 }
@@ -63,9 +57,9 @@ background {
   postgres -D ${PGDATA}
 }
 importas -u PG_PID !
-if { s6-echo "${PREFFIX} ${C133}started service [${PG_PID}] postgres${C000}" }
+if { s6-echo "${PREFIX} ${C133}started service [${PG_PID}] postgres${C000}" }
 
-if { s6-echo "${PREFFIX} ${C130}wait for services startup...${C000}" }
+if { s6-echo "${PREFIX} ${C130}wait for services startup...${C000}" }
 
 foreground {
   s6-sleep -m 500
@@ -81,7 +75,7 @@ importas -u DATABASE_EXISTS !
 
 foreground {
   if { s6-test ${DATABASE_EXISTS} != "1" }
-  if { s6-echo "${PREFFIX} ${C032}createuser pulp${C000}" }
+  if { s6-echo "${PREFIX} ${C032}createuser pulp${C000}" }
   #redirfd -w 1 /dev/null
   fdmove -c 2 1
   s6-setuidgid postgres
@@ -90,7 +84,7 @@ foreground {
 
 foreground {
   if { s6-test ${DATABASE_EXISTS} != "1" }
-  if { s6-echo "${PREFFIX} ${C032}createdb --encoding=utf-8 -O pulp pulp${C000}" }
+  if { s6-echo "${PREFIX} ${C032}createdb --encoding=utf-8 -O pulp pulp${C000}" }
   redirfd -w 1 /dev/null
   fdmove -c 2 1
   s6-setuidgid postgres
@@ -98,12 +92,14 @@ foreground {
 }
 
 foreground {
+  if { s6-echo "${PREFIX} ${C032}mkdir certs${C000}" }
   if -n {
     ls /etc/pulp/certs
   }
   mkdir -p /etc/pulp/certs
 }
 foreground {
+  if { s6-echo "${PREFIX} ${C032}create symmetric key{C000}" }
   if -n {
     ls /etc/pulp/certs/database_fields.symmetric.key
   }
@@ -112,6 +108,7 @@ foreground {
 }
 
 foreground {
+  if { s6-echo "${PREFIX} ${C032}pulpcore-manager migrate${C000}" }
   export DJANGO_SETTINGS_MODULE pulpcore.app.settings
   export PULP_CONTENT_ORIGIN localhost
   s6-setuidgid postgres

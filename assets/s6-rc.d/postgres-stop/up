@@ -1,8 +1,6 @@
 #!/usr/bin/execlineb -S0
 
-backtick -n BASENAME { s6-basename ${0} }
-importas -u BASENAME BASENAME
-define PREFFIX "[cont-init.d] ${BASENAME}:"
+define PREFIX "[oneshot] postgres-stop:"
 
 define C000 "\033[0m"
 define C030 "\033[0;30m"
@@ -28,7 +26,7 @@ define PGHOME "/var/lib/pgsql"
 define PGDATA "${PGHOME}/data"
 
 foreground {
-  if { s6-echo "${PREFFIX} ${C133}shutdown service [${PG_PID}] postgres${C000}" }
+  if { s6-echo "${PREFIX} ${C133}shutdown service postgres${C000}" }
   redirfd -w 1 /dev/null
   fdmove -c 2 1
   s6-setuidgid postgres

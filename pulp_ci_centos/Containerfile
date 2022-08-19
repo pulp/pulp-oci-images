@@ -2,10 +2,15 @@ FROM quay.io/centos/centos:stream8
 # https://ryandaniels.ca/blog/docker-dockerfile-arg-from-arg-trouble/
 ARG SCHEME="http"
 
-COPY s6-overlay-amd64.tar.gz /tmp
+COPY s6-overlay-x86_64.tar.gz /tmp
+COPY s6-overlay-noarch.tar.gz /tmp
+COPY s6-overlay-symlinks-noarch.tar.gz /tmp
+COPY s6-overlay-symlinks-arch.tar.gz /tmp
 
-RUN tar xzf /tmp/s6-overlay-amd64.tar.gz -C / --exclude="./bin" && \
-    tar xzf /tmp/s6-overlay-amd64.tar.gz -C /usr ./bin
+RUN tar xzf /tmp/s6-overlay-x86_64.tar.gz -C / && rm /tmp/s6-overlay-x86_64.tar.gz
+RUN tar xvf /tmp/s6-overlay-noarch.tar.gz -C / && rm /tmp/s6-overlay-noarch.tar.gz
+RUN tar xvf /tmp/s6-overlay-symlinks-noarch.tar.gz -C / && rm /tmp/s6-overlay-symlinks-noarch.tar.gz
+RUN tar xvf /tmp/s6-overlay-symlinks-arch.tar.gz -C / && rm /tmp/s6-overlay-symlinks-arch.tar.gz
 
 # https://superuser.com/questions/959380/how-do-i-install-generate-all-locales-on-fedora
 # This may not be necessary anymore because Fedora 30, unlike CentOS 7, has
@@ -20,6 +25,12 @@ ENV DJANGO_SETTINGS_MODULE=pulpcore.app.settings
 ENV PULP_SETTINGS=/etc/pulp/settings.py
 ENV _BUILDAH_STARTED_IN_USERNS=""
 ENV BUILDAH_ISOLATION=chroot
+
+ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=1
+# Needed because otherwise all services must start within 5 seconds
+# https://github.com/just-containers/s6-overlay/issues/467
+ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0
+
 
 # use python38
 RUN dnf -y module disable python36
@@ -84,16 +95,13 @@ RUN mkdir -p /database \
 RUN pip3 install --upgrade pip packaging setproctitle && \
     rm -rf /root/.cache/pip
 
-RUN echo "/var/lib/pgsql true postgres 0600 0750" >> /etc/fix-attrs.d/postgres
-
 COPY assets/openssl.cnf /etc/ssl/pulp/openssl.cnf
 COPY assets/v3.cnf /etc/ssl/pulp/v3.cnf
 COPY assets/wait_on_database_migrations.sh /database/assets/wait_on_database_migrations.sh
 COPY assets/ssl_nginx.conf /nginx/ssl_nginx.conf
 COPY assets/nginx.conf /nginx/nginx.conf
 COPY assets/webserver.sh /nginx/webserver.sh
-COPY assets/services /etc/services.d
-COPY assets/init /etc/cont-init.d
+COPY assets/s6-rc.d /etc/s6-overlay/s6-rc.d
 
 RUN /nginx/webserver.sh
 
