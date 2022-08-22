@@ -25,7 +25,8 @@ RUN pip3 install --upgrade \
   pulp-python${PULP_PYTHON_VERSION} \
   pulp-rpm${PULP_RPM_VERSION} \
   pulp-cli${PULP_CLI_VERSION} \
-  requests
+  requests && \
+  rm -rf /root/.cache/pip
 
 RUN ln /usr/local/lib/python3.8/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
 RUN ln /usr/local/lib/python3.8/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf

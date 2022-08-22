@@ -5,7 +5,8 @@ ARG GALAXY_NG_VERSION=""
 
 RUN pip3 install --upgrade \
   requests \
-  galaxy-ng${GALAXY_NG_VERSION}
+  galaxy-ng${GALAXY_NG_VERSION} && \
+  rm -rf /root/.cache/pip
 
 RUN ln /usr/local/lib/python3.8/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
 RUN ln /usr/local/lib/python3.8/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf

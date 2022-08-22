@@ -15,7 +15,8 @@ RUN pip3 install --upgrade \
   git+https://github.com/pulp/pulp_ostree@main \
   git+https://github.com/pulp/pulp_python@main \
   git+https://github.com/pulp/pulp_rpm@main \
-  requests
+  requests && \
+  rm -rf /root/.cache/pip
 
 RUN ln /usr/local/lib/python3.8/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
 RUN ln /usr/local/lib/python3.8/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
