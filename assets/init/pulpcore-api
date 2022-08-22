@@ -6,7 +6,7 @@ foreground {
   }
   mkdir -p /etc/pulp/certs
 }
-if -n {
+if -n -x 0 {
   ls /etc/pulp/certs/token_private_key.pem
 }
 foreground {
