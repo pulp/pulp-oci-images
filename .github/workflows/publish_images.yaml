@@ -21,7 +21,12 @@ jobs:
       - uses: actions/checkout@v2
       - name: Download s6-overlay
         run: |
-          wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-x86_64.tar.xz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-noarch.tar.xz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-symlinks-arch.tar.xz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-symlinks-noarch.tar.xz
+          unxz s6-overlay*.tar.xz
+          gzip s6-overlay*.tar
       - name: Set version
         run: |
           version="${GITHUB_REF#refs/heads/}"
@@ -121,7 +126,12 @@ jobs:
       - uses: actions/checkout@v2
       - name: Download s6-overlay
         run: |
-          wget https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-amd64.tar.gz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-x86_64.tar.xz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-noarch.tar.xz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-symlinks-arch.tar.xz
+          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.0/s6-overlay-symlinks-noarch.tar.xz
+          unxz s6-overlay*.tar.xz
+          gzip s6-overlay*.tar
       - name: Set version
         run: |
           version="${GITHUB_REF#refs/heads/}-https"

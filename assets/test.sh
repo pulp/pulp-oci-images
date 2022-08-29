@@ -30,7 +30,7 @@ docker run --detach \
            --device /dev/fuse \
            "$image"
 sleep 10
-for _ in $(seq 20)
+for _ in $(seq 30)
 do
   sleep 3
   if curl --insecure --fail $scheme://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1
