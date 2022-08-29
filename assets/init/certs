@@ -1,0 +1,30 @@
+#!/usr/bin/bash
+
+export BASENAME=$(basename ${0})
+export PREFIX="[oneshot] ${BASENAME}:"
+
+export ENDCOLOR="\e[0m"
+export BLACK="\e[30m"
+export RED="\e[31m"
+export GREEN="\e[32m"
+export ORANGE="\e[33m"
+export C034="\e[34m"
+export C035="\e[35m"
+export C036="\e[36m"
+export C037="\e[37m"
+
+if ! [ -e /etc/pulp/certs/token_private_key.pem ]; then
+  echo -e "${PREFIX} ${GREEN}generating certs${ENDCOLOR}"
+  openssl ecparam -genkey -name prime256v1 -noout -out /etc/pulp/certs/token_private_key.pem
+  openssl ec -in /etc/pulp/certs/token_private_key.pem -pubout -out /etc/pulp/certs/token_public_key.pem
+  openssl genrsa -out /etc/pulp/certs/pulp_webserver.key 2048
+  openssl req -new -key /etc/pulp/certs/pulp_webserver.key -subj "/CN=pulp/C=US/ST=NC/L=Raleigh/O=Red Hat, Inc./OU=pnt" -out /etc/pulp/certs/pulp_webserver.csr -extensions v3_req -config /etc/ssl/pulp/openssl.cnf
+  openssl x509 -req -days 365 -in /etc/pulp/certs/pulp_webserver.csr -signkey /etc/pulp/certs/pulp_webserver.key -out /etc/pulp/certs/pulp_webserver.crt -extensions v3_req -extfile /etc/ssl/pulp/v3.cnf
+  cp /etc/pulp/certs/pulp_webserver.crt /etc/pki/tls/certs/pulp_webserver.crt
+  cp /etc/pulp/certs/pulp_webserver.csr /etc/pki/tls/private/pulp_webserver.csr
+  cp /etc/pulp/certs/pulp_webserver.key /etc/pki/tls/private/pulp_webserver.key
+  update-ca-trust force-enable
+  update-ca-trust extract
+  cat /etc/pulp/certs/pulp_webserver.crt >> /etc/pki/tls/cert.pem
+  echo -e "${PREFIX} ${GREEN}finished generating certs${ENDCOLOR}"
+fi
