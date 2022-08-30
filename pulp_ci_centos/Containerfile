@@ -102,6 +102,7 @@ COPY assets/ssl_nginx.conf /nginx/ssl_nginx.conf
 COPY assets/nginx.conf /nginx/nginx.conf
 COPY assets/webserver.sh /nginx/webserver.sh
 COPY assets/s6-rc.d /etc/s6-overlay/s6-rc.d
+COPY assets/init /etc/init
 
 RUN /nginx/webserver.sh
 

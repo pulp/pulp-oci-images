@@ -1,0 +1,20 @@
+#!/usr/bin/bash
+
+export BASENAME=$(basename ${0})
+export PREFIX="[oneshot] ${BASENAME}:"
+
+export ENDCOLOR="\e[0m"
+export BLACK="\e[30m"
+export RED="\e[31m"
+export GREEN="\e[32m"
+export ORANGE="\e[33m"
+export C034="\e[34m"
+export C035="\e[35m"
+export C036="\e[36m"
+export C037="\e[37m"
+
+PGHOME="/var/lib/pgsql"
+PGDATA="${PGHOME}/data"
+
+echo -e "${PREFIX} ${ORANGE}shutdown service postgres${ENDCOLOR}"
+su -m postgres -c "pg_ctl -D ${PGDATA} stop"

@@ -1,0 +1,75 @@
+#!/usr/bin/bash
+
+export BASENAME=$(basename ${0})
+export PREFIX="[oneshot] ${BASENAME}:"
+
+export ENDCOLOR="\e[0m"
+export BLACK="\e[30m"
+export RED="\e[31m"
+export GREEN="\e[32m"
+export ORANGE="\e[33m"
+export C034="\e[34m"
+export C035="\e[35m"
+export C036="\e[36m"
+export C037="\e[37m"
+
+PGVERSION=$(postgres --version | egrep -o "[0-9]{1,}\.[0-9]{1,}")
+PGHOME="/var/lib/pgsql"
+PGDATA="${PGHOME}/data"
+
+if [ -d "${PGDATA}/base" -a -f "${PGDATA}/PG_VERSION" ]; then
+  PGDATA_VERSION=$(cat "${PGDATA}/PG_VERSION")
+  if [ "${PGDATA_VERSION}" = "${PGVERSION}" ]; then
+
+    echo -e "${PREFIX} ${RED}${PGDATA} exists but needs upgrade ${PGDATA_VERSION} != ${PGVERSION}${ENDCOLOR}"
+    exit 200
+  fi
+else
+  echo -e "${PREFIX} ${GREEN}initdb -E UTF8 --pgdata ${PGDATA}${ENDCOLOR}"
+  su postgres -c "initdb -E UTF8 --pgdata=${PGDATA}"
+  STATUS=$?
+  if [ $STATUS -ne 0 ]; then
+    echo -e "${PREFIX} ${RED} failed to initialize the database${ENDCOLOR}"
+  fi
+  if [ -d /etc/postgresql ]; then
+    echo -e "${PREFIX} ${GREEN}cp -a /etc/postgresql/. ${PGDATA}/ ${ENDCOLOR}"
+    cp -a /etc/postgresql/. ${PGDATA}/
+  fi
+fi
+
+PID_FILE=/tmp/postgres.pid
+su -m postgres -s /bin/bash -c "postgres -D ${PGDATA} & echo -e \$! > $PID_FILE"
+
+export PG_PID=`cat $PID_FILE`
+echo -e "${PREFIX} ${ORANGE}started service [${PG_PID}] postgres${ENDCOLOR}"
+echo -e "${PREFIX} ${BLACK}wait for services startup...${ENDCOLOR}"
+
+PG_ISREADY=1
+while [ "$PG_ISREADY" != "0"  ]; do
+  sleep 1
+  pg_isready --quiet
+  PG_ISREADY=$?
+done
+
+DB_EXISTS_FILE=/tmp/db_exists
+su -m -s /bin/bash postgres -c "psql --no-align --tuples-only --command=\"SELECT (1) FROM pg_database WHERE datname='pulp' LIMIT 1\" > $DB_EXISTS_FILE"
+DATABASE_EXISTS=`cat $DB_EXISTS_FILE`
+if [ "${DATABASE_EXISTS}" != "1" ]; then
+  echo -e "${PREFIX} ${GREEN}createuser pulp${ENDCOLOR}"
+  su postgres -c "createuser pulp" || { echo -e "${PREFIX} ${RED} Creating database user failed${ENDCOLOR}" ; exit 1; }
+  echo -e "${PREFIX} ${GREEN}createdb --encoding=utf-8 -O pulp pulp${ENDCOLOR}"
+  su postgres -c "createdb --encoding=utf-8 pulp" || { echo -e "${PREFIX} ${RED} Creating database failed${ENDCOLOR}" ; exit 1; }
+fi
+
+if ! [ -d /etc/pulp/certs ]; then
+  mkdir -p /etc/pulp/certs
+fi
+
+if ! [ -e /etc/pulp/certs/database_fields.symmetric.key ]; then
+  openssl rand -base64 32 > /etc/pulp/certs/database_fields.symmetric.key
+fi
+
+export DJANGO_SETTINGS_MODULE=pulpcore.app.settings
+export PULP_CONTENT_ORIGIN=localhost
+su -m postgres -c "/usr/local/bin/pulpcore-manager migrate"
+echo -e "ready" > /database/status
