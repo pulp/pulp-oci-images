@@ -1,4 +1,0 @@
-#!/usr/bin/execlineb -S0
-
-foreground { s6-echo "Calling /etc/init/postgres-stop" }
-/etc/init/postgres-stop

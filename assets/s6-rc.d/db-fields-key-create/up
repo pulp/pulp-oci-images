@@ -1,0 +1,4 @@
+#!/usr/bin/execlineb -S0
+
+foreground { s6-echo "Calling /etc/init/db-fields-key-create" }
+/etc/init/db-fields-key-create
