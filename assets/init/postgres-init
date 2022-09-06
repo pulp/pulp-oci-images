@@ -1,0 +1,38 @@
+#!/usr/bin/bash
+
+export BASENAME=$(basename ${0})
+export PREFIX="[oneshot] ${BASENAME}:"
+
+export ENDCOLOR="\e[0m"
+export BLACK="\e[30m"
+export RED="\e[31m"
+export GREEN="\e[32m"
+export ORANGE="\e[33m"
+export C034="\e[34m"
+export C035="\e[35m"
+export C036="\e[36m"
+export C037="\e[37m"
+
+PGVERSION=$(postgres --version | egrep -o "[0-9]{1,}\.[0-9]{1,}")
+PGHOME="/var/lib/pgsql"
+PGDATA="${PGHOME}/data"
+
+if [ -d "${PGDATA}/base" -a -f "${PGDATA}/PG_VERSION" ]; then
+  PGDATA_VERSION=$(cat "${PGDATA}/PG_VERSION")
+  if [ "${PGDATA_VERSION}" = "${PGVERSION}" ]; then
+
+    echo -e "${PREFIX} ${RED}${PGDATA} exists but needs upgrade ${PGDATA_VERSION} != ${PGVERSION}${ENDCOLOR}"
+    exit 200
+  fi
+else
+  echo -e "${PREFIX} ${GREEN}initdb -E UTF8 --pgdata ${PGDATA}${ENDCOLOR}"
+  su postgres -c "initdb -E UTF8 --pgdata=${PGDATA}"
+  STATUS=$?
+  if [ $STATUS -ne 0 ]; then
+    echo -e "${PREFIX} ${RED} failed to initialize the database${ENDCOLOR}"
+  fi
+  if [ -d /etc/postgresql ]; then
+    echo -e "${PREFIX} ${GREEN}cp -a /etc/postgresql/. ${PGDATA}/ ${ENDCOLOR}"
+    cp -a /etc/postgresql/. ${PGDATA}/
+  fi
+fi

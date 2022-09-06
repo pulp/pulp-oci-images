@@ -1,0 +1,4 @@
+#!/usr/bin/execlineb -S0
+
+foreground { s6-echo "Calling /etc/init/postgres-init" }
+/etc/init/postgres-init

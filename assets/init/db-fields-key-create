@@ -13,8 +13,11 @@ export C035="\e[35m"
 export C036="\e[36m"
 export C037="\e[37m"
 
-PGHOME="/var/lib/pgsql"
-PGDATA="${PGHOME}/data"
+if ! [ -d /etc/pulp/certs ]; then
+  mkdir -p /etc/pulp/certs
+fi
 
-echo -e "${PREFIX} ${ORANGE}shutdown service postgres${ENDCOLOR}"
-su -m postgres -c "pg_ctl -D ${PGDATA} stop"
+echo -e "${PREFIX} ${GREEN}creating database fields key${ENDCOLOR}"
+if ! [ -e /etc/pulp/certs/database_fields.symmetric.key ]; then
+  openssl rand -base64 32 > /etc/pulp/certs/database_fields.symmetric.key
+fi
