@@ -77,8 +77,8 @@ jobs:
       - name: Github login
         env:
           PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
-        run: echo "$PULP_GITHUB_TOKEN" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin ghcr.io
+          PULP_GITHUB_USERNAME: ${{ github.actor }}
+        run: echo "$PULP_GITHUB_TOKEN" | docker login -u "$PULP_GITHUB_USERNAME" --password-stdin ghcr.io
       - name: Push ci image to github
         run: |
           docker push ghcr.io/pulp/pulp:$VERSION
