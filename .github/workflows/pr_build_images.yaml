@@ -35,6 +35,7 @@ jobs:
         shell: bash
   build:
     runs-on: ubuntu-latest
+    needs: lint
     strategy:
       fail-fast: false
       matrix:
@@ -62,6 +63,7 @@ jobs:
 
   sslbuild:
     runs-on: ubuntu-latest
+    needs: lint
     strategy:
       fail-fast: false
       matrix:
