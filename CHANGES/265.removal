@@ -1,0 +1,2 @@
+Removed all non-GA plugins from the single container which includes: pulp_cookbook, pulp_gem,
+pulp_npm, and pulp_ostree.
