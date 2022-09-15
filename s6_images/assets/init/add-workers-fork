@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# This will block until the lock on the database is released, once the s6 boot completes
+s6-rc-update -b /tmp/s6-rc.d_compiled
+
+for i in $(seq 2 $PULP_WORKERS) ; do
+  s6-rc -a change pulpcore-worker@${i}
+done

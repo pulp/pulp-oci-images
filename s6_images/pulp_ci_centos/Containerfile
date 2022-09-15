@@ -25,6 +25,7 @@ ENV DJANGO_SETTINGS_MODULE=pulpcore.app.settings
 ENV PULP_SETTINGS=/etc/pulp/settings.py
 ENV _BUILDAH_STARTED_IN_USERNS=""
 ENV BUILDAH_ISOLATION=chroot
+ENV PULP_WORKERS=2
 
 ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=1
 # Needed because otherwise all services must start within 5 seconds

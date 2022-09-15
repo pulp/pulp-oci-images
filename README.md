@@ -52,7 +52,7 @@ pulpcore z-release, the existing y-release branch is built and published again.
 To debug the services and actually see their output, rather than running the usual command to start the container, run a command
 like the following (no "--detach", with "-ti", with "/bin/bash" on the end.)
 ```bash
-docker run -ti --name pulp --publish 8080:443 --volume "/$(pwd)/settings:/etc/pulp:Z" --device /dev/fuse pulp/pulp /bin/bash
+docker run -ti --name pulp --publish 8080:80 --volume "/$(pwd)/settings:/etc/pulp:Z" --device /dev/fuse pulp/pulp /bin/bash
 ```
 You will then see the output of the commands and echo statements from the service scripts on the
 console.
