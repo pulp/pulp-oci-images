@@ -1,0 +1,46 @@
+#!/bin/bash
+# Adds more pulpcore workers to the container, based on $PULP_WORKERS
+
+export BASENAME=$(basename ${0})
+export PREFIX="[oneshot] ${BASENAME}:"
+
+export ENDCOLOR="\e[0m"
+export BLACK="\e[30m"
+export RED="\e[31m"
+export GREEN="\e[32m"
+export ORANGE="\e[33m"
+
+# Default value of 2 is in the Containerfile, but if it is an empty string
+if [ -z "$PULP_WORKERS" ]; then
+  echo -e "$PREFIX ${GREEN}no workers to add${ENDCOLOR}"
+  exit 0
+fi
+
+if (( PULP_WORKERS < 2 )); then
+  echo -e "$PREFIX ${GREEN}no workers to add${ENDCOLOR}"
+  exit 0
+fi
+
+set -u
+
+# Cleanup from previous runs
+rm -rf /tmp/s6-rc.d /tmp/s6-rc.d_compiled 2> /dev/null
+
+# Operate on a temporary copy of the service config because we remove the dependency on base
+cp -a /etc/s6-overlay/s6-rc.d /tmp/s6-rc.d
+
+# We have to remove the dependency on base when we're recompiling the database
+rm /tmp/s6-rc.d/*/dependencies.d/base
+
+echo -e "$PREFIX ${GREEN}Adding workers 2 through ${PULP_WORKERS}${ENDCOLOR}"
+for i in $(seq 2 $PULP_WORKERS) ; do
+  ln -s /tmp/s6-rc.d/pulpcore-worker\@1 /tmp/s6-rc.d/pulpcore-worker\@${i}
+  touch /tmp/s6-rc.d/user/contents.d/pulpcore-worker\@${i}
+done
+
+s6-rc-compile /tmp/s6-rc.d_compiled /tmp/s6-rc.d
+
+# This will block until the lock on the database is released, once the s6 boot completes
+/etc/init/add-workers-fork &
+
+echo -e "$PREFIX ${GREEN}Workers will be added shortly after the boot finishes${ENDCOLOR}"
