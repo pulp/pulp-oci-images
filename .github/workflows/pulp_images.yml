@@ -86,7 +86,7 @@ jobs:
           podman push quay.io/pulp/pulp:${{ matrix.image_tag }}
           podman push quay.io/pulp/pulp-web:${{ matrix.image_tag }}
           if [[ "$IMAGE_TAG" == "stable" ]]; then
-            CURRENT_VERSION=$(docker run quay.io/pulp/pulp:latest bash -c 'pip3 show pulpcore | sed -n -e "s/Version: //p"')
+            CURRENT_VERSION=$(podman run quay.io/pulp/pulp:stable bash -c 'pip3 show pulpcore | sed -n -e "s/Version: //p"')
             echo $CURRENT_VERSION
             podman tag quay.io/pulp/pulp:${{ matrix.image_tag }} quay.io/pulp/pulp:$CURRENT_VERSION
             podman tag quay.io/pulp/pulp-web:${{ matrix.image_tag }} quay.io/pulp/pulp-web:$CURRENT_VERSION
@@ -179,7 +179,7 @@ jobs:
           podman push quay.io/pulp/galaxy:${{ matrix.image_tag }}
           podman push quay.io/pulp/galaxy-web:${{ matrix.image_tag }}
           if [[ "$IMAGE_TAG" == "stable" ]]; then
-            CURRENT_VERSION=$(podman run quay.io/pulp/galaxy:latest bash -c 'pip3 show galaxy_ng | sed -n -e "s/Version: //p"')
+            CURRENT_VERSION=$(podman run quay.io/pulp/galaxy:stable bash -c 'pip3 show galaxy_ng | sed -n -e "s/Version: //p"')
             echo $CURRENT_VERSION
             podman tag quay.io/pulp/galaxy:${{ matrix.image_tag }} quay.io/pulp/galaxy:$CURRENT_VERSION
             podman tag quay.io/pulp/galaxy-web:${{ matrix.image_tag }} quay.io/pulp/galaxy-web:$CURRENT_VERSION
