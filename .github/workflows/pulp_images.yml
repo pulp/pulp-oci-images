@@ -66,6 +66,93 @@ jobs:
         shell: bash
         env:
           PY_COLORS: '1'
+      - name: Push images
+        if: github.event_name != 'pull_request'
+        env:
+          QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
+          QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
+        run: |
+          echo "$QUAY_BOT_PASSWORD" | podman login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
+          podman push quay.io/pulp/base:latest
+          podman push quay.io/pulp/pulp:latest
+          podman push quay.io/pulp/pulp-web:latest
+      - name: Logs
+        if: always()
+        run: |
+          podman ps -a
+          podman images -a
+          podman logs --tail=10000 compose_pulp_api_1
+          podman logs --tail=10000 compose_pulp_content_1
+          podman logs --tail=10000 compose_pulp_worker_1
+          podman logs --tail=10000 compose_pulp_worker_2
+          podman logs --tail=10000 compose_pulp_web_1
+          VOLUME_PATH=$(podman volume inspect pulpdev | jq -r .[].Mountpoint)
+          ls -al $VOLUME_PATH
+          tree $VOLUME_PATH
+          http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true
+  galaxy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # by default, it uses a depth of 1
+          # this fetches all history so that we can read each commit
+          fetch-depth: 0
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.8'
+      - name: Install httpie and podman-compose
+        run: |
+          echo ::group::HTTPIE
+          sudo apt-get update -yq
+          sudo -E apt-get -yq --no-install-suggests --no-install-recommends install httpie
+          echo ::endgroup::
+          echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
+          pip install podman-compose
+        shell: bash
+      - name: Build
+        run: |
+          podman version
+          buildah version
+          buildah bud --file images/Containerfile.core.base --tag quay.io/pulp/base:latest .
+          buildah bud --pull=false --file images/galaxy/Containerfile.core --tag quay.io/pulp/galaxy:latest .
+          buildah bud --pull=false --file images/galaxy/Containerfile.webserver --tag quay.io/pulp/galaxy-web:latest .
+          podman images -a
+      - name: Compose up
+        run: |
+          cd images/compose
+          sed -i "s/pulp:latest/galaxy:latest/g" podman-compose.yml
+          sed -i "s/pulp-web:latest/galaxy-web:latest/g" podman-compose.yml
+          sudo usermod -G root $(whoami)
+          podman-compose up -d
+          sleep 30
+          for _ in $(seq 20)
+          do
+            sleep 3
+            if curl --fail http://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1
+            then
+              break
+            fi
+          done
+          curl --fail http://localhost:8080/pulp/api/v3/status/ | jq
+        shell: bash
+      - name: Test all components
+        run: |
+          .ci/scripts/galaxy_ng-tests.sh
+        shell: bash
+        env:
+          PY_COLORS: '1'
+      - name: Push images
+        if: github.event_name != 'pull_request'
+        env:
+          QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
+          QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
+        run: |
+          echo "$QUAY_BOT_PASSWORD" | podman login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
+          podman push quay.io/pulp/base:latest
+          podman push quay.io/pulp/galaxy:latest
+          podman push quay.io/pulp/galaxy-web:latest
       - name: Logs
         if: always()
         run: |
