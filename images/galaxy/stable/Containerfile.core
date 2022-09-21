@@ -1,0 +1,3 @@
+FROM quay.io/pulp/base:latest
+
+RUN pip install galaxy_ng
