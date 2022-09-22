@@ -13,7 +13,7 @@ while [ $database_migrated = false ]; do
   PULP_CONTENT_ORIGIN=localhost /usr/local/bin/pulpcore-manager showmigrations | grep '\[ \]'
   if [ $? -gt 0 ]; then
     echo "Database migrated!"
-    touch /database/migrated
+    touch $FILE
     database_migrated=true
     cat /database/status
   else

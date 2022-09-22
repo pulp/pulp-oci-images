@@ -32,5 +32,5 @@ fi
 
 export DJANGO_SETTINGS_MODULE=pulpcore.app.settings
 export PULP_CONTENT_ORIGIN=localhost
-su -m postgres -c "/usr/local/bin/pulpcore-manager migrate"
+su -m pulp -c "/usr/local/bin/pulpcore-manager migrate"
 echo -e "ready" > /database/status

@@ -20,4 +20,6 @@ fi
 echo -e "${PREFIX} ${GREEN}creating database fields key${ENDCOLOR}"
 if ! [ -e /etc/pulp/certs/database_fields.symmetric.key ]; then
   openssl rand -base64 32 > /etc/pulp/certs/database_fields.symmetric.key
+  chmod 640 /etc/pulp/certs/database_fields.symmetric.key
+  chown root:pulp /etc/pulp/certs/database_fields.symmetric.key
 fi
