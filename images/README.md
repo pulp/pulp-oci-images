@@ -73,5 +73,3 @@ with galaxy specific configuration.
 - `4.y.z`:  Galaxy 4.y.z version.
 
 [https://quay.io/repository/pulp/galaxy-web?tab=tags](https://quay.io/repository/pulp/galaxy-web?tab=tags)
-
-## Compose
