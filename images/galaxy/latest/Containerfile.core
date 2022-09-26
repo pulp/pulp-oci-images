@@ -4,4 +4,4 @@ RUN pip install git+https://github.com/ansible/galaxy_ng
 
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
     /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link && \
-    chown -R 1000 /var/lib/operator/static/
+    chown -R 700 /var/lib/operator/static/
