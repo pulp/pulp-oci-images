@@ -9,6 +9,8 @@ ENV LC_ALL=en_US.UTF-8
 ENV PYTHONUNBUFFERED=0
 ENV DJANGO_SETTINGS_MODULE=pulpcore.app.settings
 ENV PULP_SETTINGS=/etc/pulp/settings.py
+ENV _BUILDAH_STARTED_IN_USERNS=""
+ENV BUILDAH_ISOLATION=chroot
 
 # The Fedora 30 image already has tsflags=nodocs set in dnf.conf
 #
