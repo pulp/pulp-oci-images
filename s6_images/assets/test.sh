@@ -28,6 +28,7 @@ docker run --detach \
            --publish 8080:$port \
            --volume "/$(pwd)/settings:/etc/pulp:Z" \
            --device /dev/fuse \
+           -e PULP_DEFAULT_ADMIN_PASSWORD=password \
            "$image"
 sleep 10
 for _ in $(seq 30)
@@ -41,7 +42,6 @@ done
 curl --insecure --fail $scheme://localhost:8080/pulp/api/v3/status/ | jq
 
 if [[ ${image} != *"galaxy"* ]];then
-  docker exec pulp pulpcore-manager reset-admin-password --password password
   echo 127.0.0.1   pulp | sudo tee -a /etc/hosts
   git clone --depth=1 https://github.com/pulp/pulp-cli.git
   cd pulp-cli
