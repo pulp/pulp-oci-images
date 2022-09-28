@@ -80,6 +80,9 @@ RUN dnf -y install dnf-plugins-core && \
 
 RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
 
+RUN groupadd -g 700 --system pulp
+RUN useradd -d /var/lib/pulp --system -u 700 -g pulp pulp
+
 RUN mkdir -p /database \
              /etc/nginx/pulp \
              /etc/pulp \
@@ -88,10 +91,10 @@ RUN mkdir -p /database \
              /var/lib/pgsql \
              /var/lib/pulp/assets \
              /var/lib/pulp/media \
-             /var/lib/pulp/tmp \
-             /var/run/pulpcore-resource-manager \
-             /var/run/pulpcore-worker-1 \
-             /var/run/pulpcore-worker-2
+             /var/lib/pulp/tmp
+
+RUN chown pulp:pulp -R /database \
+                       /var/lib/pulp
 
 RUN pip3 install --upgrade pip packaging setproctitle && \
     rm -rf /root/.cache/pip
