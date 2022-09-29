@@ -91,6 +91,7 @@ RUN mkdir -p /database \
              /var/lib/pgsql \
              /var/lib/pulp/assets \
              /var/lib/pulp/media \
+             /var/lib/pulp/scripts \
              /var/lib/pulp/tmp
 
 RUN chown pulp:pulp -R /database \

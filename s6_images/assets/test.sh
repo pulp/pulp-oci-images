@@ -64,8 +64,6 @@ if [[ ${image} != *"galaxy"* ]];then
   curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-PRIVATE-KEY-pulp-qe | gpg --import
   echo "6EDF301256480B9B801EBA3D05A5E6DA269D9D98:6:" | gpg --import-ownertrust
   echo "Setup ansible signing service"
-  docker exec -i pulp bash -c "mkdir /var/lib/pulp/scripts"
-  docker exec -i pulp bash -c "chown pulp:pulp /var/lib/pulp/scripts"
   docker exec -i pulp bash -c "cat > /var/lib/pulp/scripts/sign_detached.sh" < "${PWD}/tests/assets/sign_detached.sh"
   docker exec pulp chmod a+rx /var/lib/pulp/scripts/sign_detached.sh
   docker exec pulp su pulp -c "pulpcore-manager add-signing-service --class core:AsciiArmoredDetachedSigningService sign_ansible /var/lib/pulp/scripts/sign_detached.sh 'Pulp QE'"
