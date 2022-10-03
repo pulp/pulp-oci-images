@@ -52,16 +52,16 @@ jobs:
 
       - name: Build the images
         run: |
-          docker build --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
+          docker build --file s6_images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
           docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:latest
           docker tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:latest
           if [ "$VERSION" = "latest" ]; then
-            docker build --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+            docker build --file s6_images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
             docker tag pulp/pulp-galaxy-ng:latest ghcr.io/pulp/pulp-galaxy-ng:latest
             docker tag pulp/pulp-galaxy-ng:latest quay.io/pulp/all-in-one-galaxy:latest
 
             # Be resilient if this fails
-            docker build --file pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
+            docker build --file s6_images/pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
             docker tag pulp/pulp:nightly ghcr.io/pulp/pulp:nightly || true
             docker tag pulp/pulp:nightly quay.io/pulp/all-in-one-pulp:nightly || true
           else
@@ -69,11 +69,11 @@ jobs:
             docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:$VERSION
             docker tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:$VERSION
           fi
-          docker build --file pulp/Containerfile --tag pulp/pulp:$VERSION .
+          docker build --file s6_images/pulp/Containerfile --tag pulp/pulp:$VERSION .
           docker tag pulp/pulp:$VERSION ghcr.io/pulp/pulp:$VERSION
           docker tag pulp/pulp:$VERSION quay.io/pulp/all-in-one-pulp:$VERSION
       - name: Test the images
-        run: assets/test.sh "pulp/pulp:$VERSION"
+        run: s6_images/assets/test.sh "pulp/pulp:$VERSION"
       - name: Github login
         env:
           PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -139,15 +139,15 @@ jobs:
           echo "VERSION=$version" >> $GITHUB_ENV
       - name: Build the images
         run: |
-          docker build --build-arg SCHEME="https" --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:https .
+          docker build --build-arg SCHEME="https" --file s6_images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:https .
           docker tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:https
           docker tag pulp/pulp-ci-centos:https quay.io/pulp/pulp-ci-centos:https
           if [ "$VERSION" = "latest-https" ]; then
-            docker build --build-arg FROM_TAG="https" --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:https .
+            docker build --build-arg FROM_TAG="https" --file s6_images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:https .
             docker tag pulp/pulp-galaxy-ng:https ghcr.io/pulp/pulp-galaxy-ng:https
             docker tag pulp/pulp-galaxy-ng:https quay.io/pulp/all-in-one-galaxy:https
 
-            docker build --build-arg FROM_TAG="https" --file pulp/Containerfile --tag pulp/pulp:https .
+            docker build --build-arg FROM_TAG="https" --file s6_images/pulp/Containerfile --tag pulp/pulp:https .
             docker tag pulp/pulp:https ghcr.io/pulp/pulp:https
             docker tag pulp/pulp:https quay.io/pulp/all-in-one-pulp:https
           else
@@ -155,16 +155,16 @@ jobs:
             docker tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:$VERSION
             docker tag pulp/pulp-ci-centos:https quay.io/pulp/pulp-ci-centos:$VERSION
 
-            docker build --build-arg FROM_TAG="https" --file pulp/Containerfile --tag pulp/pulp:$VERSION .
+            docker build --build-arg FROM_TAG="https" --file s6_images/pulp/Containerfile --tag pulp/pulp:$VERSION .
             docker tag pulp/pulp:$VERSION ghcr.io/pulp/pulp:$VERSION
             docker tag pulp/pulp:$VERSION quay.io/pulp/all-in-one-pulp:$VERSION
           fi
       - name: Test the images
         run: |
           if [ "$VERSION" = "latest-https" ]; then
-            assets/test.sh "pulp/pulp:https" https
+            s6_images/assets/test.sh "pulp/pulp:https" https
           else
-            assets/test.sh "pulp/pulp:$VERSION" https
+            s6_images/assets/test.sh "pulp/pulp:$VERSION" https
           fi
       - name: Github login
         env:

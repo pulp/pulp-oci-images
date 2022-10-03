@@ -1,0 +1,5 @@
+[allowlist]
+  description = "Our test install exports a test only PRIVATE KEY"
+  paths = [
+    "images/compose/assets/certs/database_fields.symmetric.key",
+  ]

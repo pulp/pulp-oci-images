@@ -63,10 +63,10 @@ jobs:
           wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-noarch.tar.xz
           unxz s6-overlay*.tar.xz
           gzip s6-overlay*.tar
-          docker build --file ${{ matrix.ci_type }}/Containerfile --tag pulp/${{ matrix.ci_image }}:latest .
-          docker build --file ${{ matrix.test_type }}/Containerfile --tag pulp/${{ matrix.test_image }}:latest .
+          docker build --file s6_images/${{ matrix.ci_type }}/Containerfile --tag pulp/${{ matrix.ci_image }}:latest .
+          docker build --file s6_images/${{ matrix.test_type }}/Containerfile --tag pulp/${{ matrix.test_image }}:latest .
       - name: Test the images
-        run: assets/test.sh "pulp/${{ matrix.test_image }}:latest"
+        run: s6_images/assets/test.sh "pulp/${{ matrix.test_image }}:latest"
       - name: Display log on error
         if: failure()
         run: docker logs pulp
@@ -96,10 +96,10 @@ jobs:
           wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-noarch.tar.xz
           unxz s6-overlay*.tar.xz
           gzip s6-overlay*.tar
-          docker build --build-arg SCHEME="https" --file ${{ matrix.ci_type }}/Containerfile --tag pulp/${{ matrix.ci_image }}:https .
-          docker build --build-arg FROM_TAG="https" --file ${{ matrix.test_type }}/Containerfile --tag pulp/${{ matrix.test_image }}:https .
+          docker build --build-arg SCHEME="https" --file s6_images/${{ matrix.ci_type }}/Containerfile --tag pulp/${{ matrix.ci_image }}:https .
+          docker build --build-arg FROM_TAG="https" --file s6_images/${{ matrix.test_type }}/Containerfile --tag pulp/${{ matrix.test_image }}:https .
       - name: Test the images
-        run: assets/test.sh "pulp/${{ matrix.test_image }}:https" https
+        run: s6_images/assets/test.sh "pulp/${{ matrix.test_image }}:https" https
       - name: Display log on error
         if: failure()
         run: docker logs pulp

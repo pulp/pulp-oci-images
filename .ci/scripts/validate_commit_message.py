@@ -46,6 +46,8 @@ print("Checking commit message for {sha}.".format(sha=sha[0:7]))
 # validate the issue attached to the commit
 if NO_ISSUE in message:
     print("Commit {sha} has no issue attached. Skipping issue check".format(sha=sha[0:7]))
+elif "Merge" in message and "cherry picked from commit" in message:
+    pass
 else:
     regex = r"(?:{keywords})[\s:]+#(\d+)".format(keywords=("|").join(KEYWORDS))
     pattern = re.compile(regex, re.IGNORECASE)
