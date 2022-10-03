@@ -95,15 +95,15 @@ RUN mkdir -p /database \
 RUN pip3 install --upgrade pip packaging setproctitle && \
     rm -rf /root/.cache/pip
 
-COPY assets/openssl.cnf /etc/ssl/pulp/openssl.cnf
-COPY assets/v3.cnf /etc/ssl/pulp/v3.cnf
-COPY assets/wait_on_database_migrations.sh /database/assets/wait_on_database_migrations.sh
-COPY assets/ssl_nginx.conf /nginx/ssl_nginx.conf
-COPY assets/nginx.conf /nginx/nginx.conf
-COPY assets/webserver.sh /nginx/webserver.sh
-COPY assets/s6-rc.d /etc/s6-overlay/s6-rc.d
-COPY assets/init /etc/init
-COPY assets/fix-attrs.d /etc/fix-attrs.d
+COPY s6_images/assets/openssl.cnf /etc/ssl/pulp/openssl.cnf
+COPY s6_images/assets/v3.cnf /etc/ssl/pulp/v3.cnf
+COPY s6_images/assets/wait_on_database_migrations.sh /database/assets/wait_on_database_migrations.sh
+COPY s6_images/assets/ssl_nginx.conf /nginx/ssl_nginx.conf
+COPY s6_images/assets/nginx.conf /nginx/nginx.conf
+COPY s6_images/assets/webserver.sh /nginx/webserver.sh
+COPY s6_images/assets/s6-rc.d /etc/s6-overlay/s6-rc.d
+COPY s6_images/assets/init /etc/init
+COPY s6_images/assets/fix-attrs.d /etc/fix-attrs.d
 
 RUN /nginx/webserver.sh
 

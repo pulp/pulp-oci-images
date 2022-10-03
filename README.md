@@ -13,9 +13,9 @@ $ wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/
 $ wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-noarch.tar.xz
 $ unxz s6-overlay*.tar.xz
 $ gzip s6-overlay*.tar
-$ <docker build | buildah bud> --file pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
-$ <docker build | buildah bud> --file pulp/Containerfile --tag pulp/pulp:latest .
-$ <docker build | buildah bud> --file pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+$ <docker build | buildah bud> --file s6_images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
+$ <docker build | buildah bud> --file s6_images/pulp/Containerfile --tag pulp/pulp:latest .
+$ <docker build | buildah bud> --file s6_images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
 ```
 
 ## Specifying versions
@@ -24,8 +24,8 @@ By default, containers get built using the latest version of each Pulp component
 specify a version of a particular component, you can do so with args:
 
 ```bash
-$ <docker build | buildah bud> --build_arg PULPCORE_VERSION="==3.5.0" --file pulp/Containerfile
-$ <docker build | buildah bud> --build_arg PULP_FILE_VERSION=">=1.0.0" --file pulp/Containerfile
+$ <docker build | buildah bud> --build_arg PULPCORE_VERSION="==3.5.0" --file s6_images/pulp/Containerfile
+$ <docker build | buildah bud> --build_arg PULP_FILE_VERSION=">=1.0.0" --file s6_images/pulp/Containerfile
 ```
 
 # Releasing
