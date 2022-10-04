@@ -82,6 +82,7 @@ RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
 
 RUN groupadd -g 700 --system pulp
 RUN useradd -d /var/lib/pulp --system -u 700 -g pulp pulp
+RUN usermod --add-subuids 100000-165535 --add-subgids 100000-165535 pulp
 
 RUN mkdir -p /database \
              /etc/nginx/pulp \
