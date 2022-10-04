@@ -1,0 +1,1 @@
+Fix galaxy not starting due to being unable to write to /var/log/galaxy_api_access.log

@@ -110,6 +110,11 @@ COPY s6_images/assets/s6-rc.d /etc/s6-overlay/s6-rc.d
 COPY s6_images/assets/init /etc/init
 COPY s6_images/assets/fix-attrs.d /etc/fix-attrs.d
 
+# Need to precreate when running pulp as the pulp user
+RUN touch /var/log/galaxy_api_access.log && \
+    chown pulp:pulp /var/log/galaxy_api_access.log && \
+    chmod u+rw /var/log/galaxy_api_access.log
+
 RUN /nginx/webserver.sh
 
 ENTRYPOINT ["/init"]
