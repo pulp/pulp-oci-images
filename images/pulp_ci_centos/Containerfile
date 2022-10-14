@@ -1,0 +1,41 @@
+FROM pulp/base:latest
+# https://ryandaniels.ca/blog/docker-dockerfile-arg-from-arg-trouble/
+ARG SCHEME="http"
+
+RUN curl -Ls https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-x86_64.tar.xz | tar xvJ -C /
+RUN curl -Ls https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-noarch.tar.xz | tar xvJ -C /
+RUN curl -Ls https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-noarch.tar.xz | tar xvJ -C /
+RUN curl -Ls https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-arch.tar.xz | tar xvJ -C /
+
+ENV PULP_WORKERS=2
+
+ENV PULP_STATIC_ROOT=/var/lib/operator/static/
+
+ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=1
+# Needed because otherwise all services must start within 5 seconds
+# https://github.com/just-containers/s6-overlay/issues/467
+ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0
+
+RUN dnf -y module enable postgresql:12 && \
+    dnf -y install postgresql && \
+    dnf -y install postgresql-contrib && \
+    dnf -y install postgresql-server && \
+    dnf -y install nginx && \
+    dnf -y install redis && \
+    dnf clean all
+
+COPY images/s6_assets/openssl.cnf /etc/ssl/pulp/openssl.cnf
+COPY images/s6_assets/v3.cnf /etc/ssl/pulp/v3.cnf
+COPY images/s6_assets/wait_on_database_migrations.sh /database/assets/wait_on_database_migrations.sh
+COPY images/s6_assets/ssl_nginx.conf /nginx/ssl_nginx.conf
+COPY images/s6_assets/nginx.conf /nginx/nginx.conf
+COPY images/s6_assets/webserver.sh /nginx/webserver.sh
+COPY images/s6_assets/s6-rc.d /etc/s6-overlay/s6-rc.d
+COPY images/s6_assets/init /etc/init
+COPY images/s6_assets/fix-attrs.d /etc/fix-attrs.d
+
+RUN /nginx/webserver.sh
+
+CMD ["/init"]
+
+EXPOSE 80

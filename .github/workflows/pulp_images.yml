@@ -1,19 +1,17 @@
-name: Pulp Compose
+name: pulp-oci-images CI
 
 on:
   schedule:
     - cron: '15 3 * * *'
   workflow_dispatch:
   pull_request:
-    paths:
-      - '.github/workflows/pulp_images.yml'
-      - 'images/**'
 env:
   COLORTERM: 'yes'
   TERM: 'xterm-256color'
+  PYTEST_ADDOPTS: '--color=yes'
 
 jobs:
-  compose:
+  single-process-images:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -45,14 +43,14 @@ jobs:
         run: |
           podman version
           buildah version
-          buildah bud --file images/Containerfile.core.base --tag quay.io/pulp/base:latest .
-          buildah bud --pull=false --file images/pulp/${{ matrix.image_tag }}/Containerfile.core --tag quay.io/pulp/pulp:${{ matrix.image_tag }} .
-          buildah bud --pull=false --file images/pulp/${{ matrix.image_tag }}/Containerfile.webserver --tag quay.io/pulp/pulp-web:${{ matrix.image_tag }} .
+          buildah bud --file images/Containerfile.core.base --tag pulp/base:latest .
+          buildah bud --pull=false --file images/pulp-minimal/${{ matrix.image_tag }}/Containerfile.core --tag pulp/pulp-minimal:${{ matrix.image_tag }} .
+          buildah bud --pull=false --file images/pulp-minimal/${{ matrix.image_tag }}/Containerfile.webserver --tag pulp/pulp-web:${{ matrix.image_tag }} .
           podman images -a
       - name: Compose up
         run: |
           cd images/compose
-          sed -i "s/pulp:latest/pulp:${{ matrix.image_tag }}/g" podman-compose.yml
+          sed -i "s/pulp-minimal:latest/pulp-minimal:${{ matrix.image_tag }}/g" podman-compose.yml
           sed -i "s/pulp-web:latest/pulp-web:${{ matrix.image_tag }}/g" podman-compose.yml
           sudo usermod -G root $(whoami)
           podman-compose up -d
@@ -82,8 +80,11 @@ jobs:
           QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
         run: |
           echo "$QUAY_BOT_PASSWORD" | podman login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
+          podman tag pulp/base:latest quay.io/pulp/base:latest
+          podman tag pulp/pulp-minimal:${{ matrix.image_tag }} quay.io/pulp/pulp-minimal:${{ matrix.image_tag }}
+          podman tag pulp/pulp-web:${{ matrix.image_tag }} quay.io/pulp/pulp-web:${{ matrix.image_tag }}
           podman push quay.io/pulp/base:latest
-          podman push quay.io/pulp/pulp:${{ matrix.image_tag }}
+          podman push quay.io/pulp/pulp-minimal:${{ matrix.image_tag }}
           podman push quay.io/pulp/pulp-web:${{ matrix.image_tag }}
           if [[ "$IMAGE_TAG" == "stable" ]]; then
             CURRENT_VERSION=$(podman run quay.io/pulp/pulp:stable bash -c 'pip3 show pulpcore | sed -n -e "s/Version: //p"')
@@ -108,7 +109,10 @@ jobs:
           ls -al $VOLUME_PATH
           tree $VOLUME_PATH
           http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true
-  galaxy:
+      - name: Display log on error
+        if: failure()
+        run: podman logs pulp
+  galaxy-single-process-images:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -140,14 +144,14 @@ jobs:
         run: |
           podman version
           buildah version
-          buildah bud --file images/Containerfile.core.base --tag quay.io/pulp/base:latest .
-          buildah bud --pull=false --file images/galaxy/${{ matrix.image_tag }}/Containerfile.core --tag quay.io/pulp/galaxy:${{ matrix.image_tag }} .
-          buildah bud --pull=false --file images/galaxy/${{ matrix.image_tag }}/Containerfile.webserver --tag quay.io/pulp/galaxy-web:${{ matrix.image_tag }} .
+          buildah bud --file images/Containerfile.core.base --tag pulp/base:latest .
+          buildah bud --pull=false --file images/galaxy-minimal/${{ matrix.image_tag }}/Containerfile.core --tag pulp/galaxy-minimal:${{ matrix.image_tag }} .
+          buildah bud --pull=false --file images/galaxy-minimal/${{ matrix.image_tag }}/Containerfile.webserver --tag pulp/galaxy-web:${{ matrix.image_tag }} .
           podman images -a
       - name: Compose up
         run: |
           cd images/compose
-          sed -i "s/pulp:latest/galaxy:${{ matrix.image_tag }}/g" podman-compose.yml
+          sed -i "s/pulp-minimal:latest/galaxy-minimal:${{ matrix.image_tag }}/g" podman-compose.yml
           sed -i "s/pulp-web:latest/galaxy-web:${{ matrix.image_tag }}/g" podman-compose.yml
           sudo usermod -G root $(whoami)
           podman-compose up -d
@@ -175,15 +179,20 @@ jobs:
           QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
         run: |
           echo "$QUAY_BOT_PASSWORD" | podman login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
+          podman tag pulp/base:latest quay.io/pulp/base:latest
+          podman tag pulp/galaxy-minimal:${{ matrix.image_tag }} quay.io/pulp/galaxy-minimal:${{ matrix.image_tag }}
+          podman tag pulp/galaxy-web:${{ matrix.image_tag }} quay.io/pulp/galaxy-web:${{ matrix.image_tag }}
           podman push quay.io/pulp/base:latest
-          podman push quay.io/pulp/galaxy:${{ matrix.image_tag }}
+          podman push quay.io/pulp/galaxy-minimal:${{ matrix.image_tag }}
           podman push quay.io/pulp/galaxy-web:${{ matrix.image_tag }}
           if [[ "$IMAGE_TAG" == "stable" ]]; then
             CURRENT_VERSION=$(podman run quay.io/pulp/galaxy:stable bash -c 'pip3 show galaxy_ng | sed -n -e "s/Version: //p"')
             echo $CURRENT_VERSION
-            podman tag quay.io/pulp/galaxy:${{ matrix.image_tag }} quay.io/pulp/galaxy:$CURRENT_VERSION
+            podman tag pulp/galaxy-minimal:${{ matrix.image_tag }} quay.io/pulp/galaxy-minimal:${{ matrix.image_tag }}
+            podman tag pulp/galaxy-web:${{ matrix.image_tag }} quay.io/pulp/galaxy-web:${{ matrix.image_tag }}
+            podman tag quay.io/pulp/galaxy-minimal:${{ matrix.image_tag }} quay.io/pulp/galaxy-minimal:$CURRENT_VERSION
             podman tag quay.io/pulp/galaxy-web:${{ matrix.image_tag }} quay.io/pulp/galaxy-web:$CURRENT_VERSION
-            podman push quay.io/pulp/galaxy:$CURRENT_VERSION
+            podman push quay.io/pulp/galaxy-minimal:$CURRENT_VERSION
             podman push quay.io/pulp/galaxy-web:$CURRENT_VERSION
           fi
       - name: Logs

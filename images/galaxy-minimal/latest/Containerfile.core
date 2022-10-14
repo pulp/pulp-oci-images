@@ -1,0 +1,8 @@
+FROM pulp/base:latest
+
+RUN pip3 install git+https://github.com/ansible/galaxy_ng
+
+USER pulp:pulp
+RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
+    /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link
+USER root:root

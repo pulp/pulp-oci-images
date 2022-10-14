@@ -1,0 +1,17 @@
+FROM pulp/pulp-minimal:stable as builder
+
+RUN mkdir -p /etc/nginx/pulp \
+             /www/data
+RUN ln /usr/local/lib/python3.8/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
+RUN ln /usr/local/lib/python3.8/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
+RUN ln /usr/local/lib/python3.8/site-packages/pulp_python/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_python.conf
+
+
+
+FROM docker.io/centos/nginx-116-centos7:1.16
+
+
+COPY --from=builder /etc/nginx/pulp/*.conf "${NGINX_DEFAULT_CONF_PATH}"/
+
+# Run script uses standard ways to run the application
+CMD nginx -g "daemon off;"

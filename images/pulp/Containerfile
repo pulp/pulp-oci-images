@@ -24,6 +24,11 @@ RUN pip3 install --upgrade \
   requests && \
   rm -rf /root/.cache/pip
 
+USER pulp:pulp
+RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
+       /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link
+USER root:root
+
 RUN ln /usr/local/lib/python3.8/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
 RUN ln /usr/local/lib/python3.8/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
 RUN ln /usr/local/lib/python3.8/site-packages/pulp_python/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_python.conf
