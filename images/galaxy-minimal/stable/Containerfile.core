@@ -1,7 +1,9 @@
-FROM quay.io/pulp/base:latest
+FROM pulp/base:latest
 
-RUN pip install galaxy_ng
+RUN pip3 install galaxy_ng
 
+USER pulp:pulp
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
     /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link && \
     chown -R 700 /var/lib/operator/static/
+USER root:root

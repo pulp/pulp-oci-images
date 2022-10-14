@@ -19,7 +19,7 @@ services:
       - "redis_data:/data"
 
   pulp_web:
-    image: "quay.io/pulp/pulp-web:latest"
+    image: "pulp/pulp-web:latest"
     depends_on:
       - postgres
       - pulp_api
@@ -32,7 +32,7 @@ services:
       - "./assets/nginx/nginx.conf:/etc/opt/rh/rh-nginx116/nginx/nginx.conf:z"
 
   pulp_api:
-    image: "quay.io/pulp/pulp:latest"
+    image: "pulp/pulp-minimal:latest"
     ports:
       - "24817:24817"
     command: ['pulp-api']
@@ -51,7 +51,7 @@ services:
       PULP_ADMIN_PASSWORD: password
 
   pulp_content:
-    image: "quay.io/pulp/pulp:latest"
+    image: "pulp/pulp-minimal:latest"
     ports:
       - "24816:24816"
     command: ['pulp-content']
@@ -69,7 +69,7 @@ services:
       POSTGRES_SERVICE_HOST: postgres
 
   pulp_worker:
-    image: "quay.io/pulp/pulp:latest"
+    image: "pulp/pulp-minimal:latest"
     deploy:
         replicas: 2
     command: ['pulp-worker']

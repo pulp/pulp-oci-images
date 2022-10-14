@@ -1,4 +1,5 @@
-name: Publish OCI Images
+name: Publish S6 Images
+# TODO: Tag and push the base image
 
 on:
   push:
@@ -15,18 +16,10 @@ env:
   PYTEST_ADDOPTS: '--color=yes'
 
 jobs:
-  publish:
+  s6-publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Download s6-overlay
-        run: |
-          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-x86_64.tar.xz
-          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-noarch.tar.xz
-          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-arch.tar.xz
-          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-noarch.tar.xz
-          unxz s6-overlay*.tar.xz
-          gzip s6-overlay*.tar
       - name: Set version
         run: |
           version="${GITHUB_REF#refs/heads/}"
@@ -50,167 +43,246 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
+      - name: Install httpie and podman-compose
+        run: |
+          echo ::group::HTTPIE
+          sudo apt-get update -yq
+          sudo -E apt-get -yq --no-install-suggests --no-install-recommends install httpie
+          echo ::endgroup::
+          echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${{ matrix.image_tag }}" >> $GITHUB_ENV
+          pip install podman-compose
+        shell: bash
+
       - name: Build the images
         run: |
-          docker build --file s6_images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
-          docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:latest
-          docker tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:latest
+          # In order to maintain compatibility with the old "pulp-minimal" images,
+          # which on some registries were "pulp", we label "pulp:latest" as "pulp:stable".
+
+          podman build --file images/Containerfile.core.base --tag pulp/base:latest .
+
+          podman build --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
+          podman tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:latest
+          podman tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:latest
+          podman tag pulp/pulp-ci-centos:latest docker.io/pulp/pulp-ci-centos:latest
+
+          podman build --file images/pulp/Containerfile --tag pulp/pulp:$VERSION .
+          podman tag pulp/pulp:$VERSION ghcr.io/pulp/pulp:$VERSION
+          podman tag pulp/pulp:$VERSION quay.io/pulp/pulp:$VERSION
+          podman tag pulp/pulp:$VERSION docker.io/pulp/pulp:$VERSION
           if [ "$VERSION" = "latest" ]; then
-            docker build --file s6_images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
-            docker tag pulp/pulp-galaxy-ng:latest ghcr.io/pulp/pulp-galaxy-ng:latest
-            docker tag pulp/pulp-galaxy-ng:latest quay.io/pulp/all-in-one-galaxy:latest
+            podman tag pulp/pulp:latest ghcr.io/pulp/pulp:stable
+            podman tag pulp/pulp:latest quay.io/pulp/pulp:stable
+            podman tag pulp/pulp:latest docker.io/pulp/pulp:stable
+
+            podman build --file images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+            podman tag pulp/pulp-galaxy-ng:latest ghcr.io/pulp/pulp-galaxy-ng:latest
+            podman tag pulp/pulp-galaxy-ng:latest quay.io/pulp/pulp-galaxy-ng:latest
+            podman tag pulp/pulp-galaxy-ng:latest docker.io/pulp/pulp-galaxy-ng:latest
 
             # Be resilient if this fails
-            docker build --file s6_images/pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
-            docker tag pulp/pulp:nightly ghcr.io/pulp/pulp:nightly || true
-            docker tag pulp/pulp:nightly quay.io/pulp/all-in-one-pulp:nightly || true
+            podman build --file images/pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
+            podman tag pulp/pulp:nightly ghcr.io/pulp/pulp:nightly || true
+            podman tag pulp/pulp:nightly quay.io/pulp/pulp:nightly || true
+            podman tag pulp/pulp:nightly docker.io/pulp/pulp:nightly || true
           else
-            docker tag pulp/pulp-ci-centos:latest pulp/pulp-ci-centos:$VERSION
-            docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:$VERSION
-            docker tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:$VERSION
+            podman tag pulp/pulp-ci-centos:latest pulp/pulp-ci-centos:$VERSION
+            podman tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:$VERSION
+            podman tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:$VERSION
+            podman tag pulp/pulp-ci-centos:latest docker.io/pulp/pulp-ci-centos:$VERSION
           fi
-          docker build --file s6_images/pulp/Containerfile --tag pulp/pulp:$VERSION .
-          docker tag pulp/pulp:$VERSION ghcr.io/pulp/pulp:$VERSION
-          docker tag pulp/pulp:$VERSION quay.io/pulp/all-in-one-pulp:$VERSION
-      - name: Test the images
-        run: s6_images/assets/test.sh "pulp/pulp:$VERSION"
+      - name: Test the images in s6 mode
+        run: |
+          images/s6_assets/test.sh "pulp/pulp:$VERSION"
+          podman stop pulp
+          podman rm pulp
+        shell: bash
+      - name: Compose up
+        run: |
+          cd images/compose
+          sed -i "s/pulp-minimal:latest/pulp:${VERSION}/g" podman-compose.yml
+          sed -i "s/pulp\/pulp-web/quay.io\/pulp\/pulp-web/g" podman-compose.yml
+          sudo usermod -G root $(whoami)
+          podman-compose up -d
+          sleep 30
+          for _ in $(seq 20)
+          do
+            sleep 3
+            if curl --fail http://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1
+            then
+              break
+            fi
+          done
+          curl --fail http://localhost:8080/pulp/api/v3/status/ | jq
+        shell: bash
+      - name: Test all components (pulp)
+        if: matrix.test_type == 'pulp'
+        run: |
+          git clone --depth=1 https://github.com/pulp/pulp_ansible.git
+          git clone --depth=1 https://github.com/pulp/pulp_container.git
+          .ci/scripts/pulp_tests.sh
+        shell: bash
+        env:
+          PY_COLORS: '1'
+      - name: Test all components (galaxy)
+        if: matrix.test_type == 'pulp_galaxy_ng'
+        run: |
+          .ci/scripts/galaxy_ng-tests.sh
+        shell: bash
+        env:
+          PY_COLORS: '1'
       - name: Github login
         env:
           PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PULP_GITHUB_USERNAME: ${{ github.actor }}
-        run: echo "$PULP_GITHUB_TOKEN" | docker login -u "$PULP_GITHUB_USERNAME" --password-stdin ghcr.io
-      - name: Push ci image to github
+        run: echo "$PULP_GITHUB_TOKEN" | podman login -u "$PULP_GITHUB_USERNAME" --password-stdin ghcr.io
+      - name: Push images to github
         run: |
-          docker push ghcr.io/pulp/pulp:$VERSION
-          docker push ghcr.io/pulp/pulp-ci-centos:$VERSION
+          podman push ghcr.io/pulp/pulp:$VERSION
+          podman push ghcr.io/pulp/pulp-ci-centos:$VERSION
           if [ "$VERSION" = "latest" ]; then
-            docker push ghcr.io/pulp/pulp-galaxy-ng:latest
+            podman push ghcr.io/pulp/pulp:stable
+            podman push ghcr.io/pulp/pulp-galaxy-ng:latest
             # Be resilient if this fails
-            docker push ghcr.io/pulp/pulp:nightly || true
+            podman push ghcr.io/pulp/pulp:nightly || true
           fi
       - name: Docker login
         env:
           DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
           DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
-        run: echo "$DOCKER_BOT_PASSWORD" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
-      - name: Push ci image to dockerhub
+        run: echo "$DOCKER_BOT_PASSWORD" | podman login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
+      - name: Push images to dockerhub
         run: |
-          docker push docker.io/pulp/pulp:$VERSION
-          docker push docker.io/pulp/pulp-ci-centos:$VERSION
+          podman push docker.io/pulp/pulp:$VERSION
+          podman push docker.io/pulp/pulp-ci-centos:$VERSION
           if [ "$VERSION" = "latest" ]; then
-            docker push docker.io/pulp/pulp-galaxy-ng:latest
+            podman push docker.io/pulp/pulp:stable
+            podman push docker.io/pulp/pulp-galaxy-ng:latest
             # Be resilient if this fails
-            docker push docker.io/pulp/pulp:nightly || true
+            podman push docker.io/pulp/pulp:nightly || true
           fi
       - name: Quay login
         env:
           QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
           QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
-        run: echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
-      - name: Push ci image to quay
+        run: echo "$QUAY_BOT_PASSWORD" | podman login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
+      - name: Push images to quay
         run: |
-          docker push quay.io/pulp/all-in-one-pulp:$VERSION
-          docker push quay.io/pulp/pulp-ci-centos:$VERSION
+          podman push quay.io/pulp/pulp:$VERSION
+          podman push quay.io/pulp/pulp-ci-centos:$VERSION
           if [ "$VERSION" = "latest" ]; then
-            docker push quay.io/pulp/all-in-one-galaxy:latest
+            podman push quay.io/pulp/pulp:stable
+            podman push quay.io/pulp/pulp-galaxy-ng:latest
             # Let this be the last thing so it can indicate failure without breaking anything else
-            docker push quay.io/pulp/all-in-one-pulp:nightly
+            podman push quay.io/pulp/pulp:nightly
           fi
       - name: Display log on error
         if: failure()
-        run: docker logs pulp
+        run: podman logs pulp
 
-  ssl_publish:
+  s6-ssl-publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Download s6-overlay
-        run: |
-          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-x86_64.tar.xz
-          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-noarch.tar.xz
-          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-arch.tar.xz
-          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-noarch.tar.xz
-          unxz s6-overlay*.tar.xz
-          gzip s6-overlay*.tar
       - name: Set version
         run: |
           version="${GITHUB_REF#refs/heads/}-https"
           echo "Building and publishing $version."
           echo "VERSION=$version" >> $GITHUB_ENV
+
+      - name: Install httpie and podman-compose
+        run: |
+          echo ::group::HTTPIE
+          sudo apt-get update -yq
+          sudo -E apt-get -yq --no-install-suggests --no-install-recommends install httpie
+          echo ::endgroup::
+          echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${{ matrix.image_tag }}" >> $GITHUB_ENV
+          pip install podman-compose
+        shell: bash
+
       - name: Build the images
         run: |
-          docker build --build-arg SCHEME="https" --file s6_images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:https .
-          docker tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:https
-          docker tag pulp/pulp-ci-centos:https quay.io/pulp/pulp-ci-centos:https
+          podman build --file images/Containerfile.core.base --tag pulp/base:latest .
+
+          podman build --build-arg SCHEME="https" --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:https .
+          podman tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:https
+          podman tag pulp/pulp-ci-centos:https quay.io/pulp/pulp-ci-centos:https
+          podman tag pulp/pulp-ci-centos:https docker.io/pulp/pulp-ci-centos:https
           if [ "$VERSION" = "latest-https" ]; then
-            docker build --build-arg FROM_TAG="https" --file s6_images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:https .
-            docker tag pulp/pulp-galaxy-ng:https ghcr.io/pulp/pulp-galaxy-ng:https
-            docker tag pulp/pulp-galaxy-ng:https quay.io/pulp/all-in-one-galaxy:https
+            podman build --build-arg FROM_TAG="https" --file images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:https .
+            podman tag pulp/pulp-galaxy-ng:https ghcr.io/pulp/pulp-galaxy-ng:https
+            podman tag pulp/pulp-galaxy-ng:https quay.io/pulp/pulp-galaxy-ng:https
+            podman tag pulp/pulp-galaxy-ng:https docker.io/pulp/pulp-galaxy-ng:https
 
-            docker build --build-arg FROM_TAG="https" --file s6_images/pulp/Containerfile --tag pulp/pulp:https .
-            docker tag pulp/pulp:https ghcr.io/pulp/pulp:https
-            docker tag pulp/pulp:https quay.io/pulp/all-in-one-pulp:https
+            podman build --build-arg FROM_TAG="https" --file images/pulp/Containerfile --tag pulp/pulp:https .
+            podman tag pulp/pulp:https ghcr.io/pulp/pulp:https
+            podman tag pulp/pulp:https quay.io/pulp/pulp:https
+            podman tag pulp/pulp:https docker.io/pulp/pulp:https
           else
-            docker tag pulp/pulp-ci-centos:https pulp/pulp-ci-centos:$VERSION
-            docker tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:$VERSION
-            docker tag pulp/pulp-ci-centos:https quay.io/pulp/pulp-ci-centos:$VERSION
+            podman tag pulp/pulp-ci-centos:https pulp/pulp-ci-centos:$VERSION
+            podman tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:$VERSION
+            podman tag pulp/pulp-ci-centos:https quay.io/pulp/pulp-ci-centos:$VERSION
+            podman tag pulp/pulp-ci-centos:https docker.io/pulp/pulp-ci-centos:$VERSION
 
-            docker build --build-arg FROM_TAG="https" --file s6_images/pulp/Containerfile --tag pulp/pulp:$VERSION .
-            docker tag pulp/pulp:$VERSION ghcr.io/pulp/pulp:$VERSION
-            docker tag pulp/pulp:$VERSION quay.io/pulp/all-in-one-pulp:$VERSION
+            podman build --build-arg FROM_TAG="https" --file images/pulp/Containerfile --tag pulp/pulp:$VERSION .
+            podman tag pulp/pulp:$VERSION ghcr.io/pulp/pulp:$VERSION
+            podman tag pulp/pulp:$VERSION quay.io/pulp/pulp:$VERSION
+            podman tag pulp/pulp:$VERSION docker.io/pulp/pulp:$VERSION
           fi
-      - name: Test the images
+      - name: Test the images in s6 mode
         run: |
           if [ "$VERSION" = "latest-https" ]; then
-            s6_images/assets/test.sh "pulp/pulp:https" https
+            images/s6_assets/test.sh "pulp/pulp:https" https
           else
-            s6_images/assets/test.sh "pulp/pulp:$VERSION" https
+            images/s6_assets/test.sh "pulp/pulp:$VERSION" https
           fi
+        shell: bash
       - name: Github login
         env:
           PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
-        run: echo "$PULP_GITHUB_TOKEN" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin ghcr.io
-      - name: Push ci image to github
+        run: echo "$PULP_GITHUB_TOKEN" | podman login -u "$DOCKER_BOT_USERNAME" --password-stdin ghcr.io
+      - name: Push images to github
         run: |
           if [ "$VERSION" = "latest-https" ]; then
-            docker push ghcr.io/pulp/pulp-ci-centos:https
-            docker push ghcr.io/pulp/pulp-galaxy-ng:https
-            docker push ghcr.io/pulp/pulp:https
+            podman push ghcr.io/pulp/pulp-ci-centos:https
+            podman push ghcr.io/pulp/pulp-galaxy-ng:https
+            podman push ghcr.io/pulp/pulp:https
           else
-            docker push ghcr.io/pulp/pulp-ci-centos:$VERSION
-            docker push ghcr.io/pulp/pulp:$VERSION
+            podman push ghcr.io/pulp/pulp-ci-centos:$VERSION
+            podman push ghcr.io/pulp/pulp:$VERSION
           fi
       - name: Docker login
         env:
           DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
           DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
-        run: echo "$DOCKER_BOT_PASSWORD" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
-      - name: Push ci image to dockerhub
+        run: echo "$DOCKER_BOT_PASSWORD" | podman login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
+      - name: Push images to dockerhub
         run: |
           if [ "$VERSION" = "latest-https" ]; then
-            docker push docker.io/pulp/pulp-ci-centos:https
-            docker push docker.io/pulp/pulp-galaxy-ng:https
-            docker push docker.io/pulp/pulp:https
+            podman push docker.io/pulp/pulp-ci-centos:https
+            podman push docker.io/pulp/pulp-galaxy-ng:https
+            podman push docker.io/pulp/pulp:https
           else
-            docker push docker.io/pulp/pulp:$VERSION
-            docker push docker.io/pulp/pulp-ci-centos:$VERSION
+            podman push docker.io/pulp/pulp:$VERSION
+            podman push docker.io/pulp/pulp-ci-centos:$VERSION
           fi
       - name: Quay login
         env:
           QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
           QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
-        run: echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
-      - name: Push ci image to quay
+        run: echo "$QUAY_BOT_PASSWORD" | podman login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
+      - name: Push images to quay
         run: |
           if [ "$VERSION" = "latest-https" ]; then
-            docker push quay.io/pulp/pulp-ci-centos:https
-            docker push quay.io/pulp/all-in-one-galaxy:https
-            docker push quay.io/pulp/all-in-one-pulp:https
+            podman push quay.io/pulp/pulp-ci-centos:https
+            podman push quay.io/pulp/pulp-galaxy-ng:https
+            podman push quay.io/pulp/pulp:https
           else
-            docker push quay.io/pulp/pulp-ci-centos:$VERSION
-            docker push quay.io/pulp/all-in-one-pulp:$VERSION
+            podman push quay.io/pulp/pulp-ci-centos:$VERSION
+            podman push quay.io/pulp/pulp:$VERSION
           fi
       - name: Display log on error
         if: failure()
-        run: docker logs pulp
+        run: podman logs pulp
