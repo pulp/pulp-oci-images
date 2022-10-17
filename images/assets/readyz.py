@@ -10,10 +10,14 @@ def is_api_healthy(path):
     """
     Checks if API is healthy
     """
-    address = "[::1]" if socket.has_ipv6 else "127.0.0.1"
-    url = f"http://{address}:24817{path}"
+    url = f"http://[::1]:24817{path}"
     print(f"Readiness probe checking {url}")
-    response = requests.get(url, allow_redirects=True)
+    try:
+        response = requests.get(url, allow_redirects=True)
+    except socket.gaierror:
+        url = url.replace("[::1]", "127.0.0.1")
+        print(f"Retrying - Readiness probe with {url}")
+        response = requests.get(url, allow_redirects=True)
     data = response.json()
 
     if not data["database_connection"]["connected"]:
@@ -29,10 +33,14 @@ def is_content_healthy(path):
     """
     Checks if Content is healthy
     """
-    address = "[::1]" if socket.has_ipv6 else "127.0.0.1"
-    url = f"http://{address}:24816{path}"
+    url = f"http://[::1]:24816{path}"
     print(f"Readiness probe checking {url}")
-    response = requests.head(url)
+    try:
+        response = requests.head(url)
+    except socket.gaierror:
+        url = url.replace("[::1]", "127.0.0.1")
+        print(f"Retrying - Readiness probe with {url}")
+        response = requests.head(url)
     response.raise_for_status()
 
     sys.exit(0)
