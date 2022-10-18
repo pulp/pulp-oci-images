@@ -9,6 +9,7 @@ on:
     # * is a special character in YAML so you have to quote this string
     - cron: '0 1 * * *'
   workflow_dispatch:
+  pull_request:
 
 env:
   COLORTERM: 'yes'
@@ -37,12 +38,6 @@ jobs:
           pip install gitpython requests packaging jinja2 pyyaml
           echo ::endgroup::
 
-      - name: Dispatching
-        if: github.event_name == 'schedule'
-        run: python .ci/scripts/update_ci_branches.py
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-
       - name: Install httpie and podman-compose
         run: |
           echo ::group::HTTPIE
@@ -59,25 +54,25 @@ jobs:
           podman build --file images/Containerfile.core.base --tag pulp/base:latest .
 
           podman build --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
-          podman tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:latest
-          podman tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:latest
+          podman tag pulp/pulp-ci-centos:latest ghcr.io/mikedep333/pulp-ci-centos:latest
+          podman tag pulp/pulp-ci-centos:latest quay.io/mikedep333/pulp-ci-centos:latest
           if [ "$VERSION" = "latest" ]; then
             podman build --file images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
-            podman tag pulp/pulp-galaxy-ng:latest ghcr.io/pulp/pulp-galaxy-ng:latest
-            podman tag pulp/pulp-galaxy-ng:latest quay.io/pulp/pulp-galaxy-ng:latest
+            podman tag pulp/pulp-galaxy-ng:latest ghcr.io/mikedep333/pulp-galaxy-ng:latest
+            podman tag pulp/pulp-galaxy-ng:latest quay.io/mikedep333/pulp-galaxy-ng:latest
 
             # Be resilient if this fails
             podman build --file images/pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
-            podman tag pulp/pulp:nightly ghcr.io/pulp/pulp:nightly || true
-            podman tag pulp/pulp:nightly quay.io/pulp/pulp:nightly || true
+            podman tag pulp/pulp:nightly ghcr.io/mikedep333/pulp:nightly || true
+            podman tag pulp/pulp:nightly quay.io/mikedep333/pulp:nightly || true
           else
             podman tag pulp/pulp-ci-centos:latest pulp/pulp-ci-centos:$VERSION
-            podman tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:$VERSION
-            podman tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:$VERSION
+            podman tag pulp/pulp-ci-centos:latest ghcr.io/mikedep333/pulp-ci-centos:$VERSION
+            podman tag pulp/pulp-ci-centos:latest quay.io/mikedep333/pulp-ci-centos:$VERSION
           fi
           podman build --file images/pulp/Containerfile --tag pulp/pulp:$VERSION .
-          podman tag pulp/pulp:$VERSION ghcr.io/pulp/pulp:$VERSION
-          podman tag pulp/pulp:$VERSION quay.io/pulp/pulp:$VERSION
+          podman tag pulp/pulp:$VERSION ghcr.io/mikedep333/pulp:$VERSION
+          podman tag pulp/pulp:$VERSION quay.io/mikedep333/pulp:$VERSION
       - name: Test the images in s6 mode
         run:
           images/s6_assets/test.sh "pulp/pulp:$VERSION"
@@ -116,34 +111,6 @@ jobs:
         shell: bash
         env:
           PY_COLORS: '1'
-      - name: Github login
-        env:
-          PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULP_GITHUB_USERNAME: ${{ github.actor }}
-        run: echo "$PULP_GITHUB_TOKEN" | podman login -u "$PULP_GITHUB_USERNAME" --password-stdin ghcr.io
-      - name: Push ci image to github
-        run: |
-          podman push ghcr.io/pulp/pulp:$VERSION
-          podman push ghcr.io/pulp/pulp-ci-centos:$VERSION
-          if [ "$VERSION" = "latest" ]; then
-            podman push ghcr.io/pulp/pulp-galaxy-ng:latest
-            # Be resilient if this fails
-            podman push ghcr.io/pulp/pulp:nightly || true
-          fi
-      - name: Docker login
-        env:
-          DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
-          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
-        run: echo "$DOCKER_BOT_PASSWORD" | podman login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
-      - name: Push ci image to dockerhub
-        run: |
-          podman push docker.io/pulp/pulp:$VERSION
-          podman push docker.io/pulp/pulp-ci-centos:$VERSION
-          if [ "$VERSION" = "latest" ]; then
-            podman push docker.io/pulp/pulp-galaxy-ng:latest
-            # Be resilient if this fails
-            podman push docker.io/pulp/pulp:nightly || true
-          fi
       - name: Quay login
         env:
           QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
@@ -151,12 +118,12 @@ jobs:
         run: echo "$QUAY_BOT_PASSWORD" | podman login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
       - name: Push ci image to quay
         run: |
-          podman push quay.io/pulp/pulp:$VERSION
-          podman push quay.io/pulp/pulp-ci-centos:$VERSION
+          podman push quay.io/mikedep333/pulp:$VERSION
+          podman push quay.io/mikedep333/pulp-ci-centos:$VERSION
           if [ "$VERSION" = "latest" ]; then
-            podman push quay.io/pulp/pulp-galaxy-ng:latest
+            podman push quay.io/mikedep333/pulp-galaxy-ng:latest
             # Let this be the last thing so it can indicate failure without breaking anything else
-            podman push quay.io/pulp/pulp:nightly
+            podman push quay.io/mikedep333/pulp:nightly
           fi
       - name: Display log on error
         if: failure()
@@ -188,24 +155,24 @@ jobs:
           podman build --file images/Containerfile.core.base --tag pulp/base:latest .
 
           podman build --build-arg SCHEME="https" --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:https .
-          podman tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:https
-          podman tag pulp/pulp-ci-centos:https quay.io/pulp/pulp-ci-centos:https
+          podman tag pulp/pulp-ci-centos:https ghcr.io/mikedep333/pulp-ci-centos:https
+          podman tag pulp/pulp-ci-centos:https quay.io/mikedep333/pulp-ci-centos:https
           if [ "$VERSION" = "latest-https" ]; then
             podman build --build-arg FROM_TAG="https" --file images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:https .
-            podman tag pulp/pulp-galaxy-ng:https ghcr.io/pulp/pulp-galaxy-ng:https
-            podman tag pulp/pulp-galaxy-ng:https quay.io/pulp/pulp-galaxy-ng:https
+            podman tag pulp/pulp-galaxy-ng:https ghcr.io/mikedep333/pulp-galaxy-ng:https
+            podman tag pulp/pulp-galaxy-ng:https quay.io/mikedep333/pulp-galaxy-ng:https
 
             podman build --build-arg FROM_TAG="https" --file images/pulp/Containerfile --tag pulp/pulp:https .
-            podman tag pulp/pulp:https ghcr.io/pulp/pulp:https
-            podman tag pulp/pulp:https quay.io/pulp/pulp:https
+            podman tag pulp/pulp:https ghcr.io/mikedep333/pulp:https
+            podman tag pulp/pulp:https quay.io/mikedep333/pulp:https
           else
             podman tag pulp/pulp-ci-centos:https pulp/pulp-ci-centos:$VERSION
-            podman tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:$VERSION
-            podman tag pulp/pulp-ci-centos:https quay.io/pulp/pulp-ci-centos:$VERSION
+            podman tag pulp/pulp-ci-centos:https ghcr.io/mikedep333/pulp-ci-centos:$VERSION
+            podman tag pulp/pulp-ci-centos:https quay.io/mikedep333/pulp-ci-centos:$VERSION
 
             podman build --build-arg FROM_TAG="https" --file images/pulp/Containerfile --tag pulp/pulp:$VERSION .
-            podman tag pulp/pulp:$VERSION ghcr.io/pulp/pulp:$VERSION
-            podman tag pulp/pulp:$VERSION quay.io/pulp/pulp:$VERSION
+            podman tag pulp/pulp:$VERSION ghcr.io/mikedep333/pulp:$VERSION
+            podman tag pulp/pulp:$VERSION quay.io/mikedep333/pulp:$VERSION
           fi
       - name: Test the images in s6 mode
         run: |
@@ -213,36 +180,6 @@ jobs:
             images/s6_assets/test.sh "pulp/pulp:https" https
           else
             images/s6_assets/test.sh "pulp/pulp:$VERSION" https
-          fi
-      - name: Github login
-        env:
-          PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
-        run: echo "$PULP_GITHUB_TOKEN" | podman login -u "$DOCKER_BOT_USERNAME" --password-stdin ghcr.io
-      - name: Push ci image to github
-        run: |
-          if [ "$VERSION" = "latest-https" ]; then
-            podman push ghcr.io/pulp/pulp-ci-centos:https
-            podman push ghcr.io/pulp/pulp-galaxy-ng:https
-            podman push ghcr.io/pulp/pulp:https
-          else
-            podman push ghcr.io/pulp/pulp-ci-centos:$VERSION
-            podman push ghcr.io/pulp/pulp:$VERSION
-          fi
-      - name: Docker login
-        env:
-          DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
-          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
-        run: echo "$DOCKER_BOT_PASSWORD" | podman login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
-      - name: Push ci image to dockerhub
-        run: |
-          if [ "$VERSION" = "latest-https" ]; then
-            podman push docker.io/pulp/pulp-ci-centos:https
-            podman push docker.io/pulp/pulp-galaxy-ng:https
-            podman push docker.io/pulp/pulp:https
-          else
-            podman push docker.io/pulp/pulp:$VERSION
-            podman push docker.io/pulp/pulp-ci-centos:$VERSION
           fi
       - name: Quay login
         env:
@@ -252,12 +189,12 @@ jobs:
       - name: Push ci image to quay
         run: |
           if [ "$VERSION" = "latest-https" ]; then
-            podman push quay.io/pulp/pulp-ci-centos:https
-            podman push quay.io/pulp/pulp-galaxy-ng:https
-            podman push quay.io/pulp/pulp:https
+            podman push quay.io/mikedep333/pulp-ci-centos:https
+            podman push quay.io/mikedep333/pulp-galaxy-ng:https
+            podman push quay.io/mikedep333/pulp:https
           else
-            podman push quay.io/pulp/pulp-ci-centos:$VERSION
-            podman push quay.io/pulp/pulp:$VERSION
+            podman push quay.io/mikedep333/pulp-ci-centos:$VERSION
+            podman push quay.io/mikedep333/pulp:$VERSION
           fi
       - name: Display log on error
         if: failure()
