@@ -10,7 +10,7 @@
 /usr/local/bin/pulpcore-manager migrate --noinput
 /usr/local/bin/pulpcore-manager migrate auth --noinput
 
-bash +x
+set +x
 
 if [ -n "${PULP_SIGNING_KEY_FINGERPRINT}" ]; then
     /usr/local/bin/pulpcore-manager add-signing-service "${COLLECTION_SIGNING_SERVICE}" /var/lib/pulp/scripts/collection_sign.sh "${PULP_SIGNING_KEY_FINGERPRINT}"
@@ -26,7 +26,7 @@ fi
 if [ -n "${PULP_ADMIN_PASSWORD}" ]; then
     /usr/local/bin/pulpcore-manager reset-admin-password --password "${PULP_ADMIN_PASSWORD}"
 fi
-bash -x
+set -x
 
 PULP_GUNICORN_TIMEOUT=${PULP_GUNICORN_TIMEOUT:-90}
 PULP_API_WORKERS=${PULP_API_WORKERS:-2}
