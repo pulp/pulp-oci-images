@@ -1,6 +1,10 @@
-FROM registry.fedoraproject.org/fedora:36
+FROM quay.io/centos/centos:stream8
+# https://ryandaniels.ca/blog/docker-dockerfile-arg-from-arg-trouble/
+ARG SCHEME="http"
 
-
+# https://superuser.com/questions/959380/how-do-i-install-generate-all-locales-on-fedora
+# This may not be necessary anymore because Fedora 30, unlike CentOS 7, has
+# glibc subpackages like glibc-langpack-en.
 RUN rm /etc/rpm/macros.image-language-conf
 RUN echo 'LANG="en_US.UTF-8"' > /etc/locale.conf
 ENV LANG=en_US.UTF-8
@@ -12,74 +16,83 @@ ENV PULP_SETTINGS=/etc/pulp/settings.py
 ENV _BUILDAH_STARTED_IN_USERNS=""
 ENV BUILDAH_ISOLATION=chroot
 
-# The Fedora 30 image already has tsflags=nodocs set in dnf.conf
-#
-# wget & git are presumably needed for purposes like pip installs from git
-#
-# libxcrypt-compat is needed by psycopg2-binary from PyPI
-#
-# python3-psycopg2 is installed by pulp_installer
-#
+# use python38
+RUN dnf -y module disable python36
+RUN dnf -y module enable python38
+
 # glibc-langpack-en is needed to provide the en_US.UTF-8 locale, which Pulp
 # seems to need.
 #
-# openssl-devel, python3-devel, and gcc are for testing pulp-certguard
-#
 # The last 5 lines (before clean) are needed until python3-createrepo_c gets an
-# RPM upgrade to 0.15.10. Until then, we install & build it from PyPI.
-RUN		dnf -y update && \
-		dnf -y install wget git && \
-		dnf -y install libxcrypt-compat && \
-		dnf -y install libpq-devel && \
-		dnf -y install python3-psycopg2 && \
-		dnf -y install glibc-langpack-en && \
-		dnf -y install python3-libmodulemd && \
-		dnf -y install openldap-devel && \
-		dnf -y install skopeo && \
-		dnf -y install openssl && \
-		dnf -y install openssl-devel && \
-		dnf -y install ostree && \
-		dnf -y install ostree-libs && \
-		dnf -y install python3-devel && \
-		dnf -y install python3-setuptools && \
-		dnf -y install python-pip && \
-		dnf -y install gcc && \
-		dnf -y install libmodulemd-devel && \
-		dnf -y install libcomps-devel && \
-		dnf -y install ninja-build && \
-		dnf -y install 'dnf-command(builddep)' && \
-		dnf -y install cairo-devel && \
-		dnf -y install cmake && \
-		dnf -y install gobject-introspection-devel && \
-		dnf -y install cairo-gobject-devel && \
-		dnf -y builddep createrepo_c && \
-		dnf clean all
+# RPM upgrade to 0.16.2. Until then, we install & build it from PyPI.
+#
+# TODO: Investigate differences between `dnf builddep createrepo_c` vs the list
+# of dependencies below. For example, drpm-devel.
+RUN dnf -y install dnf-plugins-core && \
+    dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && \
+    dnf config-manager --set-enabled powertools && \
+    dnf -y update && \
+    dnf -y install python38 python38-devel && \
+    dnf -y install openssl && \
+    dnf -y install openldap-devel && \
+    dnf -y install wget git && \
+    dnf -y install python3-psycopg2 && \
+    dnf -y install glibc-langpack-en && \
+    dnf -y install python3-libmodulemd && \
+    dnf -y install python3-libcomps && \
+    dnf -y install libpq-devel && \
+    dnf -y install python3-setuptools && \
+    dnf -y install buildah --exclude container-selinux && \
+    dnf -y install xz && \
+    dnf -y install libmodulemd-devel && \
+    dnf -y install libcomps-devel && \
+    dnf -y install zchunk-devel && \
+    dnf -y install ninja-build && \
+    dnf -y install cairo-devel cmake gobject-introspection-devel cairo-gobject-devel && \
+    dnf -y install libcurl-devel libxml2-devel sqlite-devel file-devel && \
+    dnf -y install ostree-libs ostree && \
+    dnf -y install skopeo && \
+    dnf -y install podman && \
+    dnf -y install sudo && \
+    dnf -y install zstd && \
+    dnf clean all
+
+# Needed to prevent the wrong version of cryptography from being installed,
+# which would break PyOpenSSL.
+RUN pip3 install --upgrade pip && \
+    rm -rf /root/.cache/pip
 
 # Need to install optional dep, rhsm, for pulp-certguard
-RUN pip install  \
-	rhsm \
-	setproctitle \
-	gunicorn \
-        python-nginx \
-	"django-storages[boto3,azure]>=1.12.2" \
-	"requests[use_chardet_on_py3]" \
-	pulpcore
+RUN pip3 install  \
+         rhsm \
+         setproctitle \
+         gunicorn \
+         python-nginx \
+         "django-storages[boto3,azure]>=1.12.2" \
+         "requests[use_chardet_on_py3]" && \
+         rm -rf /root/.cache/pip
 
-RUN mkdir -p /etc/pulp/certs \
-			 /var/lib/operator/static \
-			 /var/lib/pulp/media \
-			 /var/lib/pulp/assets \
-	         /var/lib/pulp/scripts \
-			 /var/lib/pulp/tmp
+RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
 
-# https://github.com/python-ldap/python-ldap/issues/432#issuecomment-1016756358
-RUN ln -s /usr/lib64/libldap.so /usr/lib64/libldap_r.so
+RUN groupadd -g 700 --system pulp
+RUN useradd -d /var/lib/pulp --system -u 700 -g pulp pulp
+RUN usermod --add-subuids 100000-165535 --add-subgids 100000-165535 pulp
 
-RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
-	/usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link && \
-	chown -R 700 /var/lib/operator/static/
+RUN mkdir -p /database \
+             /etc/nginx/pulp \
+             /etc/pulp/certs \
+             /etc/ssl/pulp \
+             /nginx \
+             /var/lib/operator/static \
+             /var/lib/pgsql \
+             /var/lib/pulp/assets \
+             /var/lib/pulp/media \
+             /var/lib/pulp/scripts \
+             /var/lib/pulp/tmp
 
-RUN chown -R 700 /var/lib/pulp/
+RUN chown pulp:pulp -R /database \
+                       /var/lib/pulp \
+                       /var/lib/operator/static
 
 COPY images/assets/readyz.py /usr/bin/readyz.py
 COPY images/assets/route_paths.py /usr/bin/route_paths.py
@@ -90,5 +103,10 @@ COPY images/assets/pulp-api /usr/bin/pulp-api
 COPY images/assets/pulp-content /usr/bin/pulp-content
 COPY images/assets/pulp-resource-manager /usr/bin/pulp-resource-manager
 COPY images/assets/pulp-worker /usr/bin/pulp-worker
+
+# Need to precreate when running pulp as the pulp user
+RUN touch /var/log/galaxy_api_access.log && \
+    chown pulp:pulp /var/log/galaxy_api_access.log && \
+    chmod u+rw /var/log/galaxy_api_access.log
 
 ENTRYPOINT ["/pulp-common-entrypoint.sh"]

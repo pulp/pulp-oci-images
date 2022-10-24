@@ -2,12 +2,3 @@ settings/
 containers/
 pgsql/
 pulp_storage/
-s6-overlay-amd64.tar.gz
-s6-overlay-x86_64.tar.gz
-s6-overlay-x86_64.tar.xz
-s6-overlay-noarch.tar.gz
-s6-overlay-noarch.tar.xz
-s6-overlay-symlinks-arch.tar.gz
-s6-overlay-symlinks-arch.tar.xz
-s6-overlay-symlinks-noarch.tar.gz
-s6-overlay-symlinks-noarch.tar.xz
