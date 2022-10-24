@@ -1,0 +1,1 @@
+Fix certificates not being re-added to the system store when the container is deleted and recreated.
