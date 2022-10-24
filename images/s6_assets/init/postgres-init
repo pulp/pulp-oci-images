@@ -25,8 +25,8 @@ if [ -d "${PGDATA}/base" -a -f "${PGDATA}/PG_VERSION" ]; then
     exit 200
   fi
 else
-  echo -e "${PREFIX} ${GREEN}initdb -E UTF8 --pgdata ${PGDATA}${ENDCOLOR}"
-  su postgres -c "initdb -E UTF8 --pgdata=${PGDATA}"
+  echo -e "${PREFIX} ${GREEN}initdb -E UTF8 --locale=C.UTF-8 --pgdata ${PGDATA}${ENDCOLOR}"
+  su postgres -c "initdb -E UTF8 --locale=C.UTF-8 --pgdata=${PGDATA}"
   STATUS=$?
   if [ $STATUS -ne 0 ]; then
     echo -e "${PREFIX} ${RED} failed to initialize the database${ENDCOLOR}"

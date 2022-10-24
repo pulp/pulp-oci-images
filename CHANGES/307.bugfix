@@ -1,0 +1,1 @@
+Fix the database locale not being created as UTF-8 (even though the encoding is). Also fix the owner of the database not being the "pulp" user.
