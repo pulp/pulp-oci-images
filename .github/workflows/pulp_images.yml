@@ -98,8 +98,8 @@ jobs:
             CURRENT_VERSION=$(podman run pulp/pulp-minimal:stable bash -c 'pip3 show pulpcore | sed -n -e "s/Version: //p"')
             echo $CURRENT_VERSION
 
-            podman pulp/pulp-minimal:stable ghcr.io/pulp/pulp-minimal:$CURRENT_VERSION
-            podman pulp/pulp-web:stable ghcr.io/pulp/pulp-web:$CURRENT_VERSION
+            podman push pulp/pulp-minimal:stable ghcr.io/pulp/pulp-minimal:$CURRENT_VERSION
+            podman push pulp/pulp-web:stable ghcr.io/pulp/pulp-web:$CURRENT_VERSION
 
             podman push ghcr.io/pulp/pulp-minimal:$CURRENT_VERSION
             podman push ghcr.io/pulp/pulp-web:$CURRENT_VERSION
