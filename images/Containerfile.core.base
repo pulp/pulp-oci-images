@@ -42,6 +42,7 @@ RUN dnf -y install dnf-plugins-core && \
     dnf -y install python3-libcomps && \
     dnf -y install libpq-devel && \
     dnf -y install python3-setuptools && \
+    dnf -y install swig && \
     dnf -y install buildah --exclude container-selinux && \
     dnf -y install xz && \
     dnf -y install libmodulemd-devel && \

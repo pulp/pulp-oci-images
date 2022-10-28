@@ -1,0 +1,1 @@
+Install swig that is required when no binary wheel is available on PyPI for the solv package.
