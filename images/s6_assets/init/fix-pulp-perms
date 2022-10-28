@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Fix permissions on /var/lib/pulp
+# We do not want to always fix permissions on it at every boot because it would
+# take very long. So we check individual subdirs.
+
+export BASENAME=$(basename ${0})
+export PREFIX="[oneshot] ${BASENAME}:"
+
+export ENDCOLOR="\e[0m"
+export BLACK="\e[30m"
+export RED="\e[31m"
+export GREEN="\e[32m"
+export ORANGE="\e[33m"
+export C034="\e[34m"
+export C035="\e[35m"
+export C036="\e[36m"
+export C037="\e[37m"
+
+set -x
+
+owner="$(stat --format '%U' /var/lib/pulp)"
+if [ "$owner" != "pulp" ]; then
+  echo -e "${PREFIX} ${GREEN}chown pulp:pulp /var/lib/pulp${ENDCOLOR}"
+  chown pulp:pulp /var/lib/pulp
+fi
+
+for dir in media scripts tmp; do
+  if [ -e /var/lib/pulp/${dir} ]; then
+    owner="$(stat --format '%U' /var/lib/pulp/${dir})"
+    if [ "$owner" != "pulp" ]; then
+      echo -e "${PREFIX} ${GREEN}chown -R pulp:pulp /var/lib/pulp/${dir}${ENDCOLOR}"
+      chown -R pulp:pulp /var/lib/pulp/${dir}
+    fi
+  # To avoid burden on users, we create this dir if /var/lib/pulp is mounted.
+  # The pulp processes will create the other dirs
+  elif [ "$dir" = "scripts" ]; then
+    mkdir /var/lib/pulp/scripts
+    chown pulp:pulp /var/lib/pulp/scripts
+  fi
+done

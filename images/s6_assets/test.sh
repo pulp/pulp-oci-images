@@ -19,14 +19,16 @@ else
   port=443
 fi
 
-mkdir settings
+mkdir settings pulp_storage containers
 echo "CONTENT_ORIGIN='$scheme://localhost:8080'" >> settings/settings.py
 echo "ALLOWED_EXPORT_PATHS = ['/tmp']" >> settings/settings.py
 echo "ORPHAN_PROTECTION_TIME = 0" >> settings/settings.py
 podman run --detach \
-           --name pulp \
            --publish 8080:$port \
-           --volume "/$(pwd)/settings:/etc/pulp:Z" \
+           --name pulp \
+           --volume "$(pwd)/settings":/etc/pulp:Z \
+           --volume "$(pwd)/pulp_storage":/var/lib/pulp:Z \
+           --volume "$(pwd)/containers":/var/lib/containers:Z \
            --device /dev/fuse \
            -e PULP_DEFAULT_ADMIN_PASSWORD=password \
            "$image"
@@ -65,12 +67,12 @@ if [[ ${image} != *"galaxy"* ]];then
   curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-PRIVATE-KEY-pulp-qe | gpg --import
   echo "6EDF301256480B9B801EBA3D05A5E6DA269D9D98:6:" | gpg --import-ownertrust
   echo "Setup ansible signing service"
-  podman exec -i pulp bash -c "cat > /var/lib/pulp/scripts/sign_detached.sh" < "${PWD}/tests/assets/sign_detached.sh"
-  podman exec pulp chmod a+rx /var/lib/pulp/scripts/sign_detached.sh
-  podman exec pulp su pulp -c "pulpcore-manager add-signing-service --class core:AsciiArmoredDetachedSigningService sign_ansible /var/lib/pulp/scripts/sign_detached.sh 'Pulp QE'"
+  podman exec -u pulp -i pulp bash -c "cat > /var/lib/pulp/scripts/sign_detached.sh" < "${PWD}/tests/assets/sign_detached.sh"
+  podman exec -u pulp pulp chmod a+rx /var/lib/pulp/scripts/sign_detached.sh
+  podman exec -u pulp pulp bash -c "pulpcore-manager add-signing-service --class core:AsciiArmoredDetachedSigningService sign_ansible /var/lib/pulp/scripts/sign_detached.sh 'Pulp QE'"
   echo "Setup deb release signing service"
-  podman exec -i pulp bash -c "cat > /var/lib/pulp/scripts/sign_deb_release.sh" < "${PWD}/tests/assets/sign_deb_release.sh"
-  podman exec pulp chmod a+rx /var/lib/pulp/scripts/sign_deb_release.sh
-  podman exec pulp su pulp -c "pulpcore-manager add-signing-service --class deb:AptReleaseSigningService sign_deb_release /var/lib/pulp/scripts/sign_deb_release.sh 'Pulp QE'"
+  podman exec -u pulp -i pulp bash -c "cat > /var/lib/pulp/scripts/sign_deb_release.sh" < "${PWD}/tests/assets/sign_deb_release.sh"
+  podman exec -u pulp pulp chmod a+rx /var/lib/pulp/scripts/sign_deb_release.sh
+  podman exec -u pulp pulp bash -c "pulpcore-manager add-signing-service --class deb:AptReleaseSigningService sign_deb_release /var/lib/pulp/scripts/sign_deb_release.sh 'Pulp QE'"
   make test
 fi

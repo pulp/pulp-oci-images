@@ -1,0 +1,6 @@
+#!/usr/bin/execlineb -S0
+
+with-contenv
+
+foreground { s6-echo "Calling /etc/init/fix-pulp-perms" }
+/etc/init/fix-pulp-perms

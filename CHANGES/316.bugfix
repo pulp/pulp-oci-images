@@ -1,0 +1,1 @@
+Fix users having to manually change ownership on /var/lib/pulp when it is mounted by changing ownership at boot.
