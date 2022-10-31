@@ -3,7 +3,12 @@ s6-setuidgid pulp
 foreground {
   /database/assets/wait_on_database_migrations.sh
 }
+with-contenv
+importas PULP_STATIC_ROOT PULP_STATIC_ROOT
 export DJANGO_SETTINGS_MODULE pulpcore.app.settings
+importas DJANGO_SETTINGS_MODULE DJANGO_SETTINGS_MODULE
 export PULP_SETTINGS /etc/pulp/settings.py
+importas PULP_SETTINGS PULP_SETTINGS
 export HOME /var/lib/pulp/
+importas HOME HOME
 /usr/local/bin/gunicorn pulpcore.content:server --bind "127.0.0.1:24816" --name pulp-content --timeout 90 --worker-class "aiohttp.GunicornWebWorker" -w 2 --access-logfile -

@@ -1,10 +1,17 @@
 #!/usr/bin/execlineb -P
 s6-setuidgid pulp
+with-contenv
 foreground {
   /database/assets/wait_on_database_migrations.sh
 }
+with-contenv
+importas PULP_STATIC_ROOT PULP_STATIC_ROOT
 export DJANGO_SETTINGS_MODULE pulpcore.app.settings
+importas DJANGO_SETTINGS_MODULE DJANGO_SETTINGS_MODULE
 export PULP_SETTINGS /etc/pulp/settings.py
-export PATH /usr/local/bin:/usr/bin/
+importas PULP_SETTINGS PULP_SETTINGS
 export HOME /var/lib/pulp/
+importas HOME HOME
+export PATH /usr/local/bin:/usr/bin/
+importas PATH PATH
 /usr/local/bin/pulpcore-worker
