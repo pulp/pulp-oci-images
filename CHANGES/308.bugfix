@@ -1,0 +1,1 @@
+s6: Fix the inability to set only 1 worker process.
