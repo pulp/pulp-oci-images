@@ -41,9 +41,11 @@ do
     break
   fi
 done
+set -x
 curl --insecure --fail $scheme://localhost:8080/pulp/api/v3/status/ | jq
 
 if [[ ${image} != *"galaxy"* ]];then
+  curl --insecure --fail $scheme://localhost:8080/assets/rest_framework/js/default.js
   echo 127.0.0.1   pulp | sudo tee -a /etc/hosts
   git clone --depth=1 https://github.com/pulp/pulp-cli.git
   cd pulp-cli
@@ -75,4 +77,6 @@ if [[ ${image} != *"galaxy"* ]];then
   podman exec -u pulp pulp chmod a+rx /var/lib/pulp/scripts/sign_deb_release.sh
   podman exec -u pulp pulp bash -c "pulpcore-manager add-signing-service --class deb:AptReleaseSigningService sign_deb_release /var/lib/pulp/scripts/sign_deb_release.sh 'Pulp QE'"
   make test
+else
+  curl --insecure --fail $scheme://localhost:8080/static/galaxy_ng/index.html
 fi

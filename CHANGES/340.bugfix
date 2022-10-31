@@ -1,0 +1,1 @@
+Fix missing static content (including galaxy-ng UI) in the s6 containers since the container images were unified.
