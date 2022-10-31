@@ -1,0 +1,1 @@
+The `images/compose` directory is now compatible with docker-compose in addition to podman-compose. pulp-api and pulp-content are now also scalable, even at runtime, in docker-compose. The ability to access pulp-content and pulp-api at host ports 24816 and 24817 has been removed in order to implement this, access them via the nginx webserver at port 8080 instead.

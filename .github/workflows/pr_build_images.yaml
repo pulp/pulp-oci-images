@@ -78,8 +78,8 @@ jobs:
       - name: Compose up
         run: |
           cd images/compose
-          sed -i "s/pulp-minimal:latest/${{ matrix.test_image }}:latest/g" podman-compose.yml
-          sed -i "s/pulp\/pulp-web/quay.io\/pulp\/pulp-web/g" podman-compose.yml
+          sed -i "s/pulp-minimal:latest/${{ matrix.test_image }}:latest/g" docker-compose.yml
+          sed -i "s/pulp\/pulp-web/quay.io\/pulp\/pulp-web/g" docker-compose.yml
           sudo usermod -G root $(whoami)
           podman-compose up -d
           sleep 30

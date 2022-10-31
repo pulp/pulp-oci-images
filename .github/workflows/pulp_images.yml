@@ -48,8 +48,8 @@ jobs:
       - name: Compose up
         run: |
           cd images/compose
-          sed -i "s/pulp-minimal:latest/pulp-minimal:${{ matrix.image_tag }}/g" podman-compose.yml
-          sed -i "s/pulp-web:latest/pulp-web:${{ matrix.image_tag }}/g" podman-compose.yml
+          sed -i "s/pulp-minimal:latest/pulp-minimal:${{ matrix.image_tag }}/g" docker-compose.yml
+          sed -i "s/pulp-web:latest/pulp-web:${{ matrix.image_tag }}/g" docker-compose.yml
           sudo usermod -G root $(whoami)
           podman-compose up -d
           sleep 30
@@ -228,8 +228,8 @@ jobs:
       - name: Compose up
         run: |
           cd images/compose
-          sed -i "s/pulp-minimal:latest/galaxy-minimal:${{ matrix.image_tag }}/g" podman-compose.yml
-          sed -i "s/pulp-web:latest/galaxy-web:${{ matrix.image_tag }}/g" podman-compose.yml
+          sed -i "s/pulp-minimal:latest/galaxy-minimal:${{ matrix.image_tag }}/g" docker-compose.yml
+          sed -i "s/pulp-web:latest/galaxy-web:${{ matrix.image_tag }}/g" docker-compose.yml
           sudo usermod -G root $(whoami)
           podman-compose up -d
           sleep 30
