@@ -29,7 +29,6 @@ theme:
 nav:
   - Home: index.md
   - Images: images.md
-  - S6 Images: s6_images.md
   - Changelog: CHANGES.md
 markdown_extensions:
   - toc:
