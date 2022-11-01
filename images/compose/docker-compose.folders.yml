@@ -1,0 +1,93 @@
+version: '3'
+services:
+  postgres:
+    image: "docker.io/library/postgres:13"
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: pulp
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: pulp
+      POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256'
+      POSTGRES_HOST_AUTH_METHOD: 'scram-sha-256'
+    volumes:
+      - "../../pgsql:/var/lib/postgresql/data:z"
+
+  redis:
+    image: "docker.io/library/redis:latest"
+    volumes:
+      - "redis_data:/data"
+
+  pulp_web:
+    image: "pulp/pulp-web:latest"
+    command: ['/usr/bin/nginx.sh']
+    depends_on:
+      - postgres
+      - pulp_api
+      - pulp_content
+    ports:
+      - "8080:8080"
+    hostname: pulp
+    user: root
+    volumes:
+      - "./assets/bin/nginx.sh:/usr/bin/nginx.sh:z"
+      - "./assets/nginx/nginx.conf.template:/etc/opt/rh/rh-nginx116/nginx/nginx.conf.template:z"
+
+  pulp_api:
+    image: "pulp/pulp-minimal:latest"
+    deploy:
+      replicas: 2
+    command: ['pulp-api']
+    depends_on:
+      - redis
+      - postgres
+    hostname: pulp-api
+    user: pulp
+    volumes:
+      - "./assets/settings.py:/etc/pulp/settings.py:z"
+      - "./assets/certs:/etc/pulp/certs:z"
+      - "../../pulp_storage:/var/lib/pulp:z"
+    environment:
+      POSTGRES_SERVICE_PORT: 5432
+      POSTGRES_SERVICE_HOST: postgres
+      PULP_ADMIN_PASSWORD: password
+
+  pulp_content:
+    image: "pulp/pulp-minimal:latest"
+    deploy:
+      replicas: 2
+    command: ['pulp-content']
+    depends_on:
+      - redis
+      - postgres
+    hostname: pulp-content
+    user: pulp
+    volumes:
+      - "./assets/settings.py:/etc/pulp/settings.py:z"
+      - "./assets/certs:/etc/pulp/certs:z"
+      - "../../pulp_storage:/var/lib/pulp:z"
+    environment:
+      POSTGRES_SERVICE_PORT: 5432
+      POSTGRES_SERVICE_HOST: postgres
+
+  pulp_worker:
+    image: "pulp/pulp-minimal:latest"
+    deploy:
+        replicas: 2
+    command: ['pulp-worker']
+    depends_on:
+      - redis
+      - postgres
+    hostname: pulp-worker
+    user: pulp
+    volumes:
+      - "./assets/settings.py:/etc/pulp/settings.py:z"
+      - "./assets/certs:/etc/pulp/certs:z"
+      - "../../pulp_storage:/var/lib/pulp:z"
+    environment:
+      POSTGRES_SERVICE_PORT: 5432
+      POSTGRES_SERVICE_HOST: postgres
+
+volumes:
+  redis_data:
+    name: redis_data${DEV_VOLUME_SUFFIX:-dev}
