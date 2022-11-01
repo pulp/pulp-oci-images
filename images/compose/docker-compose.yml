@@ -20,6 +20,7 @@ services:
 
   pulp_web:
     image: "pulp/pulp-web:latest"
+    command: ['/usr/bin/nginx.sh']
     depends_on:
       - postgres
       - pulp_api
@@ -29,18 +30,19 @@ services:
     hostname: pulp
     user: root
     volumes:
-      - "./assets/nginx/nginx.conf:/etc/opt/rh/rh-nginx116/nginx/nginx.conf:z"
+      - "./assets/bin/nginx.sh:/usr/bin/nginx.sh:z"
+      - "./assets/nginx/nginx.conf.template:/etc/opt/rh/rh-nginx116/nginx/nginx.conf.template:z"
 
   pulp_api:
     image: "pulp/pulp-minimal:latest"
-    ports:
-      - "24817:24817"
+    deploy:
+      replicas: 2
     command: ['pulp-api']
     depends_on:
       - redis
       - postgres
     hostname: pulp-api
-    user: 700
+    user: pulp
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
@@ -52,14 +54,14 @@ services:
 
   pulp_content:
     image: "pulp/pulp-minimal:latest"
-    ports:
-      - "24816:24816"
+    deploy:
+      replicas: 2
     command: ['pulp-content']
     depends_on:
       - redis
       - postgres
     hostname: pulp-content
-    user: 700
+    user: pulp
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
@@ -77,7 +79,7 @@ services:
       - redis
       - postgres
     hostname: pulp-worker
-    user: 700
+    user: pulp
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"

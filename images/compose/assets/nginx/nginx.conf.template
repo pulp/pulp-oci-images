@@ -16,16 +16,15 @@ http {
     # to build optimal hash types.
     types_hash_max_size 4096;
 
-    upstream pulp-content {
-        server pulp_content:24816;
-    }
-
-    upstream pulp-api {
-        server pulp_api:24817;
-    }
-
-
     server {
+        # This logic enables us to have multiple servers, and check to see
+        # if they are scaled every 10 seconds.
+        # https://www.nginx.com/blog/dns-service-discovery-nginx-plus#domain-name-variable
+        # https://serverfault.com/a/821625/189494
+        resolver $NAMESERVER valid=10s;
+        set $pulp_api pulp_api;
+        set $pulp_content pulp_content;
+
         # Gunicorn docs suggest the use of the "deferred" directive on Linux.
         listen 8080 default_server deferred;
         listen [::]:8080 default_server deferred;
@@ -51,7 +50,7 @@ http {
             # we don't want nginx trying to do something clever with
             # redirects, we set the Host: header above already.
             proxy_redirect off;
-            proxy_pass http://pulp-content;
+            proxy_pass http://$pulp_content:24816;
         }
 
         location /pulp/api/v3/ {
@@ -61,7 +60,7 @@ http {
             # we don't want nginx trying to do something clever with
             # redirects, we set the Host: header above already.
             proxy_redirect off;
-            proxy_pass http://pulp-api;
+            proxy_pass http://$pulp_api:24817;
         }
 
         location /auth/login/ {
@@ -71,7 +70,7 @@ http {
             # we don't want nginx trying to do something clever with
             # redirects, we set the Host: header above already.
             proxy_redirect off;
-            proxy_pass http://pulp-api;
+            proxy_pass http://$pulp_api:24817;
         }
 
         include /opt/app-root/etc/nginx.default.d/*.conf;
@@ -83,7 +82,7 @@ http {
             # we don't want nginx trying to do something clever with
             # redirects, we set the Host: header above already.
             proxy_redirect off;
-            proxy_pass http://pulp-api;
+            proxy_pass http://$pulp_api:24817;
             # static files are served through whitenoise - http://whitenoise.evans.io/en/stable/
         }
     }

@@ -11,3 +11,13 @@ git clone git@github.com:pulp/pulp-oci-images.git
 cd images/compose
 podman-compose up
 ```
+
+or:
+
+```shell
+pip install docker-compose
+git clone git@github.com:pulp/pulp-oci-images.git
+cd images/compose
+docker-compose up
+docker-compose scale pulp_api=4 pulp_content=4
+```
