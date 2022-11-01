@@ -16,10 +16,11 @@ ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=1
 # https://github.com/just-containers/s6-overlay/issues/467
 ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0
 
-RUN dnf -y module enable postgresql:12 && \
+RUN dnf -y module enable postgresql:13 && \
     dnf -y install postgresql && \
     dnf -y install postgresql-contrib && \
     dnf -y install postgresql-server && \
+    dnf -y install postgresql-upgrade && \
     dnf -y install nginx && \
     dnf -y install redis && \
     dnf clean all

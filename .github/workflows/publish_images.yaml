@@ -97,12 +97,12 @@ jobs:
           podman stop pulp
           podman rm pulp
         shell: bash
-      - name: Compose up
+      - name: Compose up (pulp)
         run: |
           cd images/compose
           sed -i "s/pulp-minimal:latest/pulp:${VERSION}/g" docker-compose.yml
           sed -i "s/pulp\/pulp-web/quay.io\/pulp\/pulp-web/g" docker-compose.yml
-          sudo usermod -G root $(whoami)
+          id | grep "(root)" || sudo usermod -G root $(whoami)
           podman-compose up -d
           sleep 30
           for _ in $(seq 20)
@@ -116,7 +116,6 @@ jobs:
           curl --fail http://localhost:8080/pulp/api/v3/status/ | jq
         shell: bash
       - name: Test all components (pulp)
-        if: matrix.test_type == 'pulp'
         run: |
           git clone --depth=1 https://github.com/pulp/pulp_ansible.git
           git clone --depth=1 https://github.com/pulp/pulp_container.git
@@ -124,8 +123,28 @@ jobs:
         shell: bash
         env:
           PY_COLORS: '1'
+      - name: Reset docker-compose environment
+        run: |
+          podman-compose down -v
+          git checkout docker-compose.yml
+      - name: Compose up (galaxy)
+        run: |
+          cd images/compose
+          sed -i "s/pulp-minimal:latest/pulp-galaxy-ng:${VERSION}/g" docker-compose.yml
+          sed -i "s/pulp\/pulp-web/pulp\/galaxy-web/g" docker-compose.yml
+          id | grep "(root)" || sudo usermod -G root $(whoami)
+          podman-compose up -d
+          sleep 30
+          for _ in $(seq 20)
+          do
+            sleep 3
+            if curl --fail http://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1
+            then
+              break
+            fi
+          done
+          curl --fail http://localhost:8080/pulp/api/v3/status/ | jq
       - name: Test all components (galaxy)
-        if: matrix.test_type == 'pulp_galaxy_ng'
         run: |
           .ci/scripts/galaxy_ng-tests.sh
         shell: bash
@@ -176,9 +195,12 @@ jobs:
             # Let this be the last thing so it can indicate failure without breaking anything else
             podman push quay.io/pulp/pulp:nightly
           fi
-      - name: Display log on error
-        if: failure()
-        run: podman logs pulp
+      - name: Display log
+        if: always()
+        run: |
+          podman logs pulp || true
+          cd images/compose
+          podman-compose logs
 
   s6-ssl-publish:
     runs-on: ubuntu-latest

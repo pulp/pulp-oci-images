@@ -49,10 +49,12 @@ jobs:
             ci_image: pulp-ci-centos
             test_type: pulp_galaxy_ng
             test_image: pulp-galaxy-ng
+            web_image: galaxy-web
           - ci_type: pulp_ci_centos
             ci_image: pulp-ci-centos
             test_type: pulp
             test_image: pulp
+            web_image: pulp-web
     steps:
       - uses: actions/checkout@v2
       - name: Install httpie and podman-compose
@@ -70,7 +72,15 @@ jobs:
           podman build --file images/Containerfile.core.base --tag pulp/base:latest .
           podman build --file images/${{ matrix.ci_type }}/Containerfile --tag pulp/${{ matrix.ci_image }}:latest .
           podman build --file images/${{ matrix.test_type }}/Containerfile --tag pulp/${{ matrix.test_image }}:latest .
-      - name: Test the images in s6 mode
+      - name: Test upgrading to the image in s6 mode
+        if: matrix.test_image == 'pulp'
+        run: |
+          # 3.20 has postgres 12 rather than 13
+          images/s6_assets/test.sh "pulp/${{ matrix.test_image }}:latest" http "quay.io/pulp/all-in-one-pulp:3.20"
+          podman stop pulp
+          podman rm pulp
+      - name: Test the image in s6 mode
+        if: matrix.test_image != 'pulp'
         run: |
           images/s6_assets/test.sh "pulp/${{ matrix.test_image }}:latest"
           podman stop pulp
@@ -78,10 +88,10 @@ jobs:
       - name: Compose up
         run: |
           cd images/compose
-          sed -i "s/pulp-minimal:latest/${{ matrix.test_image }}:latest/g" docker-compose.yml
-          sed -i "s/pulp\/pulp-web/quay.io\/pulp\/pulp-web/g" docker-compose.yml
-          sudo usermod -G root $(whoami)
-          podman-compose up -d
+          sed -i "s/pulp-minimal:latest/${{ matrix.test_image }}:latest/g" docker-compose.folders.yml
+          sed -i "s/pulp\/pulp-web/pulp\/${{ matrix.web_image }}/g" docker-compose.folders.yml
+          id | grep "(root)" || sudo usermod -G root $(whoami)
+          podman-compose -f docker-compose.folders.yml up -d
           sleep 30
           for _ in $(seq 20)
           do
@@ -109,9 +119,12 @@ jobs:
         shell: bash
         env:
           PY_COLORS: '1'
-      - name: Display log on error
-        if: failure()
-        run: podman logs pulp
+      - name: Display logs
+        if: always()
+        run: |
+          podman logs pulp || true
+          cd images/compose
+          podman-compose logs
 
   s6-ssl-images:
     runs-on: ubuntu-latest
