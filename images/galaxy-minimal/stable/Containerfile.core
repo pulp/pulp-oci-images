@@ -7,3 +7,6 @@ RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
     /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link && \
     chown -R 700 /var/lib/operator/static/
 USER root:root
+
+RUN chmod 2775 /var/lib/pulp/{scripts,media,tmp,assets}
+RUN chown :root /var/lib/pulp/{scripts,media,tmp,assets}
