@@ -10,45 +10,62 @@ cleanup() {
 }
 trap cleanup EXIT
 
+start_container_and_wait() {
+  podman run --detach \
+             --publish 8080:$port \
+             --name pulp \
+             --volume "$(pwd)/settings":/etc/pulp:Z \
+             --volume "$(pwd)/pulp_storage":/var/lib/pulp:Z \
+             --volume "$(pwd)/pgsql":/var/lib/pgsql:Z \
+             --volume "$(pwd)/containers":/var/lib/containers:Z \
+             --device /dev/fuse \
+             -e PULP_DEFAULT_ADMIN_PASSWORD=password \
+             "$1"
+  sleep 10
+  for _ in $(seq 30)
+  do
+    sleep 3
+    if curl --insecure --fail $scheme://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1
+    then
+      break
+    fi
+  done
+  set -x
+  curl --insecure --fail $scheme://localhost:8080/pulp/api/v3/status/ | jq
+}
+
 
 image=${1:-pulp/pulp:latest}
 scheme=${2:-http}
+old_image=${3:-""}
 if [[ "$scheme" == "http" ]]; then
   port=80
 else
   port=443
 fi
 
-mkdir settings pulp_storage containers
+mkdir -p settings pulp_storage pgsql containers
 echo "CONTENT_ORIGIN='$scheme://localhost:8080'" >> settings/settings.py
 echo "ALLOWED_EXPORT_PATHS = ['/tmp']" >> settings/settings.py
 echo "ORPHAN_PROTECTION_TIME = 0" >> settings/settings.py
-podman run --detach \
-           --publish 8080:$port \
-           --name pulp \
-           --volume "$(pwd)/settings":/etc/pulp:Z \
-           --volume "$(pwd)/pulp_storage":/var/lib/pulp:Z \
-           --volume "$(pwd)/containers":/var/lib/containers:Z \
-           --device /dev/fuse \
-           -e PULP_DEFAULT_ADMIN_PASSWORD=password \
-           "$image"
-sleep 10
-for _ in $(seq 30)
-do
-  sleep 3
-  if curl --insecure --fail $scheme://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1
-  then
-    break
-  fi
-done
-set -x
-curl --insecure --fail $scheme://localhost:8080/pulp/api/v3/status/ | jq
+
+if [ "$old_image" != "" ]; then
+  start_container_and_wait $old_image
+  podman rm -f pulp
+fi
+start_container_and_wait $image
 
 if [[ ${image} != *"galaxy"* ]];then
   curl --insecure --fail $scheme://localhost:8080/assets/rest_framework/js/default.js
-  echo 127.0.0.1   pulp | sudo tee -a /etc/hosts
-  git clone --depth=1 https://github.com/pulp/pulp-cli.git
-  cd pulp-cli
+  grep "127.0.0.1   pulp" /etc/hosts || echo "127.0.0.1   pulp" | sudo tee -a /etc/hosts
+  if [ -d pulp-cli ]; then
+    cd pulp-cli
+    git fetch origin
+    git reset --hard origin/main
+  else
+    git clone --depth=1 https://github.com/pulp/pulp-cli.git
+    cd pulp-cli
+  fi
   pip install -r test_requirements.txt
   pip install -e .
   pulp config create --base-url $scheme://pulp:8080 --username "admin" --password "password" --location tests/cli.toml

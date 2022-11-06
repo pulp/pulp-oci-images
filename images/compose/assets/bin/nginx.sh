@@ -6,7 +6,14 @@
 
 set -e
 
-export NAMESERVER=`cat /etc/resolv.conf | grep "nameserver" | awk '{print $2}' | tr '\n' ' '`
+if [ "$container" != "podman" ]; then
+  # the nameserver list under podman is unreliable.
+  # It will look like "10.89.1.1 192.168.1.1 192.168.1.1", but only the 1st IP works.
+  # This doesn't mess up `nslookup`, but it messes up `getent hosts` and nginx.
+  export NAMESERVER=`cat /etc/resolv.conf | grep "nameserver" | awk '{print $2}' | head -n1`
+else
+  export NAMESERVER=`cat /etc/resolv.conf | grep "nameserver" | awk '{print $2}' | tr '\n' ' '`
+fi
 
 echo "Nameserver is: $NAMESERVER"
 

@@ -11,7 +11,8 @@ services:
       POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256'
       POSTGRES_HOST_AUTH_METHOD: 'scram-sha-256'
     volumes:
-      - "../../pgsql:/var/lib/postgresql/data:z"
+      - "../../pgsql:/var/lib/postgresql:Z"
+      - "./assets/postgres/passwd:/etc/passwd:Z"
 
   redis:
     image: "docker.io/library/redis:latest"
@@ -30,8 +31,8 @@ services:
     hostname: pulp
     user: root
     volumes:
-      - "./assets/bin/nginx.sh:/usr/bin/nginx.sh:z"
-      - "./assets/nginx/nginx.conf.template:/etc/opt/rh/rh-nginx116/nginx/nginx.conf.template:z"
+      - "./assets/bin/nginx.sh:/usr/bin/nginx.sh:Z"
+      - "./assets/nginx/nginx.conf.template:/etc/opt/rh/rh-nginx116/nginx/nginx.conf.template:Z"
 
   pulp_api:
     image: "pulp/pulp-minimal:latest"

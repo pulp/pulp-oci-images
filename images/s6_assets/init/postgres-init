@@ -13,16 +13,34 @@ export C035="\e[35m"
 export C036="\e[36m"
 export C037="\e[37m"
 
-PGVERSION=$(postgres --version | egrep -o "[0-9]{1,}\.[0-9]{1,}")
+PGVERSION=$(postgres --version | egrep -o "1[0-9]")
 PGHOME="/var/lib/pgsql"
 PGDATA="${PGHOME}/data"
+PGDATA_OLD="${PGHOME}/data_old"
+PGDATA_OLD_RENAMED="${PGHOME}/data_old.$(date --rfc-3339=seconds)"
 
 if [ -d "${PGDATA}/base" -a -f "${PGDATA}/PG_VERSION" ]; then
   PGDATA_VERSION=$(cat "${PGDATA}/PG_VERSION")
-  if [ "${PGDATA_VERSION}" = "${PGVERSION}" ]; then
+  if [ "${PGDATA_VERSION}" != "${PGVERSION}" ]; then
+    echo -e "${PREFIX} ${ORANGE} Postgresql database exists but will be upgraded from ${PGDATA_VERSION} to ${PGVERSION}${ENDCOLOR}"
+    if [ -d ${PGDATA_OLD} ]; then
+      echo -e "${PREFIX} ${ORANGE} Renaming ${PGDATA_OLD} ${PGDATA_OLD} to ${PGDATA_OLD_RENAMED}${ENDCOLOR}"
+      mv ${PGDATA_OLD} "${PGDATA_OLD_RENAMED}"
+    fi
 
-    echo -e "${PREFIX} ${RED}${PGDATA} exists but needs upgrade ${PGDATA_VERSION} != ${PGVERSION}${ENDCOLOR}"
-    exit 200
+    # We have to check the encoding and the locale because pulp/pulp-oci-images #307 (1da694c) means it may differ.
+    # In order to check the encoding and the locale, we have to start the postgresql server,
+    # and we have to do so with the v12 binaries from the "postgresql-upgrade" RPM package.
+    # (We only support upgrading from v12 because that's all that the pulp single (s6) container has ever used previously.)
+    # This particular command `pg_ctl start` does not block.
+    su postgres -c "/usr/lib64/pgsql/postgresql-12/bin/pg_ctl start -D ${PGDATA}"
+    # The v12 binary listens on a non-standard socket under /tmp. So let's just use localhost (IP) instead.
+    ENCODING=$(su postgres -c "psql --host=localhost postgres -t -c 'SHOW server_encoding' | xargs")
+    LOCALE=$(su postgres -c "psql --host=localhost postgres -t -c 'SHOW lc_collate' | xargs")
+    su postgres -c "/usr/lib64/pgsql/postgresql-12/bin/pg_ctl stop -D ${PGDATA}"
+
+    echo -e "${PREFIX} ${ORANGE}PGSETUP_INITDB_OPTIONS=\"-E ${ENCODING} --locale=${LOCALE} --auth=trust\" postgresql-upgrade ${PGDATA}${ENDCOLOR}"
+    su postgres -c "PGSETUP_INITDB_OPTIONS=\"-E ${ENCODING} --locale=${LOCALE} --auth=trust\" postgresql-upgrade ${PGDATA}" || { echo -e "${PREFIX} ${RED} Failed to upgrade the postgresql database${ENDCOLOR}" ; exit 1; }
   fi
 else
   echo -e "${PREFIX} ${GREEN}initdb -E UTF8 --locale=C.UTF-8 --pgdata ${PGDATA}${ENDCOLOR}"

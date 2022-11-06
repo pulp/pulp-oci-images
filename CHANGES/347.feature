@@ -1,0 +1,1 @@
+Make the data dirs compatible between compose and single container. Implementation includes: 1. single container gets upgraded to postgres 13, and performs the upgrade logic. 2. compose runs postgres as uid/gid 26.
