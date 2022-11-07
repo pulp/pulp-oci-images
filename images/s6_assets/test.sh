@@ -66,8 +66,7 @@ if [[ ${image} != *"galaxy"* ]];then
     git clone --depth=1 https://github.com/pulp/pulp-cli.git
     cd pulp-cli
   fi
-  pip install -r test_requirements.txt
-  pip install -e .
+  pip install -r test_requirements.txt || pip install --no-build-isolation -r test_requirements.txt
   pulp config create --base-url $scheme://pulp:8080 --username "admin" --password "password" --location tests/cli.toml
   if [[ "$scheme" == "https" ]];then
     podman cp pulp:/etc/pulp/certs/pulp_webserver.crt /tmp/pulp_webserver.crt
