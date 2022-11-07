@@ -105,8 +105,8 @@ jobs:
           podman logs --tail=10000 compose_pulp_worker_2
           podman logs --tail=10000 compose_pulp_web_1
           VOLUME_PATH=$(podman volume inspect pulpdev | jq -r .[].Mountpoint)
-          ls -al $VOLUME_PATH
-          tree $VOLUME_PATH
+          sudo ls -al $VOLUME_PATH
+          sudo tree $VOLUME_PATH
           http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true
   galaxy:
     runs-on: ubuntu-latest
@@ -197,6 +197,6 @@ jobs:
           podman logs --tail=10000 compose_pulp_worker_2
           podman logs --tail=10000 compose_pulp_web_1
           VOLUME_PATH=$(podman volume inspect pulpdev | jq -r .[].Mountpoint)
-          ls -al $VOLUME_PATH
-          tree $VOLUME_PATH
+          sudo ls -al $VOLUME_PATH
+          sudo tree $VOLUME_PATH
           http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true
