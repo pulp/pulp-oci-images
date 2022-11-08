@@ -125,6 +125,7 @@ jobs:
           PY_COLORS: '1'
       - name: Reset docker-compose environment
         run: |
+          cd images/compose
           podman-compose down -v
           git checkout docker-compose.yml
       - name: Compose up (galaxy)
