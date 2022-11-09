@@ -8,3 +8,11 @@ RUN pip install pulpcore \
   pulp_file \
   pulp_python \
   pulp_rpm
+
+USER pulp:pulp
+RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
+  /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link
+USER root:root
+
+RUN chmod 2775 /var/lib/pulp/{scripts,media,tmp,assets}
+RUN chown :root /var/lib/pulp/{scripts,media,tmp,assets}
