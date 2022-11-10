@@ -41,9 +41,10 @@ jobs:
         run: |
           podman version
           buildah version
-          podman build --file images/Containerfile.core.base --tag pulp/base:latest .
-          podman build --pull=false --file images/pulp-minimal/${{ matrix.image_tag }}/Containerfile.core --tag pulp/pulp-minimal:${{ matrix.image_tag }} .
-          podman build --pull=false --file images/pulp-minimal/${{ matrix.image_tag }}/Containerfile.webserver --tag pulp/pulp-web:${{ matrix.image_tag }} .
+          sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --file images/Containerfile.core.base --tag pulp/base:latest .
+          podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --pull=false --file images/pulp-minimal/${{ matrix.image_tag }}/Containerfile.core --tag pulp/pulp-minimal:${{ matrix.image_tag }} .
+          podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --pull=false --file images/pulp-minimal/${{ matrix.image_tag }}/Containerfile.webserver --tag pulp/pulp-web:${{ matrix.image_tag }} .
           podman images -a
       - name: Compose up
         run: |
@@ -217,10 +218,11 @@ jobs:
         run: |
           podman version
           buildah version
-          podman build --file images/Containerfile.core.base --tag pulp/base:latest .
-          podman build --pull=false --file images/galaxy-minimal/${{ matrix.image_tag }}/Containerfile.core --tag pulp/galaxy-minimal:${{ matrix.image_tag }} .
+          sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --file images/Containerfile.core.base --tag pulp/base:latest .
+          podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --pull=false --file images/galaxy-minimal/${{ matrix.image_tag }}/Containerfile.core --tag pulp/galaxy-minimal:${{ matrix.image_tag }} .
           podman tag pulp/galaxy-minimal:${{ matrix.image_tag }} pulp/galaxy:${{ matrix.image_tag }}
-          podman build --pull=false --file images/galaxy-minimal/${{ matrix.image_tag }}/Containerfile.webserver --tag pulp/galaxy-web:${{ matrix.image_tag }} .
+          podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --pull=false --file images/galaxy-minimal/${{ matrix.image_tag }}/Containerfile.webserver --tag pulp/galaxy-web:${{ matrix.image_tag }} .
           podman images -a
       - name: Compose up
         run: |
