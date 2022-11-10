@@ -58,15 +58,16 @@ jobs:
         run: |
           # In order to maintain compatibility with the old "pulp-minimal" images,
           # which on some registries were "pulp", we label "pulp:latest" as "pulp:stable".
+          sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
-          podman build --file images/Containerfile.core.base --tag pulp/base:latest .
+          podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --file images/Containerfile.core.base --tag pulp/base:latest .
 
-          podman build --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
+          podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
           podman tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:latest
           podman tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:latest
           podman tag pulp/pulp-ci-centos:latest docker.io/pulp/pulp-ci-centos:latest
 
-          podman build --file images/pulp/Containerfile --tag pulp/pulp:$VERSION .
+          podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --file images/pulp/Containerfile --tag pulp/pulp:$VERSION .
           podman tag pulp/pulp:$VERSION ghcr.io/pulp/pulp:$VERSION
           podman tag pulp/pulp:$VERSION quay.io/pulp/pulp:$VERSION
           podman tag pulp/pulp:$VERSION docker.io/pulp/pulp:$VERSION
@@ -75,13 +76,13 @@ jobs:
             podman tag pulp/pulp:latest quay.io/pulp/pulp:stable
             podman tag pulp/pulp:latest docker.io/pulp/pulp:stable
 
-            podman build --file images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+            podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --file images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
             podman tag pulp/pulp-galaxy-ng:latest ghcr.io/pulp/pulp-galaxy-ng:latest
             podman tag pulp/pulp-galaxy-ng:latest quay.io/pulp/pulp-galaxy-ng:latest
             podman tag pulp/pulp-galaxy-ng:latest docker.io/pulp/pulp-galaxy-ng:latest
 
             # Be resilient if this fails
-            podman build --file images/pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
+            podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --file images/pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
             podman tag pulp/pulp:nightly ghcr.io/pulp/pulp:nightly || true
             podman tag pulp/pulp:nightly quay.io/pulp/pulp:nightly || true
             podman tag pulp/pulp:nightly docker.io/pulp/pulp:nightly || true
