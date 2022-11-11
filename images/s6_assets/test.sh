@@ -27,7 +27,12 @@ start_container_and_wait() {
     sleep 3
     if curl --insecure --fail $scheme://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1
     then
-      break
+      # We test it a 2nd time because otherwise there could be an error like:
+      # curl: (35) OpenSSL SSL_connect: Connection reset by peer in connection to localhost:8080
+      if curl --insecure --fail $scheme://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1
+      then
+        break
+      fi
     fi
   done
   set -x
