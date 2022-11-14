@@ -1,6 +1,6 @@
 ---
 site_name: Pulp OCI Images
-site_description: Pulp Single Container
+site_description: Pulp Containers
 site_author: Pulp Team
 site_url: https://docs.pulpproject.org/pulp_oci_images/
 repo_name: pulp/pulp-oci-images
@@ -28,7 +28,9 @@ theme:
         name: Switch to light mode
 nav:
   - Home: index.md
-  - Images: images.md
+  - Multi-Process Images: multi-process-images.md
+  - Single-Process Images: single-process-images.md
+  - Developer Instructions: developer-instructions.md
   - Changelog: CHANGES.md
 markdown_extensions:
   - toc:

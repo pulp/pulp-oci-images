@@ -1,15 +1,14 @@
 # Pulp 3 Containers
 
-This directory contains assets and tooling for building a variety of Pulp 3 related container images.
-
-For instructions how to run and use:
-
-- [Images](https://docs.pulpproject.org/pulp_oci_images/images/) to install Pulp 3's [first-party services](#first-party-services)
-- [S6 images](https://docs.pulpproject.org/pulp_oci_images/s6_images/) to install Pulp 3's first & [third-party services](#third-party-services)
+- [Multi-Process Images](multi-process-images) - A single image that runs [Pulp](https://github.com/pulp/pulpcore) or [Galaxy](https://github.com/ansible/galaxy_ng), as well as its third-party
+services (nginx, postgresql and redis), in one single Docker/Podman container.
+- [Single-Process Images](single-process-images) - These images are currently used by [pulp operator](https://docs.pulpproject.org/pulp_operator/), but they can be used in docker-compose or podman-compose. You can find a compose example [here](https://github.com/pulp/pulp-oci-images/tree/latest/images/compose).
 
 ### First-Party Services
 
 The first-party services are services written by the Pulp project itself.
+
+They are pulp-api, pulp-content, and pulp-worker.
 
 ### Third-Party Services
 
