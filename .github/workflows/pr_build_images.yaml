@@ -69,10 +69,9 @@ jobs:
         shell: bash
       - name: Build the images
         run: |
-          sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
-          podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --file images/Containerfile.core.base --tag pulp/base:latest .
-          podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --file images/${{ matrix.ci_type }}/Containerfile --tag pulp/${{ matrix.ci_image }}:latest .
-          podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --file images/${{ matrix.test_type }}/Containerfile --tag pulp/${{ matrix.test_image }}:latest .
+          podman build --file images/Containerfile.core.base --tag pulp/base:latest .
+          podman build --file images/${{ matrix.ci_type }}/Containerfile --tag pulp/${{ matrix.ci_image }}:latest .
+          podman build --file images/${{ matrix.test_type }}/Containerfile --tag pulp/${{ matrix.test_image }}:latest .
       - name: Test upgrading to the image in s6 mode
         if: matrix.test_image == 'pulp'
         run: |
