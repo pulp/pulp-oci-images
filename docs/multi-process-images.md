@@ -1,28 +1,24 @@
 # Multi-Process Images
 
-For a quick start guide on how to run and use these containers, see [Pulp in One Container](https://pulpproject.org/pulp-in-one-container/).
+These images are also known as "Single Container", or "Pulp in One Container".
 
-For more detailed instructions, see the [PULP OCI Images
-docs](https://docs.pulpproject.org/pulp_oci_images/).
+Each image runs all 3 Pulp services (pulp-api, pulp-content and pulp-worker),
+as well as Pulp's third-party services (nginx, postgresql and redis),
+in one single container.
 
-## pulp
+## System Requirements
 
-A single [Pulp](https://github.com/pulp/pulpcore) image that runs Pulp, as well as its third-party
-services (nginx, postgresql and redis), in one single Docker/Podman container.
+Either [podman](https://podman.io/getting-started/installation) or
+[docker](https://docs.docker.com/engine/install/)/[moby-engine](https://mobyproject.org/)
+must be installed.
 
-To run all the services, you do not need to specify a container command ("CMD"). The default CMD is:
+Podman has been tested at versions as low as 1.6.4, which is available on CentOS/RHEL 7 and later.
 
-- **/init** - The [s6 service manager](https://github.com/just-containers/s6-overlay) that runs all the services.
+## Available images
 
-The image can also function the same as the Single-Process image ["pulp-minimal"](#pulp-minimal). Specifically, the image can also be run as as each of the following individual services, specified as the container command ("CMD").
+### pulp
 
-- **pulp-api** - serves the Pulp(v3) API. The number of instances of this service should be scaled as demand requires.  _Administrators and users of all of the APIs put demand on this service_. If pulp_ansible, pulp_container or pulp_python are in use, _Content consumers also put demand on this service_.
-
-- **pulp-content** - serves content to clients. pulpcore-api redirects clients to pulpcore-content to download content. When content is being mirrored from a remote source, this service can download that content and stream it to the client the first time the content is requested. The number of instances of this service should be scaled as demand requires. _Content consumers put demand on this service_.
-
-- **pulp-worker** - performs syncing, importing of content, and other asynchronous operations that require resource locking. The number of instances of this service should be scaled as demand requires. _Administrators and content importers put demand on this service_.
-
-Currently built with the following plugins:
+This image contains [Pulp](https://github.com/pulp/pulpcore) and the following plugins currently:
 
 - [pulp_ansible](https://docs.pulpproject.org/pulp_ansible/)
 - [pulp-certguard](https://docs.pulpproject.org/pulp_certguard/)
@@ -33,7 +29,9 @@ Currently built with the following plugins:
 - [pulp_python](https://docs.pulpproject.org/pulp_python/)
 - [pulp_rpm](https://docs.pulpproject.org/pulp_rpm/)
 
-### Tags
+This image can also function the same as the single-process image `pulp-minimal`. See the [Single-Process Images](single-process-images) page for usage.
+
+#### Tags
 
 - `stable`: Built nightly, with latest released version of each plugin. Also called `latest`.
 - `https`: Built nightly, with latest released version of each plugin. Nginx webserver runs with SSL/TLS.
@@ -43,33 +41,206 @@ Currently built with the following plugins:
 - `3.y-https`:  Pulpcore 3.y version and its compatible plugins. Built whenever there is a z-release. 
   Nginx webserver runs with SSL/TLS.
 
-  [https://quay.io/repository/pulp/pulp?tab=tags](https://quay.io/repository/pulp/pulp?tab=tags)
+[Browse available tags](https://hub.docker.com/r/pulp/pulp/tags)
 
-## pulp-galaxy-ng
+### pulp-galaxy-ng
 
-A single [galaxy](https://github.com/ansible/galaxy_ng) image that runs Pulp as well as its third-party
-services in one single container: nginx, postgresql and redis.
+This image contains Ansible [Galaxy](https://github.com/ansible/galaxy_ng).
 
-To run all the services, you do not need to specify a container command ("CMD"). The default CMD is:
+This image can also function the same as the single-process image `galaxy-minimal`.
+See the [Single-Process Images](single-process-images) page for usage.
 
-- **/init** - The s6 service manager that runs all the services.
-
-The image can also function the same as the Single-Process image ["galaxy-minimal"](#galaxy-minimal). Specifically, the image can also be run as as each of the following individual services, specified as the container command ("CMD").
-
-- **pulp-api** - serves the Pulp(v3) API. The number of instances of this service should be scaled as demand requires. _Content consumers, Administrators and users of all of the APIs put demand on this service_.
-
-- **pulp-content** - serves content to clients. pulpcore-api redirects clients to pulpcore-content to download content. When content is being mirrored from a remote source, this service can download that content and stream it to the client the first time the content is requested. The number of instances of this service should be scaled as demand requires. _Content consumers put demand on this service_.
-
-- **pulp-worker** - performs syncing, importing of content, and other asynchronous operations that require resource locking. The number of instances of this service should be scaled as demand requires. _Administrators and content importers put demand on this service_.
-
-### Tags
+#### Tags
 
 - `stable`: Built nightly, with latest released version of each plugin. Also called `latest`.
 - `https`: Built nightly, with latest released version of each plugin. Nginx webserver runs with SSL/TLS.
 
-[https://quay.io/repository/pulp/pulp-galaxy-ng?tab=tags](https://quay.io/repository/pulp/pulp-galaxy-ng?tab=tags)
+[Browse available tags](https://hub.docker.com/r/pulp/pulp-galaxy-ng/tags)
+
+## Quickstart
+
+### Create the Directories and Settings
+
+1st, create the directories for storage/configuration, and create the `settings.py` file:
+
+```
+$ mkdir settings pulp_storage pgsql containers
+$ echo "CONTENT_ORIGIN='http://$(hostname):8080'
+ANSIBLE_API_HOSTNAME='http://$(hostname):8080'
+ANSIBLE_CONTENT_HOSTNAME='http://$(hostname):8080/pulp/content'
+CACHE_ENABLED=True" >> settings/settings.py
+```
+
+* For a complete list of available settings for `settings.py`, see [the Pulpcore Settings](https://docs.pulpproject.org/pulpcore/configuration/settings.html).
+
+* These 4 directories `settings pulp_storage pgsql containers` must be be preserved. `settings` has your settings, generated certificates, and generated database encrypted fields key. The `pulp_storage pgsql containers` are the application data.
+
+### Starting the Container
+
+For systems with SELinux enabled, use the following command to start Pulp:
+
+```
+$ podman run --detach \
+             --publish 8080:80 \
+             --name pulp \
+             --volume "$(pwd)/settings":/etc/pulp:Z \
+             --volume "$(pwd)/pulp_storage":/var/lib/pulp:Z \
+             --volume "$(pwd)/pgsql":/var/lib/pgsql:Z \
+             --volume "$(pwd)/containers":/var/lib/containers:Z \
+             --device /dev/fuse \
+             pulp/pulp
+```
+
+For systems with SELinux disabled, use the following command to start Pulp:
+
+```
+$ podman run --detach \
+             --publish 8080:80 \
+             --name pulp \
+             --volume "$(pwd)/settings":/etc/pulp \
+             --volume "$(pwd)/pulp_storage":/var/lib/pulp \
+             --volume "$(pwd)/pgsql":/var/lib/pgsql \
+             --volume "$(pwd)/containers":/var/lib/containers \
+             --device /dev/fuse \
+             pulp/pulp
+```
+
+* For Docker systems, use the last 2 command, but substitute `docker` for `podman`.
+
+* These examples use the image `pulp`  with the tag `stable` (AKA `latest`). To use an alternative image and tag like `pulp:3.21`, substitute `pulp/pulp` with `pulp/pulp:3.21`.
+
+* To use https instead of http, substitute the correct image tag like `pulp/pulp:https`. Also change `--publish 8080:80` to `--publish 8080:443`
+
+### Reset the Admin Password
+
+Now, reset the admin user’s password.
+
+```
+$ podman exec -it pulp bash -c 'pulpcore-manager reset-admin-password'
+Please enter new password for user "admin":
+Please enter new password for user "admin" again:
+Successfully set password for "admin" user.
+```
+
+* For Docker systems, substitute `docker` for `podman`.
+
+
+### Test Access
+
+At this point, both the REST API and the content app are available on your host’s port 8080. Try hitting the pulp status endpoint to confirm:
+
+```
+curl localhost:8080/pulp/api/v3/status/
+```
+
+### What to do after the Quickstart
+
+To start working with Pulp, check out the [Workflows and Use Cases](https://docs.pulpproject.org/workflows/index.html). For individual plugin documentation, see [Pulp 3 Content Plugin Documentation](https://pulpproject.org/docs/#pulp-3-content-plugin-documentation).
+
+We recommend using [pulp-cli](https://github.com/pulp/pulp-cli) to interact with Pulp. If you have Python 3 installed on the host OS, you can run these commands to get started:
+
+```
+pip install pulp-cli[pygments]
+pulp config create --username admin --base-url http://localhost:8080 --password <admin password>
+```
+
+## Advanced Usage Instructions
+
+### Available Environment Variables
+
+The following environment variables configure the container's behavior.
+
+* `NUM_WORKERS` An integer that specifies the number of worker processes (which perform syncing, importing of content, and other asynchronous operations that require resource locking.) Defaults to 2.
+
+To add one of them, modify the command you use to start pulp to to include syntax like the following at the beginning: Instead of `podman run`, specify `podman run -e NUM_WORKERS=4`
+
+### Command to specify
+
+To run all the services, you do not need to specify a container command ("CMD"). The default CMD is:
+
+- **/init** - The [s6 service manager](https://github.com/just-containers/s6-overlay) that runs all the services.
+
+## Upgrading
+
+To upgrade to a newer version of Pulp, such as the `latest` image which is published every night, start by running:
+
+```
+podman stop pulp
+podman rm pulp
+```
+
+Then update the image in the local podman/docker cache:
+
+```
+podman pull pulp/pulp
+```
+
+Then repeat the original command in [Starting the Container](#starting-the-container) (with any customizations you added to it.)
+
+
+## Known Issues
+
+### NFS or SSHFS
+
+When using rootless podman, you cannot create the directories (settings pulp_storage pgsql containers) on [NFS](https://github.com/containers/podman/blob/master/rootless.md#shortcomings-of-rootless-podman), SSHFS, or certain other non-standard filesystems.
+
+### Podman on CentOS 7
+
+When using on CentOS 7, container-selinux has a
+limitation. [1](https://github.com/containers/podman/issues/9513)
+[2](https://github.com/containers/podman/issues/6414)
+SELinux denials will prevent Pulp from running. To
+overcome it, you must do one of the following:
+
+* Run the container with "--privileged"
+* Run the container as root
+* Disable SELinux
+
+Additionally, you will likely run into a limit on the number of open files (ulimit) in the
+container.
+One way to overcome this is to add `DefaultLimitNOFILE=65536` to `/etc/systemd/system.conf`.
+
+### Docker on CentOS 7
+
+While using the version of Docker that is provided with CentOS 7, there are known issues that cause the following errors to occur:
+
+* When starting the container:
+
+  `FATAL:  could not create lock file "/var/run/postgresql/.s.PGSQL.5432.lock": No such file or directory`
+
+* (If the preceding error is worked around,) when executing `docker exec -it pulp bash -c 'pulpcore-manager reset-admin-password'`:
+
+  ```
+  psycopg2.OperationalError: could not connect to server: No such file or directory
+        Is the server running locally and accepting
+        connections on Unix domain socket "/var/run/postgresql/.s.PGSQL.5432"?
+  ```
+
+* Pulp tasks are stuck in `waiting` status, and executing `docker exec -it pulp bash -c 'rq info'` returns `0 workers`:
+
+  ```
+  1 queues, 2 jobs total
+
+  0 workers, 1 queues
+  ```
+
+The version of Docker that is provided with CentOS 7 mounts `tmpfs` on `/run`. The Pulp Container recipe uses `/var/run`, which is a symlink to `/run`, and expects its contents to be available at container run time. You can work around this by specifying an additional `/run` volume, which suppresses this behavior of the Docker runtime. Docker will copy the image's contents to that volume and the container should start as expected.
+
+The `/run` volume will need to contain a `postgresql` directory (with permissions that the container's postgresql can write to) and a separate `pulpcore-*` directory for the rq manager and its workers to start:
+
+```console
+$ mkdir -p settings pulp_storage pgsql containers run/postgresql run/pulpcore-{resource-manager,worker-{1,2}}
+$ chmod a+w run/postgresql
+```
+
+### Upgrading from ``pulp/pulp-fedora31`` image
+
+The ``pulp/pulp-fedora31`` container vendored PostgreSQL 11. The ``pulp/pulp`` image vendors PostgreSQL 13, and only automatically upgrades from PostgreSQL 12. To upgrade the database from 11 to 12, refer to [PostgreSQL documentation](https://www.postgresql.org/docs/12/upgrading.html).
+
 
 ## Build instructions
+
+The Container file and all other assets used to build the container image are available on [GitHub](https://github.com/pulp/pulp-oci-images).
 
 ```bash
 $ <docker build | buildah bud> --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
