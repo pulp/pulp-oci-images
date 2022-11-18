@@ -5,10 +5,13 @@ import socket
 import sys
 import time
 
+from requests.packages.urllib3.util.connection import HAS_IPV6
+
 if __name__ == "__main__":
 
     postgres_is_alive = False
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    family = socket.AF_INET6 if HAS_IPV6  else socket.AF_INET
+    s = socket.socket(family, socket.SOCK_STREAM)
     tries = 0
     print("Waiting on postgresql to start...")
     while not postgres_is_alive and tries < 100:
