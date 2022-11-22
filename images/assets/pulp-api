@@ -8,7 +8,6 @@
 # PLUGINS=$(pip list | awk -F '[[:space:]]+|[-]' '/pulp-/{printf $2 " " }')
 
 /usr/local/bin/pulpcore-manager migrate --noinput
-/usr/local/bin/pulpcore-manager migrate auth --noinput
 
 set +x
 
