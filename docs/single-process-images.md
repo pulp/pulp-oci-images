@@ -12,7 +12,11 @@ A single [Pulp](https://github.com/pulp/pulpcore) image that can be run as each 
 
 - **pulp-worker** - performs syncing, importing of content, and other asynchronous operations that require resource locking. The number of instances of this service should be scaled as demand requires. _Administrators and content importers put demand on this service_.
 
-Currently built with the following plugins:
+For complete documentation on how to use this image,
+see the compose example [here](https://github.com/pulp/pulp-oci-images/tree/latest/images/compose).
+It is the reference on how this image can be used to create the 3 services/containers.
+
+pulp-minimal is currently built with the following plugins:
 
 - [pulp_ansible](https://docs.pulpproject.org/pulp_ansible/)
 - [pulp-certguard](https://docs.pulpproject.org/pulp_certguard/)
@@ -35,9 +39,13 @@ Currently built with the following plugins:
 ## pulp-web
 
 An Nginx image based on [centos/nginx-116-centos7](https://hub.docker.com/r/centos/nginx-116-centos7),
-with configuration specific to pulpcore (and all the plugins found in [pulp-minimal](#pulp-minimal).)
+with configuration specific to the plugins found in [pulp-minimal](#pulp-minimal).
 
 No command ("CMD") needs to be specified, the images's built-in command is sufficient.
+
+For complete documentation on how to use this image,
+see the compose example [here](https://github.com/pulp/pulp-oci-images/tree/latest/images/compose).
+It is the reference on how this image can be used.
 
 ### Tags
 
@@ -58,23 +66,35 @@ An single [galaxy](https://github.com/ansible/galaxy_ng) image that can be run a
 
 - **pulp-worker** - performs syncing, importing of content, and other asynchronous operations that require resource locking. The number of instances of this service should be scaled as demand requires. _Administrators and content importers put demand on this service_.
 
+For complete documentation on how to use this image,
+see the compose example [here](https://github.com/pulp/pulp-oci-images/tree/latest/images/compose).
+It is the reference on how this image can be used to create the 3 services/containers.
+(You will have to replace references to "pulp-minimal" and "pulp-web" with "galaxy-minimal"
+and "galaxy-web" respectively.)
+
 ### Tags
 
-- `stable`: Built nightly, with latest released version of galaxy and its dependency plugins.
-- `nightly`: Built nightly, With master/main branches of each plugin.
+- `stable`: Built nightly, with latest released version of galaxy.
+- `nightly`: Built nightly, With master/main branch galaxy.
 - `4.y.z`:  Galaxy 4.y.z version.
 
 [https://quay.io/repository/pulp/galaxy-minimal?tab=tags](https://quay.io/repository/pulp/galaxy-minimal?tab=tags)
 
-## Galaxy Web
+## galaxy-web
 
 An Nginx image based on [centos/nginx-116-centos7](https://hub.docker.com/r/centos/nginx-116-centos7),
-with galaxy's specific configuration.
+with configuration specific to the plugins found in [galaxy-minimal](#galaxy-minimal).
+
+For complete documentation on how to use this image,
+see the compose example [here](https://github.com/pulp/pulp-oci-images/tree/latest/images/compose).
+It is the reference on how this image can be used.
+(You will have to replace references to "pulp-minimal" and "pulp-web" with "galaxy-minimal"
+and "galaxy-web" respectively.)
 
 ### Tags
 
-- `stable`: Built nightly, with latest released version of galaxy and its dependency plugins.
-- `nightly`: Built nightly, with master branch of [galaxy](https://github.com/ansible/galaxy_ng).
+- `stable`: Built nightly, with latest released version of galaxy.
+- `nightly`: Built nightly, With master/main branch galaxy.
 - `4.y.z`:  Galaxy 4.y.z version.
 
 [https://quay.io/repository/pulp/galaxy-web?tab=tags](https://quay.io/repository/pulp/galaxy-web?tab=tags)
