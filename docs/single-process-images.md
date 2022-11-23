@@ -1,0 +1,80 @@
+# Single-Process Images
+
+These images are currently used on [pulp operator](https://docs.pulpproject.org/pulp_operator/), but they can be used in docker-compose or podman-compose. You can find a compose example [here](https://github.com/pulp/pulp-oci-images/tree/latest/images/compose).
+
+## pulp-minimal
+
+A single [Pulp](https://github.com/pulp/pulpcore) image that can be run as each of the following services, specified as the container command ("CMD"):
+
+- **pulp-api** - serves the Pulp(v3) API. The number of instances of this service should be scaled as demand requires.  _Administrators and users of all of the APIs put demand on this service_. If pulp_python or pulp_container are in use, _Content consumers also put demand on this service_.
+
+- **pulp-content** - serves content to clients. pulpcore-api redirects clients to pulpcore-content to download content. When content is being mirrored from a remote source, this service can download that content and stream it to the client the first time the content is requested. The number of instances of this service should be scaled as demand requires. _Content consumers put demand on this service_.
+
+- **pulp-worker** - performs syncing, importing of content, and other asynchronous operations that require resource locking. The number of instances of this service should be scaled as demand requires. _Administrators and content importers put demand on this service_.
+
+Currently built with the following plugins:
+
+- [pulp_ansible](https://docs.pulpproject.org/pulp_ansible/)
+- [pulp-certguard](https://docs.pulpproject.org/pulp_certguard/)
+- [pulp_container](https://docs.pulpproject.org/pulp_container/)
+- [pulp_deb](https://docs.pulpproject.org/pulp_deb/)
+- [pulp_file](https://docs.pulpproject.org/pulp_file/)
+- [pulp_maven](https://docs.pulpproject.org/pulp_maven/)
+- [pulp_python](https://docs.pulpproject.org/pulp_python/)
+- [pulp_rpm](https://docs.pulpproject.org/pulp_rpm/)
+
+### Tags
+
+- `stable`: Built nightly, with latest released version of each plugin. Also called `latest`.
+- `nightly`: Built nightly, With master/main branches of each plugin. Also contains several
+  additional plugins that are not GA yet.
+- `3.y.z`:  Pulpcore 3.y.z version and its compatible plugins.
+
+[https://quay.io/repository/pulp/pulp-minimal?tab=tags](https://quay.io/repository/pulp/pulp-minimal?tab=tags)
+
+## pulp-web
+
+An Nginx image based on [centos/nginx-116-centos7](https://hub.docker.com/r/centos/nginx-116-centos7),
+with configuration specific to pulpcore (and all the plugins found in [pulp-minimal](#pulp-minimal).)
+
+No command ("CMD") needs to be specified, the images's built-in command is sufficient.
+
+### Tags
+
+- `stable`: Built nightly, with latest released version of each plugin. Also called `latest`.
+- `nightly`: Built nightly, With master/main branches of each plugin. Also built with several
+  additional plugins that are not GA yet.
+- `3.y.z`:  Pulpcore 3.y.z version and its compatible plugins.
+
+[https://quay.io/repository/pulp/pulp-web?tab=tags](https://quay.io/repository/pulp/pulp-web?tab=tags)
+
+## galaxy-minimal
+
+An single [galaxy](https://github.com/ansible/galaxy_ng) image that can be run as each of the following services, specified as the container command ("CMD"):
+
+- **pulp-api** - serves the Galaxy (v3) API. The number of instances of this service should be scaled as demand requires.  _Administrators and users of all of the APIs put demand on this service_. _Content consumers also put demand on this service_.
+
+- **pulp-content** - serves content to clients. pulpcore-api redirects clients to pulpcore-content to download content. When content is being mirrored from a remote source, this service can download that content and stream it to the client the first time the content is requested. The number of instances of this service should be scaled as demand requires. _Content consumers put demand on this service_.
+
+- **pulp-worker** - performs syncing, importing of content, and other asynchronous operations that require resource locking. The number of instances of this service should be scaled as demand requires. _Administrators and content importers put demand on this service_.
+
+### Tags
+
+- `stable`: Built nightly, with latest released version of galaxy and its dependency plugins.
+- `nightly`: Built nightly, With master/main branches of each plugin.
+- `4.y.z`:  Galaxy 4.y.z version.
+
+[https://quay.io/repository/pulp/galaxy-minimal?tab=tags](https://quay.io/repository/pulp/galaxy-minimal?tab=tags)
+
+## Galaxy Web
+
+An Nginx image based on [centos/nginx-116-centos7](https://hub.docker.com/r/centos/nginx-116-centos7),
+with galaxy's specific configuration.
+
+### Tags
+
+- `stable`: Built nightly, with latest released version of galaxy and its dependency plugins.
+- `nightly`: Built nightly, with master branch of [galaxy](https://github.com/ansible/galaxy_ng).
+- `4.y.z`:  Galaxy 4.y.z version.
+
+[https://quay.io/repository/pulp/galaxy-web?tab=tags](https://quay.io/repository/pulp/galaxy-web?tab=tags)
