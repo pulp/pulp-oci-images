@@ -30,6 +30,7 @@ nav:
   - Home: index.md
   - Multi-Process Images: multi-process-images.md
   - Single-Process Images: single-process-images.md
+  - Migrating from pulp_installer to a multi-process container: migration-pulp-installer-to-multi-process.md
   - Developer Instructions: developer-instructions.md
   - Changelog: CHANGES.md
 markdown_extensions:
