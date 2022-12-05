@@ -1,0 +1,1 @@
+Execute pulpcore-worker with exec so the sigterm from docker/kubernetes propagates properly

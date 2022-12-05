@@ -14,5 +14,5 @@ else
     export DJANGO_SETTINGS_MODULE=pulpcore.app.settings
     export PULP_SETTINGS=/etc/pulp/settings.py
     export PATH=/usr/local/bin:/usr/bin/
-    pulpcore-worker
+    exec pulpcore-worker
 fi
