@@ -1,5 +1,5 @@
 ARG FROM_TAG="latest"
-FROM pulp/pulp-ci-centos:${FROM_TAG}
+FROM --platform=${BUILDPLATFORM} pulp/pulp-ci-centos:${FROM_TAG}
 
 ARG PULPCORE_VERSION=""
 ARG PULP_ANSIBLE_VERSION=""

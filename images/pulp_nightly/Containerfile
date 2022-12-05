@@ -1,5 +1,5 @@
 ARG FROM_TAG="latest"
-FROM pulp/pulp-ci-centos:${FROM_TAG}
+FROM --platform=${BUILDPLATFORM} pulp/pulp-ci-centos:${FROM_TAG}
 
 RUN pip3 install --upgrade \
   git+https://github.com/pulp/pulpcore@main \

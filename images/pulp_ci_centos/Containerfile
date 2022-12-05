@@ -1,4 +1,4 @@
-FROM pulp/base:latest
+FROM --platform=${BUILDPLATFORM} pulp/base:latest
 # https://ryandaniels.ca/blog/docker-dockerfile-arg-from-arg-trouble/
 ARG SCHEME="http"
 

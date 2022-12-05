@@ -31,7 +31,7 @@ jobs:
         run: |
           echo ::group::HTTPIE
           sudo apt-get update -yq
-          sudo -E apt-get -yq --no-install-suggests --no-install-recommends install httpie
+          sudo -E apt-get -yq --no-install-suggests --no-install-recommends install httpie qemu-user-static
           echo ::endgroup::
           echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
           echo "IMAGE_TAG=${{ matrix.image_tag }}" >> $GITHUB_ENV
@@ -71,6 +71,20 @@ jobs:
         shell: bash
         env:
           PY_COLORS: '1'
+      - name: Logs
+        if: always()
+        run: |
+          podman ps -a
+          podman images -a
+          podman logs --tail=10000 compose_pulp_api_1
+          podman logs --tail=10000 compose_pulp_content_1
+          podman logs --tail=10000 compose_pulp_worker_1
+          podman logs --tail=10000 compose_pulp_worker_2
+          podman logs --tail=10000 compose_pulp_web_1
+          VOLUME_PATH=$(podman volume inspect pulpdev | jq -r .[].Mountpoint)
+          sudo ls -al $VOLUME_PATH
+          sudo tree $VOLUME_PATH
+          http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true
       - name: Github login
         if: github.event_name != 'pull_request'
         env:
@@ -80,20 +94,25 @@ jobs:
       - name: Push images to github
         if: github.event_name != 'pull_request'
         run: |
+          podman rmi -f $(podman images -a -q)
+          MANIFEST_NAME=multiarch-base IMAGE=pulp/base:latest BUILD_PATH=images/Containerfile.core.base .ci/scripts/multiarch.sh --build
+          MANIFEST_NAME=multiarch-pulp IMAGE=pulp/pulp-minimal:${{ matrix.image_tag }} BUILD_PATH=images/pulp-minimal/${{ matrix.image_tag }}/Containerfile.core .ci/scripts/multiarch.sh --build
+          MANIFEST_NAME=multiarch-web IMAGE=pulp/pulp-web:${{ matrix.image_tag }} BUILD_PATH=images/pulp-minimal/${{ matrix.image_tag }}/Containerfile.webserver .ci/scripts/multiarch.sh --build
+
           podman tag pulp/base:latest ghcr.io/pulp/base:latest
           podman tag pulp/pulp-minimal:${{ matrix.image_tag }} ghcr.io/pulp/pulp-minimal:${{ matrix.image_tag }}
           podman tag pulp/pulp-web:${{ matrix.image_tag }} ghcr.io/pulp/pulp-web:${{ matrix.image_tag }}
 
-          podman push ghcr.io/pulp/base:latest
-          podman push ghcr.io/pulp/pulp-minimal:${{ matrix.image_tag }}
-          podman push ghcr.io/pulp/pulp-web:${{ matrix.image_tag }}
+          MANIFEST_NAME=multiarch-base IMAGE=ghcr.io/pulp/base:latest .ci/scripts/multiarch.sh --push
+          MANIFEST_NAME=multiarch-pulp IMAGE=ghcr.io/pulp/pulp-minimal:${{ matrix.image_tag }} .ci/scripts/multiarch.sh --push
+          MANIFEST_NAME=multiarch-web IMAGE=ghcr.io/pulp/pulp-web:${{ matrix.image_tag }} .ci/scripts/multiarch.sh --push
 
           if [[ "$IMAGE_TAG" == "stable" ]]; then
             podman tag pulp/pulp-minimal:stable ghcr.io/pulp/pulp-minimal:latest
             podman tag pulp/pulp-web:stable ghcr.io/pulp/pulp-web:latest
 
-            podman push ghcr.io/pulp/pulp-minimal:latest
-            podman push ghcr.io/pulp/pulp-web:latest
+            MANIFEST_NAME=multiarch-pulp IMAGE=ghcr.io/pulp/pulp-minimal:latest .ci/scripts/multiarch.sh --push
+            MANIFEST_NAME=multiarch-web IMAGE=ghcr.io/pulp/pulp-web:latest .ci/scripts/multiarch.sh --push
 
             CURRENT_VERSION=$(podman run pulp/pulp-minimal:stable bash -c 'pip3 show pulpcore | sed -n -e "s/Version: //p"')
             echo $CURRENT_VERSION
@@ -101,8 +120,8 @@ jobs:
             podman tag pulp/pulp-minimal:stable ghcr.io/pulp/pulp-minimal:$CURRENT_VERSION
             podman tag pulp/pulp-web:stable ghcr.io/pulp/pulp-web:$CURRENT_VERSION
 
-            podman push ghcr.io/pulp/pulp-minimal:$CURRENT_VERSION
-            podman push ghcr.io/pulp/pulp-web:$CURRENT_VERSION
+            MANIFEST_NAME=multiarch-pulp IMAGE=ghcr.io/pulp/pulp-minimal:$CURRENT_VERSION .ci/scripts/multiarch.sh --push
+            MANIFEST_NAME=multiarch-web IMAGE=ghcr.io/pulp/pulp-web:$CURRENT_VERSION .ci/scripts/multiarch.sh --push
           fi
           echo $CURRENT_VERSION
       - name: Docker login
@@ -118,16 +137,16 @@ jobs:
           podman tag pulp/pulp-minimal:${{ matrix.image_tag }} docker.io/pulp/pulp-minimal:${{ matrix.image_tag }}
           podman tag pulp/pulp-web:${{ matrix.image_tag }} docker.io/pulp/pulp-web:${{ matrix.image_tag }}
 
-          podman push docker.io/pulp/base:latest
-          podman push docker.io/pulp/pulp-minimal:${{ matrix.image_tag }}
-          podman push docker.io/pulp/pulp-web:${{ matrix.image_tag }}
+          MANIFEST_NAME=multiarch-base IMAGE=docker.io/pulp/base:latest .ci/scripts/multiarch.sh --push
+          MANIFEST_NAME=multiarch-pulp IMAGE=docker.io/pulp/pulp-minimal:${{ matrix.image_tag }} .ci/scripts/multiarch.sh --push
+          MANIFEST_NAME=multiarch-web IMAGE=docker.io/pulp/pulp-web:${{ matrix.image_tag }} .ci/scripts/multiarch.sh --push
 
           if [[ "$IMAGE_TAG" == "stable" ]]; then
             podman tag pulp/pulp-minimal:stable docker.io/pulp/pulp-minimal:latest
             podman tag pulp/pulp-web:stable docker.io/pulp/pulp-web:latest
 
-            podman push docker.io/pulp/pulp-minimal:latest
-            podman push docker.io/pulp/pulp-web:latest
+            MANIFEST_NAME=multiarch-pulp IMAGE=docker.io/pulp/pulp-minimal:latest .ci/scripts/multiarch.sh --push
+            MANIFEST_NAME=multiarch-web IMAGE=docker.io/pulp/pulp-web:latest .ci/scripts/multiarch.sh --push
 
             CURRENT_VERSION=$(podman run pulp/pulp-minimal:stable bash -c 'pip3 show pulpcore | sed -n -e "s/Version: //p"')
             echo $CURRENT_VERSION
@@ -135,8 +154,8 @@ jobs:
             podman tag pulp/pulp-minimal:stable docker.io/pulp/pulp-minimal:$CURRENT_VERSION
             podman tag pulp/pulp-web:stable docker.io/pulp/pulp-web:$CURRENT_VERSION
 
-            podman push docker.io/pulp/pulp-minimal:$CURRENT_VERSION
-            podman push docker.io/pulp/pulp-web:$CURRENT_VERSION
+            MANIFEST_NAME=multiarch-pulp IMAGE=docker.io/pulp/pulp-minimal:$CURRENT_VERSION .ci/scripts/multiarch.sh --push
+            MANIFEST_NAME=multiarch-web IMAGE=docker.io/pulp/pulp-web:$CURRENT_VERSION .ci/scripts/multiarch.sh --push
           fi
           echo $CURRENT_VERSION
       - name: Quay login
@@ -152,16 +171,16 @@ jobs:
           podman tag pulp/pulp-minimal:${{ matrix.image_tag }} quay.io/pulp/pulp-minimal:${{ matrix.image_tag }}
           podman tag pulp/pulp-web:${{ matrix.image_tag }} quay.io/pulp/pulp-web:${{ matrix.image_tag }}
 
-          podman push quay.io/pulp/base:latest
-          podman push quay.io/pulp/pulp-minimal:${{ matrix.image_tag }}
-          podman push quay.io/pulp/pulp-web:${{ matrix.image_tag }}
+          MANIFEST_NAME=multiarch-base IMAGE=quay.io/pulp/base:latest .ci/scripts/multiarch.sh --push
+          MANIFEST_NAME=multiarch-pulp IMAGE=quay.io/pulp/pulp-minimal:${{ matrix.image_tag }} .ci/scripts/multiarch.sh --push
+          MANIFEST_NAME=multiarch-web IMAGE=quay.io/pulp/pulp-web:${{ matrix.image_tag }} .ci/scripts/multiarch.sh --push
 
           if [[ "$IMAGE_TAG" == "stable" ]]; then
             podman tag pulp/pulp-minimal:stable quay.io/pulp/pulp-minimal:latest
             podman tag pulp/pulp-web:stable quay.io/pulp/pulp-web:latest
 
-            podman push quay.io/pulp/pulp-minimal:latest
-            podman push quay.io/pulp/pulp-web:latest
+            MANIFEST_NAME=multiarch-pulp IMAGE=quay.io/pulp/pulp-minimal:latest .ci/scripts/multiarch.sh --push
+            MANIFEST_NAME=multiarch-web IMAGE=quay.io/pulp/pulp-web:latest .ci/scripts/multiarch.sh --push
 
             CURRENT_VERSION=$(podman run pulp/pulp-minimal:stable bash -c 'pip3 show pulpcore | sed -n -e "s/Version: //p"')
             echo $CURRENT_VERSION
@@ -169,24 +188,11 @@ jobs:
             podman tag pulp/pulp-minimal:stable quay.io/pulp/pulp-minimal:$CURRENT_VERSION
             podman tag pulp/pulp-web:stable quay.io/pulp/pulp-web:$CURRENT_VERSION
 
-            podman push quay.io/pulp/pulp-minimal:$CURRENT_VERSION
-            podman push quay.io/pulp/pulp-web:$CURRENT_VERSION
+            MANIFEST_NAME=multiarch-pulp IMAGE=quay.io/pulp/pulp-minimal:$CURRENT_VERSION .ci/scripts/multiarch.sh --push
+            MANIFEST_NAME=multiarch-web IMAGE=quay.io/pulp/pulp-web:$CURRENT_VERSION .ci/scripts/multiarch.sh --push
           fi
           echo $CURRENT_VERSION
-      - name: Logs
-        if: always()
-        run: |
-          podman ps -a
-          podman images -a
-          podman logs --tail=10000 compose_pulp_api_1
-          podman logs --tail=10000 compose_pulp_content_1
-          podman logs --tail=10000 compose_pulp_worker_1
-          podman logs --tail=10000 compose_pulp_worker_2
-          podman logs --tail=10000 compose_pulp_web_1
-          VOLUME_PATH=$(podman volume inspect pulpdev | jq -r .[].Mountpoint)
-          sudo ls -al $VOLUME_PATH
-          sudo tree $VOLUME_PATH
-          http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true
+
   galaxy-single-process-images:
     runs-on: ubuntu-latest
     strategy:
@@ -207,7 +213,7 @@ jobs:
         run: |
           echo ::group::HTTPIE
           sudo apt-get update -yq
-          sudo -E apt-get -yq --no-install-suggests --no-install-recommends install httpie
+          sudo -E apt-get -yq --no-install-suggests --no-install-recommends install httpie qemu-user-static
           echo ::endgroup::
           echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
           echo "IMAGE_TAG=${{ matrix.image_tag }}" >> $GITHUB_ENV
@@ -219,7 +225,6 @@ jobs:
           buildah version
           podman build --format docker --file images/Containerfile.core.base --tag pulp/base:latest .
           podman build --format docker --pull=false --file images/galaxy-minimal/${{ matrix.image_tag }}/Containerfile.core --tag pulp/galaxy-minimal:${{ matrix.image_tag }} .
-          podman tag pulp/galaxy-minimal:${{ matrix.image_tag }} pulp/galaxy:${{ matrix.image_tag }}
           podman build --format docker --pull=false --file images/galaxy-minimal/${{ matrix.image_tag }}/Containerfile.webserver --tag pulp/galaxy-web:${{ matrix.image_tag }} .
           podman images -a
       - name: Compose up
@@ -246,117 +251,6 @@ jobs:
         shell: bash
         env:
           PY_COLORS: '1'
-      - name: Github login
-        if: github.event_name != 'pull_request'
-        env:
-          PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULP_GITHUB_USERNAME: ${{ github.actor }}
-        run: echo "$PULP_GITHUB_TOKEN" | podman login -u "$PULP_GITHUB_USERNAME" --password-stdin ghcr.io
-      - name: Push images to github
-        if: github.event_name != 'pull_request'
-        run: |
-          podman tag pulp/base:latest ghcr.io/pulp/base:latest
-          podman tag pulp/galaxy-minimal:${{ matrix.image_tag }} ghcr.io/pulp/galaxy-minimal:${{ matrix.image_tag }}
-          podman tag pulp/galaxy:${{ matrix.image_tag }} ghcr.io/pulp/galaxy:${{ matrix.image_tag }}
-          podman tag pulp/galaxy-web:${{ matrix.image_tag }} ghcr.io/pulp/galaxy-web:${{ matrix.image_tag }}
-
-          podman push ghcr.io/pulp/base:latest
-          podman push ghcr.io/pulp/galaxy-minimal:${{ matrix.image_tag }}
-          podman push ghcr.io/pulp/galaxy:${{ matrix.image_tag }}
-          podman push ghcr.io/pulp/galaxy-web:${{ matrix.image_tag }}
-
-          if [[ "$IMAGE_TAG" == "stable" ]]; then
-            podman tag pulp/galaxy-minimal:stable ghcr.io/pulp/galaxy-minimal:latest
-            podman tag pulp/galaxy:stable ghcr.io/pulp/galaxy:latest
-            podman tag pulp/galaxy-web:stable ghcr.io/pulp/galaxy-web:latest
-
-            podman push ghcr.io/pulp/galaxy-minimal:latest
-            podman push ghcr.io/pulp/galaxy:latest
-            podman push ghcr.io/pulp/galaxy-web:latest
-
-            CURRENT_VERSION=$(podman run pulp/galaxy-minimal:stable bash -c 'pip3 show galaxy_ng | sed -n -e "s/Version: //p"')
-            echo $CURRENT_VERSION
-            podman tag pulp/galaxy-minimal:stable ghcr.io/pulp/galaxy-minimal:$CURRENT_VERSION
-            podman tag pulp/galaxy-minimal:stable ghcr.io/pulp/galaxy:$CURRENT_VERSION
-            podman tag pulp/galaxy-web:stable ghcr.io/pulp/galaxy-web:$CURRENT_VERSION
-            podman push ghcr.io/pulp/galaxy-minimal:$CURRENT_VERSION
-            podman push ghcr.io/pulp/galaxy:$CURRENT_VERSION
-            podman push ghcr.io/pulp/galaxy-web:$CURRENT_VERSION
-          fi
-      - name: Docker login
-        if: github.event_name != 'pull_request'
-        env:
-          DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
-          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
-        run: echo "$DOCKER_BOT_PASSWORD" | podman login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
-      - name: Push images to dockerhub
-        if: github.event_name != 'pull_request'
-        run: |
-          podman tag pulp/base:latest docker.io/pulp/base:latest
-          podman tag pulp/galaxy-minimal:${{ matrix.image_tag }} docker.io/pulp/galaxy-minimal:${{ matrix.image_tag }}
-          podman tag pulp/galaxy:${{ matrix.image_tag }} docker.io/pulp/galaxy:${{ matrix.image_tag }}
-          podman tag pulp/galaxy-web:${{ matrix.image_tag }} docker.io/pulp/galaxy-web:${{ matrix.image_tag }}
-
-          podman push docker.io/pulp/base:latest
-          podman push docker.io/pulp/galaxy-minimal:${{ matrix.image_tag }}
-          podman push docker.io/pulp/galaxy:${{ matrix.image_tag }}
-          podman push docker.io/pulp/galaxy-web:${{ matrix.image_tag }}
-
-          if [[ "$IMAGE_TAG" == "stable" ]]; then
-            podman tag pulp/galaxy-minimal:stable docker.io/pulp/galaxy-minimal:latest
-            podman tag pulp/galaxy:stable docker.io/pulp/galaxy:latest
-            podman tag pulp/galaxy-web:stable docker.io/pulp/galaxy-web:latest
-
-            podman push docker.io/pulp/galaxy-minimal:latest
-            podman push docker.io/pulp/galaxy:latest
-            podman push docker.io/pulp/galaxy-web:latest
-
-            CURRENT_VERSION=$(podman run pulp/galaxy-minimal:stable bash -c 'pip3 show galaxy_ng | sed -n -e "s/Version: //p"')
-            echo $CURRENT_VERSION
-            podman tag pulp/galaxy-minimal:stable docker.io/pulp/galaxy-minimal:$CURRENT_VERSION
-            podman tag pulp/galaxy-minimal:stable docker.io/pulp/galaxy:$CURRENT_VERSION
-            podman tag pulp/galaxy-web:stable docker.io/pulp/galaxy-web:$CURRENT_VERSION
-            podman push docker.io/pulp/galaxy-minimal:$CURRENT_VERSION
-            podman push docker.io/pulp/galaxy:$CURRENT_VERSION
-            podman push docker.io/pulp/galaxy-web:$CURRENT_VERSION
-          fi
-      - name: Quay login
-        if: github.event_name != 'pull_request'
-        env:
-          QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
-          QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
-        run: echo "$QUAY_BOT_PASSWORD" | podman login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
-      - name: Push images to quay
-        if: github.event_name != 'pull_request'
-        run: |
-          podman tag pulp/base:latest quay.io/pulp/base:latest
-          podman tag pulp/galaxy-minimal:${{ matrix.image_tag }} quay.io/pulp/galaxy-minimal:${{ matrix.image_tag }}
-          podman tag pulp/galaxy:${{ matrix.image_tag }} quay.io/pulp/galaxy:${{ matrix.image_tag }}
-          podman tag pulp/galaxy-web:${{ matrix.image_tag }} quay.io/pulp/galaxy-web:${{ matrix.image_tag }}
-
-          podman push quay.io/pulp/base:latest
-          podman push quay.io/pulp/galaxy-minimal:${{ matrix.image_tag }}
-          podman push quay.io/pulp/galaxy:${{ matrix.image_tag }}
-          podman push quay.io/pulp/galaxy-web:${{ matrix.image_tag }}
-
-          if [[ "$IMAGE_TAG" == "stable" ]]; then
-            podman tag pulp/galaxy-minimal:stable quay.io/pulp/galaxy-minimal:latest
-            podman tag pulp/galaxy:stable quay.io/pulp/galaxy:latest
-            podman tag pulp/galaxy-web:stable quay.io/pulp/galaxy-web:latest
-
-            podman push quay.io/pulp/galaxy-minimal:latest
-            podman push quay.io/pulp/galaxy:latest
-            podman push quay.io/pulp/galaxy-web:latest
-
-            CURRENT_VERSION=$(podman run pulp/galaxy-minimal:stable bash -c 'pip3 show galaxy_ng | sed -n -e "s/Version: //p"')
-            echo $CURRENT_VERSION
-            podman tag pulp/galaxy-minimal:stable quay.io/pulp/galaxy-minimal:$CURRENT_VERSION
-            podman tag pulp/galaxy-minimal:stable quay.io/pulp/galaxy:$CURRENT_VERSION
-            podman tag pulp/galaxy-web:stable quay.io/pulp/galaxy-web:$CURRENT_VERSION
-            podman push quay.io/pulp/galaxy-minimal:$CURRENT_VERSION
-            podman push quay.io/pulp/galaxy:$CURRENT_VERSION
-            podman push quay.io/pulp/galaxy-web:$CURRENT_VERSION
-          fi
       - name: Logs
         if: always()
         run: |
@@ -371,3 +265,100 @@ jobs:
           sudo ls -al $VOLUME_PATH
           sudo tree $VOLUME_PATH
           http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true
+      - name: Github login
+        if: github.event_name != 'pull_request'
+        env:
+          PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PULP_GITHUB_USERNAME: ${{ github.actor }}
+        run: echo "$PULP_GITHUB_TOKEN" | podman login -u "$PULP_GITHUB_USERNAME" --password-stdin ghcr.io
+      - name: Push images to github
+        if: github.event_name != 'pull_request'
+        run: |
+          podman rmi -f $(podman images -a -q)
+          MANIFEST_NAME=multiarch-base IMAGE=pulp/base:latest BUILD_PATH=images/Containerfile.core.base .ci/scripts/multiarch.sh --build
+          MANIFEST_NAME=multiarch-galaxy IMAGE=pulp/galaxy-minimal:${{ matrix.image_tag }} BUILD_PATH=images/galaxy-minimal/${{ matrix.image_tag }}/Containerfile.core .ci/scripts/multiarch.sh --build
+          MANIFEST_NAME=multiarch-web IMAGE=pulp/galaxy-web:${{ matrix.image_tag }} BUILD_PATH=images/galaxy-minimal/${{ matrix.image_tag }}/Containerfile.webserver .ci/scripts/multiarch.sh --build
+          podman tag pulp/base:latest ghcr.io/pulp/base:latest
+          podman tag pulp/galaxy-minimal:${{ matrix.image_tag }} ghcr.io/pulp/galaxy-minimal:${{ matrix.image_tag }}
+          podman tag pulp/galaxy-web:${{ matrix.image_tag }} ghcr.io/pulp/galaxy-web:${{ matrix.image_tag }}
+
+          MANIFEST_NAME=multiarch-base IMAGE=ghcr.io/pulp/base:latest .ci/scripts/multiarch.sh --push
+          MANIFEST_NAME=multiarch-galaxy IMAGE=ghcr.io/pulp/galaxy-minimal:${{ matrix.image_tag }} .ci/scripts/multiarch.sh --push
+          MANIFEST_NAME=multiarch-web IMAGE=ghcr.io/pulp/galaxy-web:${{ matrix.image_tag }} .ci/scripts/multiarch.sh --push
+
+          if [[ "$IMAGE_TAG" == "stable" ]]; then
+            podman tag pulp/galaxy-minimal:stable ghcr.io/pulp/galaxy-minimal:latest
+            podman tag pulp/galaxy-web:stable ghcr.io/pulp/galaxy-web:latest
+
+            MANIFEST_NAME=multiarch-galaxy IMAGE=ghcr.io/pulp/galaxy-minimal:latest .ci/scripts/multiarch.sh --push
+            MANIFEST_NAME=multiarch-web IMAGE=ghcr.io/pulp/galaxy-web:latest .ci/scripts/multiarch.sh --push
+
+            CURRENT_VERSION=$(podman run pulp/galaxy-minimal:stable bash -c 'pip3 show galaxy_ng | sed -n -e "s/Version: //p"')
+            echo $CURRENT_VERSION
+            podman tag pulp/galaxy-minimal:stable ghcr.io/pulp/galaxy-minimal:$CURRENT_VERSION
+            podman tag pulp/galaxy-web:stable ghcr.io/pulp/galaxy-web:$CURRENT_VERSION
+            MANIFEST_NAME=multiarch-galaxy IMAGE=ghcr.io/pulp/galaxy-minimal:$CURRENT_VERSION .ci/scripts/multiarch.sh --push
+            MANIFEST_NAME=multiarch-web IMAGE=ghcr.io/pulp/galaxy-web:$CURRENT_VERSION .ci/scripts/multiarch.sh --push
+          fi
+      - name: Docker login
+        if: github.event_name != 'pull_request'
+        env:
+          DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
+          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
+        run: echo "$DOCKER_BOT_PASSWORD" | podman login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
+      - name: Push images to dockerhub
+        if: github.event_name != 'pull_request'
+        run: |
+          podman tag pulp/base:latest docker.io/pulp/base:latest
+          podman tag pulp/galaxy-minimal:${{ matrix.image_tag }} docker.io/pulp/galaxy-minimal:${{ matrix.image_tag }}
+          podman tag pulp/galaxy-web:${{ matrix.image_tag }} docker.io/pulp/galaxy-web:${{ matrix.image_tag }}
+
+          MANIFEST_NAME=multiarch-base IMAGE=docker.io/pulp/base:latest .ci/scripts/multiarch.sh --push
+          MANIFEST_NAME=multiarch-galaxy IMAGE=docker.io/pulp/galaxy-minimal:${{ matrix.image_tag }} .ci/scripts/multiarch.sh --push
+          MANIFEST_NAME=multiarch-web IMAGE=docker.io/pulp/galaxy-web:${{ matrix.image_tag }} .ci/scripts/multiarch.sh --push
+
+          if [[ "$IMAGE_TAG" == "stable" ]]; then
+            podman tag pulp/galaxy-minimal:stable docker.io/pulp/galaxy-minimal:latest
+            podman tag pulp/galaxy-web:stable docker.io/pulp/galaxy-web:latest
+
+            MANIFEST_NAME=multiarch-galaxy IMAGE=docker.io/pulp/galaxy-minimal:latest .ci/scripts/multiarch.sh --push
+            MANIFEST_NAME=multiarch-web IMAGE=docker.io/pulp/galaxy-web:latest .ci/scripts/multiarch.sh --push
+
+            CURRENT_VERSION=$(podman run pulp/galaxy-minimal:stable bash -c 'pip3 show galaxy_ng | sed -n -e "s/Version: //p"')
+            echo $CURRENT_VERSION
+            podman tag pulp/galaxy-minimal:stable docker.io/pulp/galaxy-minimal:$CURRENT_VERSION
+            podman tag pulp/galaxy-web:stable docker.io/pulp/galaxy-web:$CURRENT_VERSION
+            MANIFEST_NAME=multiarch-galaxy IMAGE=docker.io/pulp/galaxy-minimal:$CURRENT_VERSION .ci/scripts/multiarch.sh --push
+            MANIFEST_NAME=multiarch-web IMAGE=docker.io/pulp/galaxy-web:$CURRENT_VERSION .ci/scripts/multiarch.sh --push
+          fi
+      - name: Quay login
+        if: github.event_name != 'pull_request'
+        env:
+          QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
+          QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
+        run: echo "$QUAY_BOT_PASSWORD" | podman login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
+      - name: Push images to quay
+        if: github.event_name != 'pull_request'
+        run: |
+          podman tag pulp/base:latest quay.io/pulp/base:latest
+          podman tag pulp/galaxy-minimal:${{ matrix.image_tag }} quay.io/pulp/galaxy-minimal:${{ matrix.image_tag }}
+          podman tag pulp/galaxy-web:${{ matrix.image_tag }} quay.io/pulp/galaxy-web:${{ matrix.image_tag }}
+
+          MANIFEST_NAME=multiarch-base IMAGE=quay.io/pulp/base:latest .ci/scripts/multiarch.sh --push
+          MANIFEST_NAME=multiarch-galaxy IMAGE=quay.io/pulp/galaxy-minimal:${{ matrix.image_tag }} .ci/scripts/multiarch.sh --push
+          MANIFEST_NAME=multiarch-web IMAGE=quay.io/pulp/galaxy-web:${{ matrix.image_tag }} .ci/scripts/multiarch.sh --push
+
+          if [[ "$IMAGE_TAG" == "stable" ]]; then
+            podman tag pulp/galaxy-minimal:stable quay.io/pulp/galaxy-minimal:latest
+            podman tag pulp/galaxy-web:stable quay.io/pulp/galaxy-web:latest
+
+            MANIFEST_NAME=multiarch-galaxy IMAGE=quay.io/pulp/galaxy-minimal:latest .ci/scripts/multiarch.sh --push
+            MANIFEST_NAME=multiarch-web IMAGE=quay.io/pulp/galaxy-web:latest .ci/scripts/multiarch.sh --push
+
+            CURRENT_VERSION=$(podman run pulp/galaxy-minimal:stable bash -c 'pip3 show galaxy_ng | sed -n -e "s/Version: //p"')
+            echo $CURRENT_VERSION
+            podman tag pulp/galaxy-minimal:stable quay.io/pulp/galaxy-minimal:$CURRENT_VERSION
+            podman tag pulp/galaxy-web:stable quay.io/pulp/galaxy-web:$CURRENT_VERSION
+            MANIFEST_NAME=multiarch-galaxy IMAGE=quay.io/pulp/galaxy-minimal:$CURRENT_VERSION .ci/scripts/multiarch.sh --push
+            MANIFEST_NAME=multiarch-web IMAGE=quay.io/pulp/galaxy-web:$CURRENT_VERSION .ci/scripts/multiarch.sh --push
+          fi
