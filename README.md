@@ -4,6 +4,21 @@ This directory contains assets and tooling for building a variety of Pulp 3 rela
 
 For instructions how to run and use this container, see [Pulp in One Container](https://pulpproject.org/pulp-in-one-container/).
 
+## Advanced Usage Instructions
+
+### Available Environment Variables
+
+The following environment variables configure the container's behavior.
+
+* `PULP_GUNICORN_TIMEOUT` A positive integer that specifies the [timeout for gunicorn process](https://docs.gunicorn.org/en/stable/settings.html#timeout). Default to 90.
+
+* `PULP_API_WORKERS` A positive integer that specifies the number of [gunicorn worker processes](https://docs.gunicorn.org/en/stable/settings.html#workers) for handling Pulp API requests. Default to 2.
+
+* `PULP_CONTENT_WORKERS` A positive integer that specifies the number of [gunicorn worker processes](https://docs.gunicorn.org/en/stable/settings.html#workers) for handling Pulp Content requests. Default to 2.
+
+
+To add one of them, modify the command you use to start pulp to include syntax like the following at the beginning: Instead of `podman run`, specify `podman run -e PULP_GUNICORN_TIMEOUT=30 ...`
+
 # Build instructions
 
 ```bash

@@ -28,9 +28,6 @@ if [ -n "${PULP_ADMIN_PASSWORD}" ]; then
 fi
 set -x
 
-PULP_GUNICORN_TIMEOUT=${PULP_GUNICORN_TIMEOUT:-90}
-PULP_API_WORKERS=${PULP_API_WORKERS:-2}
-
 mkdir -p /var/lib/pulp/media \
          /var/lib/pulp/assets \
          /var/lib/pulp/tmp
