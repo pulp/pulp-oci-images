@@ -161,6 +161,10 @@ The following environment variables configure the container's behavior.
 
 To add one of them, modify the command you use to start pulp to include syntax like the following at the beginning: Instead of `podman run`, specify `podman run -e NUM_WORKERS=4 -e PULP_GUNICORN_TIMEOUT=30 ...`
 
+### Adding Signing Services
+
+Administrators can add signing services to Pulp using the command line tools. Users may then associate the signing services with repositories that support content signing.  
+See *Signing Services* documentation for more information: https://github.com/pulp/pulp-oci-images/blob/latest/docs/signing_script.md
 
 ### Command to specify
 
