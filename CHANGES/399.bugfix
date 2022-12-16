@@ -1,0 +1,1 @@
+Fixed an issue with readiness probe script getting wrong pulp container type.
