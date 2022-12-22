@@ -1,0 +1,1 @@
+Fix readiness probe script based on gunicorn install method.
