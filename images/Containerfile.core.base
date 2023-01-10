@@ -12,6 +12,16 @@ ENV PULP_SETTINGS=/etc/pulp/settings.py
 ENV _BUILDAH_STARTED_IN_USERNS=""
 ENV BUILDAH_ISOLATION=chroot
 
+# Install updates & dnf plugins before disabling python36 to prevent errors
+RUN dnf -y install dnf-plugins-core && \
+    dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && \
+    dnf config-manager --set-enabled powertools && \
+    dnf -y update
+
+# use python38
+RUN dnf -y module disable python36
+RUN dnf -y module enable python38
+
 # The Fedora 30 image already has tsflags=nodocs set in dnf.conf
 #
 # wget & git are presumably needed for purposes like pip installs from git
@@ -25,35 +35,34 @@ ENV BUILDAH_ISOLATION=chroot
 #
 # openssl-devel, python3-devel, and gcc are for testing pulp-certguard
 #
-# The last 5 lines (before clean) are needed until python3-createrepo_c gets an
-# RPM upgrade to 0.15.10. Until then, we install & build it from PyPI.
-RUN		dnf -y update && \
-		dnf -y install wget git && \
-		dnf -y install libxcrypt-compat && \
-		dnf -y install libpq-devel && \
-		dnf -y install python3-psycopg2 && \
-		dnf -y install glibc-langpack-en && \
-		dnf -y install python3-libmodulemd && \
-		dnf -y install openldap-devel && \
-		dnf -y install skopeo && \
-		dnf -y install openssl && \
-		dnf -y install openssl-devel && \
-		dnf -y install ostree && \
-		dnf -y install ostree-libs && \
-		dnf -y install python3-devel && \
-		dnf -y install python3-setuptools && \
-		dnf -y install python-pip && \
-		dnf -y install gcc && \
-		dnf -y install libmodulemd-devel && \
-		dnf -y install libcomps-devel && \
-		dnf -y install ninja-build && \
-		dnf -y install 'dnf-command(builddep)' && \
-		dnf -y install cairo-devel && \
-		dnf -y install cmake && \
-		dnf -y install gobject-introspection-devel && \
-		dnf -y install cairo-gobject-devel && \
-		dnf -y builddep createrepo_c && \
-		dnf clean all
+# TODO: Investigate differences between `dnf builddep createrepo_c` vs the list
+# of dependencies below. For example, drpm-devel.
+RUN dnf -y install python38 python38-cryptography python38-devel && \
+    dnf -y install openssl openssl-devel && \
+    dnf -y install openldap-devel && \
+    dnf -y install wget git && \
+    dnf -y install python3-psycopg2 && \
+    dnf -y install redhat-rpm-config gcc cargo libffi-devel && \
+    dnf -y install glibc-langpack-en && \
+    dnf -y install python3-libmodulemd && \
+    dnf -y install python3-libcomps && \
+    dnf -y install libpq-devel && \
+    dnf -y install python3-setuptools && \
+    dnf -y install swig && \
+    dnf -y install buildah --exclude container-selinux && \
+    dnf -y install xz && \
+    dnf -y install libmodulemd-devel && \
+    dnf -y install libcomps-devel && \
+    dnf -y install zchunk-devel && \
+    dnf -y install ninja-build && \
+    dnf -y install cairo-devel cmake gobject-introspection-devel cairo-gobject-devel && \
+    dnf -y install libcurl-devel libxml2-devel sqlite-devel file-devel && \
+    dnf -y install ostree-libs ostree && \
+    dnf -y install skopeo && \
+    dnf -y install podman && \
+    dnf -y install sudo && \
+    dnf -y install zstd && \
+    dnf clean all
 
 # Need to install optional dep, rhsm, for pulp-certguard
 RUN pip install  \
