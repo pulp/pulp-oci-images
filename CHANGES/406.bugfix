@@ -1,0 +1,1 @@
+Fix core image failing to build due to python 3.6 dependencies of dnf-plugins-core being disabled.
