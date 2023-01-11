@@ -11,7 +11,7 @@ services:
       POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256'
       POSTGRES_HOST_AUTH_METHOD: 'scram-sha-256'
     volumes:
-      - "../../pgsql:/var/lib/postgresql:Z"
+      - ${PULP_POSTGRES_PATH:-"../../pgsql"}:/var/lib/postgresql:Z
       - "./assets/postgres/passwd:/etc/passwd:Z"
 
   redis:
@@ -47,7 +47,7 @@ services:
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
-      - "../../pulp_storage:/var/lib/pulp:z"
+      - ${PULP_STORAGE_PATH:-"../../pulp_storage"}:/var/lib/pulp:z
     environment:
       POSTGRES_SERVICE_PORT: 5432
       POSTGRES_SERVICE_HOST: postgres
@@ -66,7 +66,7 @@ services:
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
-      - "../../pulp_storage:/var/lib/pulp:z"
+      - ${PULP_STORAGE_PATH:-"../../pulp_storage"}:/var/lib/pulp:z
     environment:
       POSTGRES_SERVICE_PORT: 5432
       POSTGRES_SERVICE_HOST: postgres
@@ -84,7 +84,7 @@ services:
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
-      - "../../pulp_storage:/var/lib/pulp:z"
+      - ${PULP_STORAGE_PATH:-"../../pulp_storage"}:/var/lib/pulp:z
     environment:
       POSTGRES_SERVICE_PORT: 5432
       POSTGRES_SERVICE_HOST: postgres

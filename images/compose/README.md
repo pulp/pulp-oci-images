@@ -33,6 +33,12 @@ mkdir ../../pgsql ../../pulp_storage
 podman unshare chown 700:700 ../../pulp_storage
 podman-compose -f docker-compose.folders.yml up
 ```
+You can specify your own paths with:
+
+```
+PULP_STORAGE_PATH="./storage" PULP_POSTGRES_PATH="./database" podman-compose -f docker-compose.folders.yml up
+```
+
 
 ## Running with docker and using existing directories for data
 ```shell
