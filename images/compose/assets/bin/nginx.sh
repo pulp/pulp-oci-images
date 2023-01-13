@@ -6,7 +6,7 @@
 
 set -e
 
-if [ "$container" != "podman" ]; then
+if [ "$container" == "podman" ]; then
   # the nameserver list under podman is unreliable.
   # It will look like "10.89.1.1 192.168.1.1 192.168.1.1", but only the 1st IP works.
   # This doesn't mess up `nslookup`, but it messes up `getent hosts` and nginx.
