@@ -1,0 +1,2 @@
+
+Fixed bug in docker-compose file that prevented managed services from automatically restarting upon failure.
