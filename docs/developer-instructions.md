@@ -12,3 +12,6 @@ pulpcore z-release, the existing y-release branch is built and published again.
   [here](https://github.com/pulp/pulp-oci-images/pull/61/files) as an example)
 * Kick off a new build from the release branch at [the publish workflow](https://github.com/pulp/pulp-oci-images/actions/workflows/publish_images.yaml)
   (Afterwards, it will auto-build nightly.)
+* Kick off a new build from the release branch at [the publish workflow](https://github.com/pulp/pulp-oci-images/actions/workflows/pulp_images.yml)
+  (Afterwards, it will auto-build nightly.)
+
