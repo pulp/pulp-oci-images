@@ -1,0 +1,1 @@
+Fixed bug where all workers had the same name when started using docker-compose.
