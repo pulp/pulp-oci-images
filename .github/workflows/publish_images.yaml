@@ -125,29 +125,35 @@ jobs:
           PY_COLORS: '1'
       - name: Reset docker-compose environment
         run: |
-          cd images/compose
-          podman-compose down -v
-          git checkout docker-compose.yml
+          if [ "$VERSION" = "latest" ]; then
+            cd images/compose
+            podman-compose down -v
+            git checkout docker-compose.yml
+          fi
       - name: Compose up (galaxy)
         run: |
-          cd images/compose
-          sed -i "s/pulp-minimal:latest/pulp-galaxy-ng:${VERSION}/g" docker-compose.yml
-          sed -i "s/pulp\/pulp-web/pulp\/galaxy-web/g" docker-compose.yml
-          id | grep "(root)" || sudo usermod -G root $(whoami)
-          podman-compose up -d
-          sleep 30
-          for _ in $(seq 20)
-          do
-            sleep 3
-            if curl --fail http://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1
-            then
-              break
-            fi
-          done
-          curl --fail http://localhost:8080/pulp/api/v3/status/ | jq
+          if [ "$VERSION" = "latest" ]; then
+            cd images/compose
+            sed -i "s/pulp-minimal:latest/pulp-galaxy-ng:${VERSION}/g" docker-compose.yml
+            sed -i "s/pulp\/pulp-web/pulp\/galaxy-web/g" docker-compose.yml
+            id | grep "(root)" || sudo usermod -G root $(whoami)
+            podman-compose up -d
+            sleep 30
+            for _ in $(seq 20)
+            do
+              sleep 3
+              if curl --fail http://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1
+              then
+                break
+              fi
+            done
+            curl --fail http://localhost:8080/pulp/api/v3/status/ | jq
+          fi
       - name: Test all components (galaxy)
         run: |
-          .ci/scripts/galaxy_ng-tests.sh
+          if [ "$VERSION" = "latest" ]; then
+            .ci/scripts/galaxy_ng-tests.sh
+          fi
         shell: bash
         env:
           PY_COLORS: '1'
