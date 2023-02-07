@@ -1,6 +1,5 @@
 FROM pulp/base:latest
 # https://ryandaniels.ca/blog/docker-dockerfile-arg-from-arg-trouble/
-ARG SCHEME="http"
 
 RUN curl -Ls https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-x86_64.tar.xz | tar xvJ -C /
 RUN curl -Ls https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-noarch.tar.xz | tar xvJ -C /
@@ -8,6 +7,8 @@ RUN curl -Ls https://github.com/just-containers/s6-overlay/releases/download/v3.
 RUN curl -Ls https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-arch.tar.xz | tar xvJ -C /
 
 ENV PULP_WORKERS=2
+
+ENV PULP_HTTPS=false
 
 ENV PULP_STATIC_ROOT=/var/lib/operator/static/
 
@@ -30,12 +31,9 @@ COPY images/s6_assets/v3.cnf /etc/ssl/pulp/v3.cnf
 COPY images/s6_assets/wait_on_database_migrations.sh /database/assets/wait_on_database_migrations.sh
 COPY images/s6_assets/ssl_nginx.conf /nginx/ssl_nginx.conf
 COPY images/s6_assets/nginx.conf /nginx/nginx.conf
-COPY images/s6_assets/webserver.sh /nginx/webserver.sh
 COPY images/s6_assets/s6-rc.d /etc/s6-overlay/s6-rc.d
 COPY images/s6_assets/init /etc/init
 COPY images/s6_assets/fix-attrs.d /etc/fix-attrs.d
-
-RUN /nginx/webserver.sh
 
 CMD ["/init"]
 

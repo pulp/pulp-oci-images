@@ -1,2 +1,4 @@
 #!/usr/bin/execlineb -P
-/usr/sbin/nginx
+with-contenv
+foreground { s6-echo "Calling /etc/init/nginx" }
+/etc/init/nginx
