@@ -34,14 +34,17 @@ This image can also function the same as the single-process image `pulp-minimal`
 #### Tags
 
 - `stable`: Built nightly, with latest released version of each plugin. Also called `latest`.
-- `https`: Built nightly, with latest released version of each plugin. Nginx webserver runs with SSL/TLS.
 - `nightly`: Built nightly, With master/main branches of each plugin. Also built with several
   additional plugins that are not GA yet.
 - `3.y`:  Pulpcore 3.y version and its compatible plugins. Built whenever there is a z-release.
-- `3.y-https`:  Pulpcore 3.y version and its compatible plugins. Built whenever there is a z-release. 
-  Nginx webserver runs with SSL/TLS.
 
 [Browse available tags](https://hub.docker.com/r/pulp/pulp/tags)
+
+#### Discontinued tags
+
+- `https`: These were built nightly, with latest released version of each plugin. Nginx webserver ran with SSL/TLS. Now, use `stable` instead with `-e PULP_HTTPS=true`.
+- `3.y-https`:  Pulpcore 3.y version and its compatible plugins. These were built whenever there is a z-release. 
+  Nginx webserver ran with SSL/TLS. Now, use `3.y` instead with `-e PULP_HTTPS=true`.
 
 ### pulp-galaxy-ng
 
@@ -53,9 +56,12 @@ See the [Single-Process Images](single-process-images) page for usage.
 #### Tags
 
 - `stable`: Built nightly, with latest released version of each plugin. Also called `latest`.
-- `https`: Built nightly, with latest released version of each plugin. Nginx webserver runs with SSL/TLS.
 
 [Browse available tags](https://hub.docker.com/r/pulp/pulp-galaxy-ng/tags)
+
+#### Discontinued tags
+
+- `https`: These were built nightly, with latest released version of each plugin. Nginx webserver ran with SSL/TLS. Now, use `stable` instead with `-e PULP_HTTPS=true`.
 
 ## Quickstart
 
@@ -109,7 +115,7 @@ $ podman run --detach \
 
 * These examples use the image `pulp`  with the tag `stable` (AKA `latest`). To use an alternative image and tag like `pulp:3.21`, substitute `pulp/pulp` with `pulp/pulp:3.21`.
 
-* To use https instead of http, substitute the correct image tag like `pulp/pulp:https`. Also change `--publish 8080:80` to `--publish 8080:443`
+* To use https instead of http, add `-e PULP_HTTPS=true` Also change `--publish 8080:80` to `--publish 8080:443`
 
 ### Reset the Admin Password
 

@@ -1,6 +1,5 @@
 FROM quay.io/centos/centos:stream8
 # https://ryandaniels.ca/blog/docker-dockerfile-arg-from-arg-trouble/
-ARG SCHEME="http"
 
 # https://superuser.com/questions/959380/how-do-i-install-generate-all-locales-on-fedora
 # This may not be necessary anymore because Fedora 30, unlike CentOS 7, has

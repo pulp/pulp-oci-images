@@ -20,6 +20,7 @@ start_container_and_wait() {
              --volume "$(pwd)/containers":/var/lib/containers:Z \
              --device /dev/fuse \
              -e PULP_DEFAULT_ADMIN_PASSWORD=password \
+             -e PULP_HTTPS=${pulp_https} \
              "$1"
   sleep 10
   for _ in $(seq 30)
@@ -45,8 +46,10 @@ scheme=${2:-http}
 old_image=${3:-""}
 if [[ "$scheme" == "http" ]]; then
   port=80
+  pulp_https=false
 else
   port=443
+  pulp_https=true
 fi
 
 mkdir -p settings pulp_storage pgsql containers
@@ -72,6 +75,9 @@ if [[ ${image} != *"galaxy"* ]];then
     cd pulp-cli
   fi
   pip install -r test_requirements.txt || pip install --no-build-isolation -r test_requirements.txt
+  if [ -e tests/cli.toml ]; then
+    mv tests/cli.toml "tests/cli.toml.bak.$(date -R)"
+  fi
   pulp config create --base-url $scheme://pulp:8080 --username "admin" --password "password" --location tests/cli.toml
   if [[ "$scheme" == "https" ]];then
     podman cp pulp:/etc/pulp/certs/pulp_webserver.crt /tmp/pulp_webserver.crt

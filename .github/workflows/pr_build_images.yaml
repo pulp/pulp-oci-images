@@ -85,6 +85,13 @@ jobs:
           images/s6_assets/test.sh "pulp/${{ matrix.test_image }}:latest"
           podman stop pulp
           podman rm pulp
+      - name: Test the image in s6 mode with https
+        run: |
+          # Delete the database from the previous test 1st, so test.sh does not fail
+          sudo rm -rf pgsql/data
+          images/s6_assets/test.sh "pulp/${{ matrix.test_image }}:latest" https
+          podman stop pulp
+          podman rm pulp
       - name: Compose up
         run: |
           cd images/compose
@@ -125,31 +132,3 @@ jobs:
           podman logs pulp || true
           cd images/compose
           podman-compose logs
-
-  s6-ssl-images:
-    runs-on: ubuntu-latest
-    needs: lint
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - ci_type: pulp_ci_centos
-            ci_image: pulp-ci-centos
-            test_type: pulp_galaxy_ng
-            test_image: pulp-galaxy-ng
-          - ci_type: pulp_ci_centos
-            ci_image: pulp-ci-centos
-            test_type: pulp
-            test_image: pulp
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build the images
-        run: |
-          podman build --file images/Containerfile.core.base --tag pulp/base:latest .
-          podman build --build-arg SCHEME="https" --file images/${{ matrix.ci_type }}/Containerfile --tag pulp/${{ matrix.ci_image }}:https .
-          podman build --build-arg FROM_TAG="https" --file images/${{ matrix.test_type }}/Containerfile --tag pulp/${{ matrix.test_image }}:https .
-      - name: Test the images in s6 mode
-        run: images/s6_assets/test.sh "pulp/${{ matrix.test_image }}:https" https
-      - name: Display log on error
-        if: failure()
-        run: podman logs pulp
