@@ -9,12 +9,11 @@ in one single Docker/Podman container.
 | Name | Description |
 | ---- | ----------- |
 | pulp | Multi-Process Pulp with several plugins |
-| pulp-galaxy-ng | Multi-Process Ansible Galaxy |
 | pulp-minimal | Single-Process Pulp with several plugins
 | pulp-web | Webserver for pulp-minimal |
+| galaxy | Multi-Process Ansible Galaxy |
 | galaxy-minimal | Single-Process Ansible Galaxy |
 | galaxy-web | Webserver for galaxy-minimal |
-| galaxy | Alias for galaxy-minimal |
 
 ## First-Party Services
 

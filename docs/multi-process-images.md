@@ -46,18 +46,21 @@ This image can also function the same as the single-process image `pulp-minimal`
 - `3.y-https`:  Pulpcore 3.y version and its compatible plugins. These were built whenever there is a z-release. 
   Nginx webserver ran with SSL/TLS. Now, use `3.y` instead with `-e PULP_HTTPS=true`.
 
-### pulp-galaxy-ng
+### galaxy
 
 This image contains Ansible [Galaxy](https://github.com/ansible/galaxy_ng).
 
 This image can also function the same as the single-process image `galaxy-minimal`.
 See the [Single-Process Images](single-process-images) page for usage.
 
+Note that this name `galaxy` used to be for single-process images. Version tags `4.6.3` and earlier
+are single-process rather than multi-process.
+
 #### Tags
 
 - `stable`: Built nightly, with latest released version of each plugin. Also called `latest`.
 
-[Browse available tags](https://hub.docker.com/r/pulp/pulp-galaxy-ng/tags)
+[Browse available tags](https://hub.docker.com/r/pulp/galaxy/tags)
 
 #### Discontinued tags
 
@@ -269,7 +272,7 @@ The Container file and all other assets used to build the container image are av
 ```bash
 $ <docker build | buildah bud> --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
 $ <docker build | buildah bud> --file images/pulp/Containerfile --tag pulp/pulp:latest .
-$ <docker build | buildah bud> --file images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
+$ <docker build | buildah bud> --file images/galaxy/Containerfile --tag pulp/galaxy:latest .
 ```
 
 ### Specifying versions
