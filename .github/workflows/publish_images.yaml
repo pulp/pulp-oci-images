@@ -96,6 +96,7 @@ jobs:
           images/s6_assets/test.sh "pulp/pulp:$VERSION"
           podman stop pulp
           podman rm pulp
+        shell: bash
       - name: Test the images in s6 mode with https
         run: |
           # Delete the database from the previous test 1st, so test.sh does not fail
@@ -103,6 +104,7 @@ jobs:
           images/s6_assets/test.sh "pulp/pulp:$VERSION" https
           podman stop pulp
           podman rm pulp
+        shell: bash
       - name: Compose up (pulp)
         run: |
           cd images/compose
