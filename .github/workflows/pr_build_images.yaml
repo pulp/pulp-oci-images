@@ -47,8 +47,8 @@ jobs:
         include:
           - ci_type: pulp_ci_centos
             ci_image: pulp-ci-centos
-            test_type: pulp_galaxy_ng
-            test_image: pulp-galaxy-ng
+            test_type: galaxy
+            test_image: galaxy
             web_image: galaxy-web
           - ci_type: pulp_ci_centos
             ci_image: pulp-ci-centos
@@ -120,7 +120,7 @@ jobs:
         env:
           PY_COLORS: '1'
       - name: Test all components (galaxy)
-        if: matrix.test_type == 'pulp_galaxy_ng'
+        if: matrix.test_type == 'galaxy'
         run: |
           .ci/scripts/galaxy_ng-tests.sh
         shell: bash

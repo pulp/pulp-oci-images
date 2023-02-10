@@ -75,10 +75,13 @@ jobs:
             podman tag pulp/pulp:latest quay.io/pulp/pulp:stable
             podman tag pulp/pulp:latest docker.io/pulp/pulp:stable
 
-            podman build --file images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
-            podman tag pulp/pulp-galaxy-ng:latest ghcr.io/pulp/pulp-galaxy-ng:latest
-            podman tag pulp/pulp-galaxy-ng:latest quay.io/pulp/pulp-galaxy-ng:latest
-            podman tag pulp/pulp-galaxy-ng:latest docker.io/pulp/pulp-galaxy-ng:latest
+            podman build --file images/galaxy/Containerfile --tag pulp/galaxy:latest .
+            podman tag pulp/galaxy:latest ghcr.io/pulp/galaxy:latest
+            podman tag pulp/galaxy:latest quay.io/pulp/galaxy:latest
+            podman tag pulp/galaxy:latest docker.io/pulp/galaxy:latest
+            podman tag pulp/galaxy:latest ghcr.io/pulp/galaxy:stable
+            podman tag pulp/galaxy:latest quay.io/pulp/galaxy:stable
+            podman tag pulp/galaxy:latest docker.io/pulp/galaxy:stable
 
             # Be resilient if this fails
             podman build --file images/pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
@@ -140,7 +143,7 @@ jobs:
         run: |
           if [ "$VERSION" = "latest" ]; then
             cd images/compose
-            sed -i "s/pulp-minimal:latest/pulp-galaxy-ng:${VERSION}/g" docker-compose.yml
+            sed -i "s/pulp-minimal:latest/galaxy:${VERSION}/g" docker-compose.yml
             sed -i "s/pulp\/pulp-web/pulp\/galaxy-web/g" docker-compose.yml
             id | grep "(root)" || sudo usermod -G root $(whoami)
             podman-compose up -d
@@ -174,7 +177,8 @@ jobs:
           podman push ghcr.io/pulp/pulp-ci-centos:$VERSION
           if [ "$VERSION" = "latest" ]; then
             podman push ghcr.io/pulp/pulp:stable
-            podman push ghcr.io/pulp/pulp-galaxy-ng:latest
+            podman push ghcr.io/pulp/galaxy:latest
+            podman push ghcr.io/pulp/galaxy:stable
             # Be resilient if this fails
             podman push ghcr.io/pulp/pulp:nightly || true
           fi
@@ -189,7 +193,8 @@ jobs:
           podman push docker.io/pulp/pulp-ci-centos:$VERSION
           if [ "$VERSION" = "latest" ]; then
             podman push docker.io/pulp/pulp:stable
-            podman push docker.io/pulp/pulp-galaxy-ng:latest
+            podman push docker.io/pulp/galaxy:latest
+            podman push docker.io/pulp/galaxy:stable
             # Be resilient if this fails
             podman push docker.io/pulp/pulp:nightly || true
           fi
@@ -204,7 +209,8 @@ jobs:
           podman push quay.io/pulp/pulp-ci-centos:$VERSION
           if [ "$VERSION" = "latest" ]; then
             podman push quay.io/pulp/pulp:stable
-            podman push quay.io/pulp/pulp-galaxy-ng:latest
+            podman push quay.io/pulp/galaxy:latest
+            podman push quay.io/pulp/galaxy:stable
             # Let this be the last thing so it can indicate failure without breaking anything else
             podman push quay.io/pulp/pulp:nightly
           fi
