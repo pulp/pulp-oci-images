@@ -44,20 +44,23 @@ def is_content_healthy(path):
 
 
 """
-Get container type based on entrypoint.
-Our entrypoint script is "exec'ing" (so no new process being created) the gunicorn process with the name of pulp "entity" (pulp-api, pulp-content, pulp-worker, pulp-resource-manager). Because of that, container's PID 1 will always be something like:
+PID 1 value (/proc/1/cmdline) may vary based on the gunicorn install method (RPM vs pip)
+The cmdline value for this PID looks like:
 ```
+# pip installation
 gunicorn: master \[pulp-{content,api,worker,resource-manager}\]
 ```
+OR
+```
+# RPM installation
+/usr/bin/python3.9/usr/bin/gunicorn--bind[::]:2481{6,7}pulpcore.app.wsgi:application--namepulp-{api,content}--timeout90--workers2
+```
 """
-def pulp_type():
-    f = open("/proc/1/cmdline", "r")
-    p_type = f.readline().split(" ")[2].strip("\x00")
-    f.close()
-    return p_type
+with open("/proc/1/cmdline", "r") as f:
+    cmdline = f.readline()
 
-if pulp_type() == "[pulp-api]":
+if "pulp-api" in cmdline:
     is_api_healthy(sys.argv[1])
 
-elif pulp_type() == "[pulp-content]":
+elif "pulp-content" in cmdline:
     is_content_healthy(sys.argv[1])
