@@ -36,15 +36,16 @@ jobs:
           echo ::endgroup::
           echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
           echo "APP=${{ matrix.app }}" >> $GITHUB_ENV
+          export APP=${{ matrix.app }}
           # We set additional variables this way, rather than via the matrix, so that they
           # do not clutter the job names on the GHA webui.
           # Also so that we can use bash conditionals for undefined
           echo "IMAGE_TAG=${{ matrix.image_tag }}" >> $GITHUB_ENV
           if [ "${APP}" = "pulp" ]; then
-            PIP_PKG_NAME_FOR_VERSION_STRING=pulpcore
+            echo PIP_PKG_NAME_FOR_VERSION_STRING=pulpcore >> $GITHUB_ENV
           fi
           if [ "${APP}" = "galaxy" ]; then
-            PIP_PKG_NAME_FOR_VERSION_STRING=galaxy-ng
+            echo PIP_PKG_NAME_FOR_VERSION_STRING=galaxy-ng >> $GITHUB_ENV
           fi
           pip install podman-compose
         shell: bash
