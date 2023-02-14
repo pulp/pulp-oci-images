@@ -1,8 +1,11 @@
 name: pulp-oci-images CI
 
 on:
+  push:
+    branches:
+      - latest
   schedule:
-    - cron: '15 3 * * *'
+    - cron: '0 1 * * *'
   workflow_dispatch:
   pull_request:
 env:
@@ -11,13 +14,8 @@ env:
   PYTEST_ADDOPTS: '--color=yes'
 
 jobs:
-  single-process-images:
+  lint:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        app: [pulp, galaxy]
-        image_tag: [nightly, stable]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -28,6 +26,133 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: '3.8'
+      - name: Check commit message
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_CONTEXT: ${{ github.event.pull_request.commits_url }}
+        run: |
+          echo ::group::REQUESTS
+          pip install pygithub
+          echo ::endgroup::
+          for sha in $(curl $GITHUB_CONTEXT | jq '.[].sha' | sed 's/"//g')
+          do
+            python .ci/scripts/validate_commit_message.py $sha
+            VALUE=$?
+            if [ "$VALUE" -gt 0 ]; then
+              exit $VALUE
+            fi
+          done
+        shell: bash
+  base-images:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    outputs:
+      image_variants: "${{ steps.image_variants.outputs.image_variants }}"
+    steps:
+      # We do not want to build nightly images unless it's a PR to the latest branch,
+      # or a branch/dispatch build on the latest branch.
+      - name: Set the list of image_variants for later jobs
+        id: image_variants
+        run: |
+          if [ "${{ github.base_ref }}" == "latest" ] || [ "${{ github.ref_name }}" == "latest" ]; then
+            echo "image_variants=[\"nightly\",\"stable\"]" >> "$GITHUB_OUTPUT"
+          else
+            echo "image_variants=[\"stable\"]" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Set the temporary image tag
+        run: |
+          temp_tag="${GITHUB_REF_NAME%/*}"
+          echo "Building $temp_tag"
+          echo "TEMP_TAG=${temp_tag}" >> $GITHUB_ENV
+      - uses: actions/checkout@v2
+        with:
+          # by default, it uses a depth of 1
+          # this fetches all history so that we can read each commit
+          fetch-depth: 0
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.8'
+      - name: Dispatching
+        if: github.event_name == 'schedule'
+        run: python .ci/scripts/update_ci_branches.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      - name: Build images
+        run: |
+          podman version
+          buildah version
+          podman build --format docker --file images/Containerfile.core.base --tag pulp/base:${TEMP_TAG} .
+          podman build --format docker --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:${TEMP_TAG} --build-arg FROM_TAG=${TEMP_TAG} .
+      # we use the docker format (default), even though it may not be the fastest,
+      # because it supports saving both images at once.
+      # However, it seems to export the common layers twice.
+      # We should look into whether its possible to export just pulp-ci-centos,
+      # and tag the base image manually.
+      - name: Save podman images to tarball
+        run: podman save -m -o base-images.tar pulp/base:${TEMP_TAG} pulp/pulp-ci-centos:${TEMP_TAG}
+      - name: Cache podman images
+        uses: actions/cache/save@v3
+        with:
+          key: base-images-${{ github.run_id }}-${{ github.run_attempt }}
+          path: base-images.tar
+          fail-on-cache-miss: true
+  app-images:
+    needs: base-images
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image_variant: ${{ fromJSON(needs.base-images.outputs.image_variants) }}
+        app:
+          - image_name: pulp-minimal
+            web_image: pulp-web
+            pip_name: pulpcore
+            s6: false
+          - image_name: pulp
+            web_image: pulp-web
+            pip_name: pulpcore
+            s6: true
+          - image_name: galaxy-minimal
+            web_image: galaxy-web
+            pip_name: galaxy-ng
+            s6: false
+          - image_name: galaxy
+            web_image: galaxy-web
+            pip_name: galaxy-ng
+            s6: true
+    steps:
+      - name: Set the temporary image tag
+        run: |
+          temp_tag="${GITHUB_REF_NAME%/*}"
+          echo "Building $temp_tag"
+          echo "TEMP_TAG=${temp_tag}" >> $GITHUB_ENV
+      - uses: actions/checkout@v2
+        with:
+          # by default, it uses a depth of 1
+          # this fetches all history so that we can read each commit
+          fetch-depth: 0
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.8'
+      - name: Install python dependencies
+        if: github.event_name == 'schedule'
+        run: |
+          echo ::group::PYDEPS
+          pip install gitpython requests packaging jinja2 pyyaml
+          echo ::endgroup::
+      - name: Restore podman images from cache
+        uses: actions/cache/restore@v3
+        with:
+          key: base-images-${{ github.run_id }}-${{ github.run_attempt }}
+          path: base-images.tar
+          fail-on-cache-miss: true
+      - name: Load podman images from tarball
+        run: |
+          podman load -i base-images.tar
       - name: Install httpie and podman-compose
         run: |
           echo ::group::HTTPIE
@@ -35,35 +160,73 @@ jobs:
           sudo -E apt-get -yq --no-install-suggests --no-install-recommends install httpie
           echo ::endgroup::
           echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
-          echo "APP=${{ matrix.app }}" >> $GITHUB_ENV
-          export APP=${{ matrix.app }}
-          # We set additional variables this way, rather than via the matrix, so that they
-          # do not clutter the job names on the GHA webui.
-          # Also so that we can use bash conditionals for undefined
-          echo "IMAGE_TAG=${{ matrix.image_tag }}" >> $GITHUB_ENV
-          if [ "${APP}" = "pulp" ]; then
-            echo PIP_PKG_NAME_FOR_VERSION_STRING=pulpcore >> $GITHUB_ENV
-          fi
-          if [ "${APP}" = "galaxy" ]; then
-            echo PIP_PKG_NAME_FOR_VERSION_STRING=galaxy-ng >> $GITHUB_ENV
-          fi
           pip install podman-compose
         shell: bash
-      - name: Build
+      - name: Build images
         run: |
           podman version
           buildah version
-          podman build --format docker --file images/Containerfile.core.base --tag pulp/base:latest .
-          podman build --format docker --pull=false --file images/${APP}-minimal/$IMAGE_TAG/Containerfile.core --tag pulp/${APP}-minimal:$IMAGE_TAG .
-          podman build --format docker --pull=false --file images/${APP}-minimal/$IMAGE_TAG/Containerfile.webserver --tag pulp/${APP}-web:$IMAGE_TAG .
+          if [ "${{ matrix.app.s6 }}" == "false" ]; then
+            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.core --tag pulp/${{ matrix.app.image_name }}:${TEMP_TAG} --build-arg FROM_TAG=${TEMP_TAG} .
+            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.webserver --tag pulp/${{ matrix.app.web_image }}:${TEMP_TAG} --build-arg FROM_TAG=${TEMP_TAG} .
+          else
+            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile --tag pulp/${{ matrix.app.image_name }}:${TEMP_TAG} --build-arg FROM_TAG=${TEMP_TAG} .
+          fi
           podman images -a
+      - name: Set version and branch image tags
+        run: |
+          app_version=$(podman run pulp/${{ matrix.app.image_name }}:stable bash -c "pip3 show ${{ matrix.app.pip_name }} | sed -n -e 's/Version: //p'")
+          app_branch=$(echo ${app_version} | grep -oP '\d+\.\d+')
+
+          echo "APP_VERSION: ${app_version}"
+          echo "APP_BRANCH: ${app_branch}"
+          echo "APP_VERSION=${app_version}" >> $GITHUB_ENV
+          echo "APP_BRANCH=${app_branch}" >> $GITHUB_ENV
+
+          base_version=$(podman run pulp/${{ matrix.app.image_name }}:stable bash -c "pip3 show pulpcore | sed -n -e 's/Version: //p'")
+          base_branch=$(echo ${base_version} | grep -oP '\d+\.\d+')
+
+          echo "BASE_VERSION: ${base_version}"
+          echo "BASE_BRANCH: ${base_branch}"
+          echo "BASE_VERSION=${base_version}" >> $GITHUB_ENV
+          echo "BASE_BRANCH=${base_branch}" >> $GITHUB_ENV
+      - name: Test upgrading to the image in s6 mode
+        if: matrix.app.image_name == 'pulp'
+        run: |
+          # 3.20 has postgres 12 rather than 13
+          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_TAG}" http "quay.io/pulp/all-in-one-pulp:3.20"
+          podman stop pulp
+          podman rm pulp
+      - name: Test the image in s6 mode
+        if: matrix.app.image_name == 'galaxy'
+        run: |
+          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_TAG}"
+          podman stop pulp
+          podman rm pulp
+      - name: Test the image in s6 mode with https
+        if: matrix.app.s6
+        run: |
+          # Delete the database from the previous test 1st, so test.sh does not fail
+          sudo rm -rf pgsql/data
+          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_TAG}" https
+          podman stop pulp
+          podman rm pulp
       - name: Compose up
         run: |
+          if [ "${{ matrix.app.s6 }}" == "true" ]; then
+            # Reuse the folders from the s6 mode tests
+            FILE="docker-compose.folders.yml"
+            # We'll pull the web image from a registry since we didn't build it.
+            WEB_TAG="${APP_BRANCH}"
+          else
+            FILE="docker-compose.yml"
+            WEB_TAG="${TEMP_TAG}"
+          fi
           cd images/compose
-          sed -i "s/pulp-minimal:latest/${APP}-minimal:$IMAGE_TAG/g" docker-compose.yml
-          sed -i "s/pulp-web:latest/${APP}-web:$IMAGE_TAG/g" docker-compose.yml
-          sudo usermod -G root $(whoami)
-          podman-compose up -d
+          sed -i "s/pulp-minimal:latest/${{ matrix.app.image_name }}:${TEMP_TAG}/g" $FILE
+          sed -i "s/pulp-web:latest/${{ matrix.app.web_image }}:${WEB_TAG}/g" $FILE
+          id | grep "(root)" || sudo usermod -G root $(whoami)
+          podman-compose -f $FILE up -d
           sleep 30
           for _ in $(seq 20)
           do
@@ -81,6 +244,9 @@ jobs:
           git clone --depth=1 https://github.com/pulp/pulp_ansible.git
           git clone --depth=1 https://github.com/pulp/pulp_container.git
           .ci/scripts/pulp_tests.sh
+        shell: bash
+        env:
+          PY_COLORS: '1'
       - name: Test all components (galaxy)
         if: matrix.app == 'galaxy'
         run: |
@@ -94,107 +260,72 @@ jobs:
           PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PULP_GITHUB_USERNAME: ${{ github.actor }}
         run: echo "$PULP_GITHUB_TOKEN" | podman login -u "$PULP_GITHUB_USERNAME" --password-stdin ghcr.io
-      - name: Push images to github
-        if: github.event_name != 'pull_request'
-        run: |
-          podman tag pulp/base:latest ghcr.io/pulp/base:latest
-          podman tag pulp/${APP}-minimal:$IMAGE_TAG ghcr.io/pulp/${APP}-minimal:$IMAGE_TAG
-          podman tag pulp/${APP}-web:$IMAGE_TAG ghcr.io/pulp/${APP}-web:$IMAGE_TAG
-
-          podman push ghcr.io/pulp/base:latest
-          podman push ghcr.io/pulp/${APP}-minimal:$IMAGE_TAG
-          podman push ghcr.io/pulp/${APP}-web:$IMAGE_TAG
-
-          if [[ "$IMAGE_TAG" == "stable" ]]; then
-            podman tag pulp/${APP}-minimal:stable ghcr.io/pulp/${APP}-minimal:latest
-            podman tag pulp/${APP}-web:stable ghcr.io/pulp/${APP}-web:latest
-
-            podman push ghcr.io/pulp/${APP}-minimal:latest
-            podman push ghcr.io/pulp/${APP}-web:latest
-
-            CURRENT_VERSION=$(podman run pulp/${APP}-minimal:stable bash -c "pip3 show ${PIP_PKG_NAME_FOR_VERSION_STRING} | sed -n -e 's/Version: //p'")
-            echo $CURRENT_VERSION
-
-            podman tag pulp/${APP}-minimal:stable ghcr.io/pulp/${APP}-minimal:$CURRENT_VERSION
-            podman tag pulp/${APP}-web:stable ghcr.io/pulp/${APP}-web:$CURRENT_VERSION
-
-            podman push ghcr.io/pulp/${APP}-minimal:$CURRENT_VERSION
-            podman push ghcr.io/pulp/${APP}-web:$CURRENT_VERSION
-          fi
-          echo $CURRENT_VERSION
       - name: Docker login
         if: github.event_name != 'pull_request'
         env:
           DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
           DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
         run: echo "$DOCKER_BOT_PASSWORD" | podman login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
-      - name: Push images to dockerhub
-        if: github.event_name != 'pull_request'
-        run: |
-          podman tag pulp/base:latest docker.io/pulp/base:latest
-          podman tag pulp/${APP}-minimal:$IMAGE_TAG docker.io/pulp/${APP}-minimal:$IMAGE_TAG
-          podman tag pulp/${APP}-web:$IMAGE_TAG docker.io/pulp/${APP}-web:$IMAGE_TAG
-
-          podman push docker.io/pulp/base:latest
-          podman push docker.io/pulp/${APP}-minimal:$IMAGE_TAG
-          podman push docker.io/pulp/${APP}-web:$IMAGE_TAG
-
-          if [[ "$IMAGE_TAG" == "stable" ]]; then
-            podman tag pulp/${APP}-minimal:stable docker.io/pulp/${APP}-minimal:latest
-            podman tag pulp/${APP}-web:stable docker.io/pulp/${APP}-web:latest
-
-            podman push docker.io/pulp/${APP}-minimal:latest
-            podman push docker.io/pulp/${APP}-web:latest
-
-            CURRENT_VERSION=$(podman run pulp/${APP}-minimal:stable bash -c "pip3 show ${PIP_PKG_NAME_FOR_VERSION_STRING} | sed -n -e 's/Version: //p'")
-            echo $CURRENT_VERSION
-
-            podman tag pulp/${APP}-minimal:stable docker.io/pulp/${APP}-minimal:$CURRENT_VERSION
-            podman tag pulp/${APP}-web:stable docker.io/pulp/${APP}-web:$CURRENT_VERSION
-
-            podman push docker.io/pulp/${APP}-minimal:$CURRENT_VERSION
-            podman push docker.io/pulp/${APP}-web:$CURRENT_VERSION
-          fi
-          echo $CURRENT_VERSION
       - name: Quay login
         if: github.event_name != 'pull_request'
         env:
           QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
           QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
         run: echo "$QUAY_BOT_PASSWORD" | podman login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
-      - name: Push images to quay
+      - name: Push base images to registries
         if: github.event_name != 'pull_request'
         run: |
-          podman tag pulp/base:latest quay.io/pulp/base:latest
-          podman tag pulp/${APP}-minimal:$IMAGE_TAG quay.io/pulp/${APP}-minimal:$IMAGE_TAG
-          podman tag pulp/${APP}-web:$IMAGE_TAG quay.io/pulp/${APP}-web:$IMAGE_TAG
-
-          podman push quay.io/pulp/base:latest
-          podman push quay.io/pulp/${APP}-minimal:$IMAGE_TAG
-          podman push quay.io/pulp/${APP}-web:$IMAGE_TAG
-
-          if [[ "$IMAGE_TAG" == "stable" ]]; then
-            podman tag pulp/${APP}-minimal:stable quay.io/pulp/${APP}-minimal:latest
-            podman tag pulp/${APP}-web:stable quay.io/pulp/${APP}-web:latest
-
-            podman push quay.io/pulp/${APP}-minimal:latest
-            podman push quay.io/pulp/${APP}-web:latest
-
-            CURRENT_VERSION=$(podman run pulp/${APP}-minimal:stable bash -c "pip3 show ${PIP_PKG_NAME_FOR_VERSION_STRING} | sed -n -e 's/Version: //p'")
-            echo $CURRENT_VERSION
-
-            podman tag pulp/${APP}-minimal:stable quay.io/pulp/${APP}-minimal:$CURRENT_VERSION
-            podman tag pulp/${APP}-web:stable quay.io/pulp/${APP}-web:$CURRENT_VERSION
-
-            podman push quay.io/pulp/${APP}-minimal:$CURRENT_VERSION
-            podman push quay.io/pulp/${APP}-web:$CURRENT_VERSION
-          fi
-          echo $CURRENT_VERSION
+          for registry in gchr.io docker.io quay.io; do
+            # Technically multiple jobs will build and push these 2 images
+            # but it is created once in the base-images job, and will be identical
+            for image_name_looped in base pulp-ci-centos; do
+              if [ "${TEMP_TAG}" == "latest" ]; then
+                tags="${BASE_BRANCH} ${BASE_VERSION} latest"
+              else
+                tags="${BASE_BRANCH} ${BASE_VERSION}"
+              fi
+              for tag in $tags; do
+                podman tag pulp/${image_name_looped}:${TEMP_TAG} ${registry}/pulp/${image_name_looped}:${tag}
+                podman push ${registry}/pulp/${image_name_looped}:${tag}
+              done
+            done
+            unset tag
+        shell: bash
+      - name: Push app images to registries
+        if: github.event_name != 'pull_request'
+        run: |
+          for registry in gchr.io docker.io quay.io; do
+            for image_name_looped in ${{ matrix.app.image_name }} ${{ matrix.app.web_image }}; do
+              if [ "${{ matrix.image_variant }}" == "stable" ]; then
+                # latest branch stable variant gets tagged as both "latest" and "stable"
+                if [ "${TEMP_TAG}" == "latest" ]; then
+                  tags="${APP_BRANCH} ${APP_VERSION} ${{ matrix.image_variant }} latest"
+                else
+                  tags="${APP_BRANCH} ${APP_VERSION}"
+                fi
+              else
+                # The matrix should ensure that the nightly variant only ever pertains to the "latest" branch, but let's be extra safe
+                if [ "${TEMP_TAG}" == "latest" ]; then
+                  # "nightly" is a special case, no version / branch tags
+                  tags="${{ matrix.image_variant }}"
+                fi
+              fi
+              for tag in $tags; do
+                podman tag pulp/${image_name_looped}:${TEMP_TAG} ${registry}/pulp/${image_name_looped}:${tag}
+                podman push ${registry}/pulp/${image_name_looped}:${tag}
+              done
+            done
+          done
+        shell: bash
       - name: Logs
         if: always()
         run: |
+          set +e
           podman ps -a
           podman images -a
+          podman logs pulp
+          cd images/compose
+          podman-compose logs
           podman logs --tail=10000 compose_pulp_api_1
           podman logs --tail=10000 compose_pulp_content_1
           podman logs --tail=10000 compose_pulp_worker_1

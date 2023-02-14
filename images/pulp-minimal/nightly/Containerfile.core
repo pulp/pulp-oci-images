@@ -1,4 +1,5 @@
-FROM pulp/base:latest
+ARG FROM_TAG="latest"
+FROM pulp/base:${FROM_TAG}
 
 RUN pip3 install git+https://github.com/pulp/pulpcore.git#egg=pulpcore \
   git+https://github.com/pulp/pulp_ansible.git \

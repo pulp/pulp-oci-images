@@ -1,4 +1,5 @@
-FROM pulp/pulp-minimal:nightly as builder
+ARG FROM_TAG="nightly"
+FROM pulp/pulp-minimal:${FROM_TAG} as builder
 
 RUN mkdir -p /etc/nginx/pulp \
              /www/data

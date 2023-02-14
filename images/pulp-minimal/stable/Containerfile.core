@@ -1,4 +1,5 @@
-FROM pulp/base:latest
+ARG FROM_TAG="latest"
+FROM pulp/base:${FROM_TAG}
 
 RUN pip3 install pulpcore \
   pulp_ansible \

@@ -1,4 +1,5 @@
-FROM pulp/galaxy-minimal:stable as builder
+ARG FROM_TAG="stable"
+FROM pulp/galaxy-minimal:${FROM_TAG} as builder
 
 RUN mkdir -p /etc/nginx/pulp \
              /www/data
