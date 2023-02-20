@@ -78,7 +78,7 @@ if [[ ${image} != *"galaxy"* ]];then
   if [ -e tests/cli.toml ]; then
     mv tests/cli.toml "tests/cli.toml.bak.$(date -R)"
   fi
-  pulp config create --base-url $scheme://pulp:8080 --username "admin" --password "password" --location tests/cli.toml
+  pulp config create --base-url $scheme://pulp:8080 --username "admin" --password "password" --no-verify-ssl --location tests/cli.toml
   if [[ "$scheme" == "https" ]];then
     podman cp pulp:/etc/pulp/certs/pulp_webserver.crt /tmp/pulp_webserver.crt
     sudo cp /tmp/pulp_webserver.crt /usr/local/share/ca-certificates/pulp_webserver.crt
