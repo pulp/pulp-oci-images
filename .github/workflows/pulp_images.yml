@@ -64,9 +64,9 @@ jobs:
           fi
       - name: Set the temporary image tag
         run: |
-          temp_tag="${GITHUB_REF_NAME%/*}"
-          echo "Building $temp_tag"
-          echo "TEMP_TAG=${temp_tag}" >> $GITHUB_ENV
+          temp_base_tag="${GITHUB_REF_NAME%/*}"
+          echo "Building $temp_base_tag"
+          echo "TEMP_BASE_TAG=${temp_base_tag}" >> $GITHUB_ENV
       - uses: actions/checkout@v2
         with:
           # by default, it uses a depth of 1
@@ -85,8 +85,8 @@ jobs:
         run: |
           podman version
           buildah version
-          podman build --format docker --file images/Containerfile.core.base --tag pulp/base:${TEMP_TAG} .
-          podman build --format docker --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:${TEMP_TAG} --build-arg FROM_TAG=${TEMP_TAG} .
+          podman build --format docker --file images/Containerfile.core.base --tag pulp/base:${TEMP_BASE_TAG} .
+          podman build --format docker --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:${TEMP_BASE_TAG} --build-arg FROM_TAG=${TEMP_BASE_TAG} .
       # we use the docker format (default), even though it may not be the fastest,
       # because it supports saving both images at once.
       # However, it seems to export the common layers twice.
@@ -95,12 +95,12 @@ jobs:
       - name: Save podman images to tarball
         id: pulp_ci_centos_id
         run: |
-           podman save -m -o base-images.tar pulp/base:${TEMP_TAG} pulp/pulp-ci-centos:${TEMP_TAG}
+           podman save -m -o base-images.tar pulp/base:${TEMP_BASE_TAG} pulp/pulp-ci-centos:${TEMP_BASE_TAG}
            # The id is unique to the image build (not the Containerfile) and will be used in the cache key
            # If a workflow completes successfully, every workflow will generate a new cache.
            # And if we re-run the entire workflow ("Re-run all jobs"), it will generate a new cache too.
            # If we re-run a failed app-images job, it will use the existing cache from base-images
-           id=$(podman image inspect --format '{{ .Id }}' pulp/pulp-ci-centos:${TEMP_TAG})
+           id=$(podman image inspect --format '{{ .Id }}' pulp/pulp-ci-centos:${TEMP_BASE_TAG})
            echo "pulp_ci_centos_id=${id}" >> "$GITHUB_OUTPUT"
            echo "pulp_ci_centos_id=${id}" >> "$GITHUB_ENV"
       - name: Cache podman images
@@ -134,11 +134,17 @@ jobs:
             pip_name: galaxy-ng
             s6: true
     steps:
-      - name: Set the temporary image tag
+      - name: Set the temporary image tags
         run: |
-          temp_tag="${GITHUB_REF_NAME%/*}"
-          echo "Building $temp_tag"
-          echo "TEMP_TAG=${temp_tag}" >> $GITHUB_ENV
+          if [ "${{ matrix.image_variant }}" == "nightly" ]; then
+            temp_app_tag="nightly"
+          else
+            temp_app_tag="${GITHUB_REF_NAME%/*}"
+          fi
+          temp_base_tag="${GITHUB_REF_NAME%/*}"
+          echo "Building $temp_app_tag from base $temp_base_tag"
+          echo "TEMP_APP_TAG=${temp_app_tag}" >> $GITHUB_ENV
+          echo "TEMP_BASE_TAG=${temp_base_tag}" >> $GITHUB_ENV
       - uses: actions/checkout@v2
         with:
           # by default, it uses a depth of 1
@@ -182,10 +188,10 @@ jobs:
           podman version
           buildah version
           if [ "${{ matrix.app.s6 }}" == "false" ]; then
-            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.core --tag pulp/${{ matrix.app.image_name }}:${TEMP_TAG} --build-arg FROM_TAG=${TEMP_TAG} .
-            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.webserver --tag pulp/${{ matrix.app.web_image }}:${TEMP_TAG} --build-arg FROM_TAG=${TEMP_TAG} .
+            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.core --tag pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_BASE_TAG} .
+            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.webserver --tag pulp/${{ matrix.app.web_image }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_APP_TAG} .
           else
-            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile --tag pulp/${{ matrix.app.image_name }}:${TEMP_TAG} --build-arg FROM_TAG=${TEMP_TAG} .
+            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile --tag pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_BASE_TAG} .
           fi
           podman images -a
       - name: Set version and branch image tags
@@ -209,13 +215,13 @@ jobs:
         if: matrix.app.image_name == 'pulp'
         run: |
           # 3.20 has postgres 12 rather than 13
-          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_TAG}" http "quay.io/pulp/all-in-one-pulp:3.20"
+          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}" http "quay.io/pulp/all-in-one-pulp:3.20"
           podman stop pulp
           podman rm pulp
       - name: Test the image in s6 mode
         if: matrix.app.image_name == 'galaxy'
         run: |
-          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_TAG}"
+          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}"
           podman stop pulp
           podman rm pulp
       - name: Test the image in s6 mode with https
@@ -223,7 +229,7 @@ jobs:
         run: |
           # Delete the database from the previous test 1st, so test.sh does not fail
           sudo rm -rf pgsql/data
-          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_TAG}" https
+          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}" https
           podman stop pulp
           podman rm pulp
       - name: Compose up
@@ -235,10 +241,10 @@ jobs:
             WEB_TAG="${APP_BRANCH}"
           else
             FILE="docker-compose.yml"
-            WEB_TAG="${TEMP_TAG}"
+            WEB_TAG="${TEMP_APP_TAG}"
           fi
           cd images/compose
-          sed -i "s/pulp-minimal:latest/${{ matrix.app.image_name }}:${TEMP_TAG}/g" $FILE
+          sed -i "s/pulp-minimal:latest/${{ matrix.app.image_name }}:${TEMP_APP_TAG}/g" $FILE
           sed -i "s/pulp-web:latest/${{ matrix.app.web_image }}:${WEB_TAG}/g" $FILE
           id | grep "(root)" || sudo usermod -G root $(whoami)
           podman-compose -f $FILE up -d
@@ -294,13 +300,13 @@ jobs:
             # Technically multiple jobs will build and push these 2 images
             # but it is created once in the base-images job, and will be identical
             for image_name_looped in base pulp-ci-centos; do
-              if [ "${TEMP_TAG}" == "latest" ]; then
+              if [ "${TEMP_BASE_TAG}" == "latest" ]; then
                 tags="${BASE_BRANCH} ${BASE_VERSION} latest"
               else
                 tags="${BASE_BRANCH} ${BASE_VERSION}"
               fi
               for tag in $tags; do
-                podman tag pulp/${image_name_looped}:${TEMP_TAG} ${registry}/pulp/${image_name_looped}:${tag}
+                podman tag pulp/${image_name_looped}:${TEMP_BASE_TAG} ${registry}/pulp/${image_name_looped}:${tag}
                 podman push ${registry}/pulp/${image_name_looped}:${tag}
               done
             done
@@ -320,20 +326,20 @@ jobs:
             for image_name_looped in $images; do
               if [ "${{ matrix.image_variant }}" == "stable" ]; then
                 # latest branch stable variant gets tagged as both "latest" and "stable"
-                if [ "${TEMP_TAG}" == "latest" ]; then
+                if [ "${TEMP_APP_TAG}" == "latest" ]; then
                   tags="${APP_BRANCH} ${APP_VERSION} ${{ matrix.image_variant }} latest"
                 else
                   tags="${APP_BRANCH} ${APP_VERSION}"
                 fi
               else
                 # The matrix should ensure that the nightly variant only ever pertains to the "latest" branch, but let's be extra safe
-                if [ "${TEMP_TAG}" == "latest" ]; then
+                if [ "${TEMP_APP_TAG}" == "latest" ]; then
                   # "nightly" is a special case, no version / branch tags
-                  tags="${{ matrix.image_variant }}"
+                  tags="nightly"
                 fi
               fi
               for tag in $tags; do
-                podman tag pulp/${image_name_looped}:${TEMP_TAG} ${registry}/pulp/${image_name_looped}:${tag}
+                podman tag pulp/${image_name_looped}:${TEMP_APP_TAG} ${registry}/pulp/${image_name_looped}:${tag}
                 podman push ${registry}/pulp/${image_name_looped}:${tag}
               done
             done
