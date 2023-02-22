@@ -295,8 +295,14 @@ jobs:
       - name: Push app images to registries
         if: github.event_name != 'pull_request'
         run: |
+          if [ "${{ matrix.app.s6 }}" == "true" ]; then
+            images="${{ matrix.app.image_name }}"
+          else
+            images="${{ matrix.app.image_name }} ${{ matrix.app.web_image }}"
+          fi
           for registry in ghcr.io docker.io quay.io; do
-            for image_name_looped in ${{ matrix.app.image_name }} ${{ matrix.app.web_image }}; do
+
+            for image_name_looped in $images; do
               if [ "${{ matrix.image_variant }}" == "stable" ]; then
                 # latest branch stable variant gets tagged as both "latest" and "stable"
                 if [ "${TEMP_TAG}" == "latest" ]; then
