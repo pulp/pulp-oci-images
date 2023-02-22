@@ -275,7 +275,7 @@ jobs:
       - name: Push base images to registries
         if: github.event_name != 'pull_request'
         run: |
-          for registry in gchr.io docker.io quay.io; do
+          for registry in ghcr.io docker.io quay.io; do
             # Technically multiple jobs will build and push these 2 images
             # but it is created once in the base-images job, and will be identical
             for image_name_looped in base pulp-ci-centos; do
@@ -295,7 +295,7 @@ jobs:
       - name: Push app images to registries
         if: github.event_name != 'pull_request'
         run: |
-          for registry in gchr.io docker.io quay.io; do
+          for registry in ghcr.io docker.io quay.io; do
             for image_name_looped in ${{ matrix.app.image_name }} ${{ matrix.app.web_image }}; do
               if [ "${{ matrix.image_variant }}" == "stable" ]; then
                 # latest branch stable variant gets tagged as both "latest" and "stable"
