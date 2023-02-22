@@ -50,6 +50,7 @@ jobs:
       fail-fast: false
     outputs:
       image_variants: "${{ steps.image_variants.outputs.image_variants }}"
+      pulp_ci_centos_id: "${{ steps.pulp_ci_centos_id.outputs.pulp_ci_centos_id }}"
     steps:
       # We do not want to build nightly images unless it's a PR to the latest branch,
       # or a branch/dispatch build on the latest branch.
@@ -101,10 +102,11 @@ jobs:
            # If we re-run a failed app-images job, it will use the existing cache from base-images
            id=$(podman image inspect --format '{{ .Id }}' pulp/pulp-ci-centos:${TEMP_TAG})
            echo "pulp_ci_centos_id=${id}" >> "$GITHUB_OUTPUT"
+           echo "pulp_ci_centos_id=${id}" >> "$GITHUB_ENV"
       - name: Cache podman images
         uses: actions/cache/save@v3
         with:
-          key: base-images=${{ needs.base-images.outputs.pulp_ci_centos_id }}
+          key: base-images=${{ env.pulp_ci_centos_id }}
           path: base-images.tar
           fail-on-cache-miss: true
   app-images:
@@ -152,6 +154,11 @@ jobs:
           echo ::group::PYDEPS
           pip install gitpython requests packaging jinja2 pyyaml
           echo ::endgroup::
+      - name: Verify needs.base-images.outputs.pulp_ci_centos_id is not blank
+        run: |
+          if [ -z "${{ needs.base-images.outputs.pulp_ci_centos_id }}" ]; then
+            exit 1
+          fi
       - name: Restore podman images from cache
         uses: actions/cache/restore@v3
         with:
