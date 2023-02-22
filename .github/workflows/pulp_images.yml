@@ -92,11 +92,19 @@ jobs:
       # We should look into whether its possible to export just pulp-ci-centos,
       # and tag the base image manually.
       - name: Save podman images to tarball
-        run: podman save -m -o base-images.tar pulp/base:${TEMP_TAG} pulp/pulp-ci-centos:${TEMP_TAG}
+        id: pulp_ci_centos_id
+        run: |
+           podman save -m -o base-images.tar pulp/base:${TEMP_TAG} pulp/pulp-ci-centos:${TEMP_TAG}
+           # The id is unique to the image build (not the Containerfile) and will be used in the cache key
+           # If a workflow completes successfully, every workflow will generate a new cache.
+           # And if we re-run the entire workflow ("Re-run all jobs"), it will generate a new cache too.
+           # If we re-run a failed app-images job, it will use the existing cache from base-images
+           id=$(podman image inspect --format '{{ .Id }}' pulp/pulp-ci-centos:${TEMP_TAG})
+           echo "pulp_ci_centos_id=${id}" >> "$GITHUB_OUTPUT"
       - name: Cache podman images
         uses: actions/cache/save@v3
         with:
-          key: base-images-${{ github.run_id }}-${{ github.run_attempt }}
+          key: base-images=${{ needs.base-images.outputs.pulp_ci_centos_id }}
           path: base-images.tar
           fail-on-cache-miss: true
   app-images:
@@ -147,7 +155,7 @@ jobs:
       - name: Restore podman images from cache
         uses: actions/cache/restore@v3
         with:
-          key: base-images-${{ github.run_id }}-${{ github.run_attempt }}
+          key: base-images=${{ needs.base-images.outputs.pulp_ci_centos_id }}
           path: base-images.tar
           fail-on-cache-miss: true
       - name: Load podman images from tarball
