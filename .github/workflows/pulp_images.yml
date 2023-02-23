@@ -76,9 +76,13 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: '3.8'
-      - name: Dispatching
+      - name: Dispatch workflows on stable branches
         if: github.event_name == 'schedule'
-        run: python .ci/scripts/update_ci_branches.py
+        run: |
+          echo ::group::PYDEPS
+          pip install gitpython requests packaging jinja2 pyyaml
+          echo ::endgroup::
+          python .ci/scripts/update_ci_branches.py
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       - name: Build images
