@@ -333,7 +333,7 @@ jobs:
                 fi
               else
                 # The matrix should ensure that the nightly variant only ever pertains to the "latest" branch, but let's be extra safe
-                if [ "${TEMP_APP_TAG}" == "latest" ]; then
+                if [ "${GITHUB_REF_NAME%/*}" == "latest" ]; then
                   # "nightly" is a special case, no version / branch tags
                   tags="nightly"
                 fi
