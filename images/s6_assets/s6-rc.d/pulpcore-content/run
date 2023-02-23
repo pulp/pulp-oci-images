@@ -13,4 +13,6 @@ export HOME /var/lib/pulp/
 importas HOME HOME
 importas PULP_GUNICORN_TIMEOUT PULP_GUNICORN_TIMEOUT
 importas PULP_CONTENT_WORKERS PULP_CONTENT_WORKERS
-/usr/local/bin/gunicorn pulpcore.content:server --bind "127.0.0.1:24816" --name pulp-content --timeout "${PULP_GUNICORN_TIMEOUT}" --worker-class "aiohttp.GunicornWebWorker" --workers "${PULP_CONTENT_WORKERS}" --access-logfile -
+importas PULP_GUNICORN_RELOAD PULP_GUNICORN_RELOAD
+foreground { s6-echo "Calling /etc/init/pulpcore-content" }
+/etc/init/pulpcore-content
