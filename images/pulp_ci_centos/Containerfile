@@ -7,6 +7,8 @@ RUN curl -Ls https://github.com/just-containers/s6-overlay/releases/download/v3.
 RUN curl -Ls https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-noarch.tar.xz | tar xvJ -C /
 RUN curl -Ls https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-arch.tar.xz | tar xvJ -C /
 
+ENV PULP_GUNICORN_RELOAD=${PULP_GUNICORN_RELOAD:-false}
+
 ENV PULP_WORKERS=2
 
 ENV PULP_HTTPS=false

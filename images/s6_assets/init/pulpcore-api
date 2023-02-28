@@ -1,0 +1,5 @@
+#!/bin/bash
+if [ "${PULP_GUNICORN_RELOAD}" = "true" ]; then
+  PULP_GUNICORN_RELOAD_STRING="--reload"
+fi
+exec /usr/local/bin/gunicorn pulpcore.app.wsgi:application --bind "127.0.0.1:24817" --name pulp-api --timeout "${PULP_GUNICORN_TIMEOUT}" --workers "${PULP_API_WORKERS}" --access-logfile - --access-logformat "pulp [%({correlation-id}o)s]: %(h)s %(l)s %(u)s %(t)s \"%(r)s\" %(s)s %(b)s \"%(f)s\" \"%(a)s\"" ${PULP_GUNICORN_RELOAD_STRING}
