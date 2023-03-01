@@ -13,7 +13,7 @@ github_api = "https://api.github.com"
 
 for branch in branches:
     print(f"Updating {branch}")
-    if type(branch) == float and branch < 3.22 :
+    if type(branch) == float and branch < 3.23 :
         workflow_path = "/actions/workflows/publish_images.yaml/dispatches"
     else:
         workflow_path = "/actions/workflows/pulp_images.yml/dispatches"
