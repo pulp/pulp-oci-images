@@ -2,6 +2,13 @@ import os
 import requests
 from yaml import safe_load
 
+def isfloat(num):
+    try:
+        float(num)
+        return True
+    except ValueError:
+        return False
+
 headers = {
     "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
     "Accept": "application/vnd.github.v3+json",
@@ -13,7 +20,7 @@ github_api = "https://api.github.com"
 
 for branch in branches:
     print(f"Updating {branch}")
-    if type(branch) == float and branch < 3.23 :
+    if isfloat(branch) and float(branch) < 3.23 :
         workflow_path = "/actions/workflows/publish_images.yaml/dispatches"
     else:
         workflow_path = "/actions/workflows/pulp_images.yml/dispatches"
