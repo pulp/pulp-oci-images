@@ -14,6 +14,11 @@ services:
       - "pg_data:/var/lib/postgresql"
       - "./assets/postgres/passwd:/etc/passwd:Z"
     restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U pulp" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: "docker.io/library/redis:latest"
@@ -25,9 +30,10 @@ services:
     image: "pulp/pulp-web:latest"
     command: ['/usr/bin/nginx.sh']
     depends_on:
-      - postgres
-      - pulp_api
-      - pulp_content
+      postgres:
+        condition: service_healthy
+      pulp_api:
+      pulp_content:
     ports:
       - "8080:8080"
     hostname: pulp
@@ -43,8 +49,9 @@ services:
       replicas: 2
     command: ['pulp-api']
     depends_on:
-      - redis
-      - postgres
+      redis:
+      postgres:
+        condition: service_healthy
     hostname: pulp-api
     user: pulp
     volumes:
@@ -63,8 +70,9 @@ services:
       replicas: 2
     command: ['pulp-content']
     depends_on:
-      - redis
-      - postgres
+      redis:
+      postgres:
+        condition: service_healthy
     hostname: pulp-content
     user: pulp
     volumes:
@@ -82,8 +90,9 @@ services:
         replicas: 2
     command: ['pulp-worker']
     depends_on:
-      - redis
-      - postgres
+      redis:
+      postgres:
+        condition: service_healthy
     user: pulp
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
