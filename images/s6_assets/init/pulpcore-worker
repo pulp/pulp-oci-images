@@ -1,0 +1,5 @@
+#!/bin/bash
+if [ "${PULP_OTEL_ENABLED}" = "true" ]; then
+  OTEL_PREFIX="/usr/local/bin/opentelemetry-instrument --service_name pulp-worker"
+fi
+exec $OTEL_PREFIX /usr/local/bin/pulpcore-worker

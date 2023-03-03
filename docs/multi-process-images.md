@@ -169,6 +169,8 @@ The following environment variables configure the container's behavior.
 
 * `PULP_GUNICORN_TIMEOUT` A positive integer that specifies the [timeout for gunicorn process](https://docs.gunicorn.org/en/stable/settings.html#timeout). Default to 90.
 
+* `PULP_OTEL_ENABLED` Set to "true" (all lowercase) if you wish to enable pulp telemetry.
+
 To add one of them, modify the command you use to start pulp to include syntax like the following at the beginning: Instead of `podman run`, specify `podman run -e NUM_WORKERS=4 -e PULP_GUNICORN_TIMEOUT=30 ...`
 
 ### Adding Signing Services

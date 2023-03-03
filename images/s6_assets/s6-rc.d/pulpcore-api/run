@@ -14,5 +14,6 @@ importas HOME HOME
 importas PULP_GUNICORN_TIMEOUT PULP_GUNICORN_TIMEOUT
 importas PULP_API_WORKERS PULP_API_WORKERS
 importas PULP_GUNICORN_RELOAD PULP_GUNICORN_RELOAD
+importas PULP_OTEL_ENABLED PULP_OTEL_ENABLED
 foreground { s6-echo "Calling /etc/init/pulpcore-api" }
 /etc/init/pulpcore-api

@@ -2,4 +2,7 @@
 if [ "${PULP_GUNICORN_RELOAD}" = "true" ]; then
   PULP_GUNICORN_RELOAD_STRING="--reload"
 fi
-exec /usr/local/bin/gunicorn pulpcore.content:server --bind "127.0.0.1:24816" --name pulp-content --timeout "${PULP_GUNICORN_TIMEOUT}" --worker-class "aiohttp.GunicornWebWorker" --workers "${PULP_CONTENT_WORKERS}" --access-logfile - ${PULP_GUNICORN_RELOAD_STRING}
+if [ "${PULP_OTEL_ENABLED}" = "true" ]; then
+  OTEL_PREFIX="/usr/local/bin/opentelemetry-instrument --service_name pulp-content"
+fi
+exec $OTEL_PREFIX /usr/local/bin/gunicorn pulpcore.content:server --bind "127.0.0.1:24816" --name pulp-content --timeout "${PULP_GUNICORN_TIMEOUT}" --worker-class "aiohttp.GunicornWebWorker" --workers "${PULP_CONTENT_WORKERS}" --access-logfile - ${PULP_GUNICORN_RELOAD_STRING}
