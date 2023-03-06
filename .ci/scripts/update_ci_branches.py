@@ -1,7 +1,9 @@
 import os
 import requests
 from yaml import safe_load
+from packaging import version
 
+# We use this to check if the version is x,y, like a normal branch.
 def isfloat(num):
     try:
         float(num)
@@ -20,7 +22,7 @@ github_api = "https://api.github.com"
 
 for branch in branches:
     print(f"Updating {branch}")
-    if isfloat(branch) and float(branch) < 3.23 :
+    if isfloat(branch) and version.parse(branch) < version.parse("3.23") :
         workflow_path = "/actions/workflows/publish_images.yaml/dispatches"
     else:
         workflow_path = "/actions/workflows/pulp_images.yml/dispatches"
