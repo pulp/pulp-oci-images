@@ -14,4 +14,6 @@ export HOME /var/lib/pulp/
 importas HOME HOME
 export PATH /usr/local/bin:/usr/bin/
 importas PATH PATH
-/usr/local/bin/pulpcore-worker
+importas PULP_OTEL_ENABLED PULP_OTEL_ENABLED
+foreground { s6-echo "Calling /etc/init/pulpcore-worker" }
+/etc/init/pulpcore-worker

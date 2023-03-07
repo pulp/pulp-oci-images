@@ -9,6 +9,8 @@ RUN curl -Ls https://github.com/just-containers/s6-overlay/releases/download/v3.
 
 ENV PULP_GUNICORN_RELOAD=${PULP_GUNICORN_RELOAD:-false}
 
+ENV PULP_OTEL_ENABLED=${PULP_OTEL_ENABLED:-false}
+
 ENV PULP_WORKERS=2
 
 ENV PULP_HTTPS=false
@@ -28,6 +30,8 @@ RUN dnf -y module enable postgresql:13 && \
     dnf -y install nginx && \
     dnf -y install redis && \
     dnf clean all
+
+RUN pip install opentelemetry-sdk opentelemetry-instrumentation-wsgi
 
 COPY images/s6_assets/openssl.cnf /etc/ssl/pulp/openssl.cnf
 COPY images/s6_assets/v3.cnf /etc/ssl/pulp/v3.cnf
