@@ -159,7 +159,7 @@ pulp config create --username admin --base-url http://localhost:8080 --password 
 
 The following environment variables configure the container's behavior.
 
-* `NUM_WORKERS` An integer that specifies the number of worker processes (which perform syncing, importing of content, and other asynchronous operations that require resource locking.) Defaults to 2.
+* `PULP_WORKERS` An integer that specifies the number of worker processes (which perform syncing, importing of content, and other asynchronous operations that require resource locking.) Defaults to 2.
 
 * `PULP_API_WORKERS` A positive integer that specifies the number of [gunicorn worker processes](https://docs.gunicorn.org/en/stable/settings.html#workers) for handling Pulp API requests. Default to 2.
 
@@ -171,7 +171,7 @@ The following environment variables configure the container's behavior.
 
 * `PULP_OTEL_ENABLED` Set to "true" (all lowercase) if you wish to enable pulp telemetry.
 
-To add one of them, modify the command you use to start pulp to include syntax like the following at the beginning: Instead of `podman run`, specify `podman run -e NUM_WORKERS=4 -e PULP_GUNICORN_TIMEOUT=30 ...`
+To add one of them, modify the command you use to start pulp to include syntax like the following at the beginning: Instead of `podman run`, specify `podman run -e PULP_WORKERS=4 -e PULP_GUNICORN_TIMEOUT=30 ...`
 
 ### Adding Signing Services
 
