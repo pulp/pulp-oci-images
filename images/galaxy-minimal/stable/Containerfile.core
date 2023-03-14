@@ -1,7 +1,13 @@
 ARG FROM_TAG="latest"
 FROM pulp/base:${FROM_TAG}
 
-RUN pip3 install galaxy_ng
+ARG PULPCORE_VERSION=""
+ARG GALAXY_NG_VERSION=""
+
+RUN pip3 install --upgrade \
+  pulpcore${PULPCORE_VERSION} \
+  galaxy-ng${GALAXY_NG_VERSION} && \
+  rm -rf /root/.cache/pip
 
 USER pulp:pulp
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \

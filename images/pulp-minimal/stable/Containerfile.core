@@ -1,15 +1,27 @@
 ARG FROM_TAG="latest"
 FROM pulp/base:${FROM_TAG}
 
-RUN pip3 install pulpcore \
-  pulp_ansible \
-  pulp-certguard \
-  pulp_container \
-  pulp_deb \
-  pulp_file \
-  pulp_maven \
-  pulp_python \
-  pulp_rpm
+ARG PULPCORE_VERSION=""
+ARG PULP_ANSIBLE_VERSION=""
+ARG PULP_CERTGUARD_VERSION=""
+ARG PULP_CONTAINER_VERSION=""
+ARG PULP_DEB_VERSION=""
+ARG PULP_FILE_VERSION=""
+ARG PULP_MAVEN_VERSION=""
+ARG PULP_PYTHON_VERSION=""
+ARG PULP_RPM_VERSION=""
+
+RUN pip3 install --upgrade \
+  pulpcore${PULPCORE_VERSION} \
+  pulp-ansible${PULP_ANSIBLE_VERSION} \
+  pulp-certguard${PULP_CERTGUARD_VERSION} \
+  pulp-container${PULP_CONTAINER_VERSION} \
+  pulp-deb${PULP_DEB_VERSION} \
+  pulp-file${PULP_FILE_VERSION} \
+  pulp-maven${PULP_MAVEN_VERSION} \
+  pulp-python${PULP_PYTHON_VERSION} \
+  pulp-rpm${PULP_RPM_VERSION} && \
+  rm -rf /root/.cache/pip
 
 USER pulp:pulp
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
