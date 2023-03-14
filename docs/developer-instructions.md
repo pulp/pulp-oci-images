@@ -9,9 +9,9 @@ pulpcore z-release, the existing y-release branch is built and published again.
 
 * First create a new release branch in this pulp-oci-images repo for the prior Y release
   (if it does not already exist.) So if you are releasing 3.23, create the 3.22 branch.
-* Update PULPCORE_VERSION in images/pulp/stable/Containerfile on the release branch (see
-  [here](https://github.com/pulp/pulp-oci-images/pull/61/files) as an example)
-* Update `branches` in `.ci/scripts/update_ci_branches.py` to include the prior Y release.
-* Kick off a new build from the release branch at [the workflow](https://github.com/pulp/pulp-oci-images/actions/workflows/pulp_images.yml)
-  (Afterwards, it will auto-build nightly.)
-
+* Update PULPCORE_VERSION in the following files on the prior Y release branch
+  (see [here](https://github.com/pulp/pulp-oci-images/pull/61/files) as an example, albeit of only 1 file):
+  * images/pulp/stable/Containerfile
+  * images/pulp-minimal/stable/Containerfile.core
+* Update `branches` on the latest branch `.ci/scripts/update_ci_branches.py` to include the prior Y release.
+  (Once merged, it will trigger a build of the new released version from the latest branch.)

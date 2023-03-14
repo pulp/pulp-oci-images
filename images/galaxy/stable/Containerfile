@@ -1,10 +1,12 @@
 ARG FROM_TAG="latest"
 FROM pulp/pulp-ci-centos:${FROM_TAG}
 
+ARG PULPCORE_VERSION=""
 ARG GALAXY_NG_VERSION=""
 
 RUN pip3 install --upgrade \
   requests \
+  pulpcore${PULPCORE_VERSION} \
   galaxy-ng${GALAXY_NG_VERSION} && \
   rm -rf /root/.cache/pip
 
