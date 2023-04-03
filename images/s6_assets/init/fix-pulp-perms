@@ -4,6 +4,8 @@
 # We do not want to always fix permissions on it at every boot because it would
 # take very long. So we check individual subdirs.
 
+set -eu
+
 export BASENAME=$(basename ${0})
 export PREFIX="[oneshot] ${BASENAME}:"
 
@@ -17,25 +19,28 @@ export C035="\e[35m"
 export C036="\e[36m"
 export C037="\e[37m"
 
-set -x
+HOME_DIR=/var/lib/pulp
+DIRECTORIES_NEEDED=(media scripts tmp)
 
-owner="$(stat --format '%U' /var/lib/pulp)"
+owner="$(stat --format '%U' $HOME_DIR)"
 if [ "$owner" != "pulp" ]; then
-  echo -e "${PREFIX} ${GREEN}chown pulp:pulp /var/lib/pulp${ENDCOLOR}"
-  chown pulp:pulp /var/lib/pulp
+  echo -e "${PREFIX} ${GREEN}chown pulp:pulp $HOME_DIR${ENDCOLOR}"
+  chown pulp:pulp $HOME_DIR
 fi
 
-for dir in media scripts tmp; do
-  if [ -e /var/lib/pulp/${dir} ]; then
-    owner="$(stat --format '%U' /var/lib/pulp/${dir})"
-    if [ "$owner" != "pulp" ]; then
-      echo -e "${PREFIX} ${GREEN}chown -R pulp:pulp /var/lib/pulp/${dir}${ENDCOLOR}"
-      chown -R pulp:pulp /var/lib/pulp/${dir}
-    fi
-  # To avoid burden on users, we create this dir if /var/lib/pulp is mounted.
-  # The pulp processes will create the other dirs
-  elif [ "$dir" = "scripts" ]; then
-    mkdir /var/lib/pulp/scripts
-    chown pulp:pulp /var/lib/pulp/scripts
+for dir in "${DIRECTORIES_NEEDED[@]}"; do
+  DIRECTORY_NEEDED=$HOME_DIR/$dir
+  if [ ! -d $DIRECTORY_NEEDED ]; then
+    echo "Creating directory $DIRECTORY_NEEDED"
+    mkdir -p $DIRECTORY_NEEDED
+  fi;
+
+  echo "Checking $DIRECTORY_NEEDED permissions"
+  owner="$(stat --format '%U' $DIRECTORY_NEEDED)"
+
+  if [ "$owner" != "pulp" ]; then
+    echo -e "${PREFIX} ${GREEN}chown -R pulp:pulp $DIRECTORY_NEEDED${ENDCOLOR}"
+    chown -R pulp:pulp $DIRECTORY_NEEDED
   fi
+
 done
