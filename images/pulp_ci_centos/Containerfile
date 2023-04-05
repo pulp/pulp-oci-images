@@ -31,7 +31,18 @@ RUN dnf -y module enable postgresql:13 && \
     dnf -y install redis && \
     dnf clean all
 
-RUN pip install opentelemetry-sdk opentelemetry-instrumentation-wsgi opentelemetry-distro[otlp]
+RUN pip install \
+opentelemetry-sdk \
+opentelemetry-instrumentation \
+opentelemetry-instrumentation-dbapi \
+opentelemetry-instrumentation-logging \
+opentelemetry-instrumentation-wsgi \
+opentelemetry-instrumentation-aiohttp-client \
+opentelemetry-instrumentation-botocore \
+opentelemetry-instrumentation-django \
+opentelemetry-instrumentation-psycopg2 \
+opentelemetry-instrumentation-redis \
+opentelemetry-distro[otlp]
 
 COPY images/s6_assets/openssl.cnf /etc/ssl/pulp/openssl.cnf
 COPY images/s6_assets/v3.cnf /etc/ssl/pulp/v3.cnf
