@@ -29,6 +29,7 @@ RUN dnf -y module enable postgresql:13 && \
     dnf -y install postgresql-upgrade && \
     dnf -y install nginx && \
     dnf -y install redis && \
+    dnf -y install which && \
     dnf clean all
 
 RUN pip install opentelemetry-sdk opentelemetry-instrumentation-wsgi opentelemetry-distro[otlp]
