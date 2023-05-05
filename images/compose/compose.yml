@@ -11,7 +11,7 @@ services:
       POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256'
       POSTGRES_HOST_AUTH_METHOD: 'scram-sha-256'
     volumes:
-      - "pg_data:/var/lib/postgresql"
+      - "pg_data:/var/lib/postgresql/data"
       - "./assets/postgres/passwd:/etc/passwd:Z"
     restart: always
     healthcheck:

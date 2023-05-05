@@ -1,0 +1,1 @@
+Fix the postgresql database not being preserved for docker-compose.
