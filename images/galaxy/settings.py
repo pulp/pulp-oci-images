@@ -3,7 +3,7 @@ import os
 _CONTAINER_ENV_CONFIGS = {
     "API_PROTOCOL": "https" if os.getenv("PULP_HTTPS", default="false") == "true" else "http",
     "API_HOST": os.getenv("GALAXY_HOSTNAME", default="localhost"),
-    "API_PORT": os.getenv("GALAXY_PORT", default="5001")
+    "API_PORT": os.getenv("GALAXY_PORT", default="8080")
 }
 
 CONTENT_ORIGIN='{API_PROTOCOL}://{API_HOST}:{API_PORT}'.format(**_CONTAINER_ENV_CONFIGS)

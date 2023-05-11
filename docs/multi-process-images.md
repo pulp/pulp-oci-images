@@ -69,12 +69,68 @@ are single-process rather than multi-process.
 
 ## Quickstart
 
+### Galaxy Quickstart
+
+The galaxy base image includes a default settings.py and can be configured using environment variables. This image can be configured with the following two environment variables:
+
+- `GALAXY_HOSTNAME`: publicly accessible hostname that the API and content app will run on.
+- `GALAXY_PORT`: public port that the API and content app will run on.
+
+The galaxy image can also be run just like any of the other multi process pulp images by mounting a custom settings.py file, however this setup provides an easy, out of the box configuration for running galaxy.
+
+#### Examples
+
+Run galaxy on localhost:
+
+```
+$ podman run -p 8080:80 ghcr.io/pulp/galaxy:latest
+```
+
+Run galaxy on localhost with https:
+
+```
+$ podman run -p 443:443 -e "PULP_HTTPS=true" -e "GALAXY_PORT=443" ghcr.io/pulp/galaxy:latest
+```
+
+Run galaxy from a server with https:
+
+```
+$ podman run -p 443:443 -e "PULP_HTTPS=true" -e "GALAXY_PORT=443" -e "GALAXY_HOSTNAME=192.168.0.100" ghcr.io/pulp/galaxy:latest
+```
+
+Modify the system settings to allow for uploads without approval:
+
+```
+$ podman run -p 8080:80 -e "PULP_GALAXY_REQUIRE_CONTENT_APPROVAL=false" ghcr.io/pulp/galaxy:latest
+```
+
+Mount the storage directories for persistent data and https:
+
+NOTE: don't mount volumes to `/etc/pulp/` as you would with the vanilla pulp images, as this will override the default settings.py file.
+
+```
+$ podman run --detach \
+             --publish 443:443 \
+             --name pulp \
+             -e "GALAXY_HOSTNAME=my.galaxy.host.example.com" \
+             -e "PULP_HTTPS=true" \
+             -e "GALAXY_PORT=443" \
+             --volume "$(pwd)/certs":/etc/pulp/certs:Z \
+             --volume "$(pwd)/pulp_storage":/var/lib/pulp:Z \
+             --volume "$(pwd)/pgsql":/var/lib/pgsql:Z \
+             --volume "$(pwd)/containers":/var/lib/containers:Z \
+             --device /dev/fuse \
+             ghcr.io/pulp/galaxy:latest
+```
+
+Once your containers are running see "Reset the Admin Password" section to set up your admin user.
+
 ### Create the Directories and Settings
 
 1st, create the directories for storage/configuration, and create the `settings.py` file:
 
 ```
-$ mkdir settings pulp_storage pgsql containers
+$ mkdir -p settings/certs pulp_storage pgsql containers
 $ echo "CONTENT_ORIGIN='http://$(hostname):8080'
 ANSIBLE_API_HOSTNAME='http://$(hostname):8080'
 ANSIBLE_CONTENT_HOSTNAME='http://$(hostname):8080/pulp/content'
