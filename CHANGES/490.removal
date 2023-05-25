@@ -1,0 +1,1 @@
+Removed ``pulp-cookbook`` from the nighlty images since it's currently incompatible with ``pulpcore``>=3.25.
