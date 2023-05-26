@@ -1,0 +1,1 @@
+Removed the OpenTelemetry libraries installation from the ``pulp-ci-centos`` image.
