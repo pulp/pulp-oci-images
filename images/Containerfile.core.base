@@ -27,6 +27,7 @@ RUN dnf -y install dnf-plugins-core && \
 # use python38
 RUN dnf -y module disable python36
 RUN dnf -y module enable python38
+RUN dnf -y module enable nginx:1.22
 
 # glibc-langpack-en is needed to provide the en_US.UTF-8 locale, which Pulp
 # seems to need.
