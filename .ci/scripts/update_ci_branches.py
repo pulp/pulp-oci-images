@@ -3,7 +3,7 @@ import requests
 from yaml import safe_load
 from packaging import version
 
-branches = ["3.24", "3.23", "3.21", "3.18", "3.16"]
+branches = ["3.25", "3.23", "3.21", "3.18", "3.16"]
 
 # We use this to check if the version is x,y, like a normal branch.
 def isfloat(num):
