@@ -200,7 +200,7 @@ jobs:
           podman images -a
       - name: Set version and branch image tags
         run: |
-          app_version=$(podman run pulp/${{ matrix.app.image_name }}:stable bash -c "pip3 show ${{ matrix.app.pip_name }} | sed -n -e 's/Version: //p'")
+          app_version=$(podman run --pull=never pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} bash -c "pip3 show ${{ matrix.app.pip_name }} | sed -n -e 's/Version: //p'")
           app_branch=$(echo ${app_version} | grep -oP '\d+\.\d+')
 
           echo "APP_VERSION: ${app_version}"
@@ -208,7 +208,7 @@ jobs:
           echo "APP_VERSION=${app_version}" >> $GITHUB_ENV
           echo "APP_BRANCH=${app_branch}" >> $GITHUB_ENV
 
-          base_version=$(podman run pulp/${{ matrix.app.image_name }}:stable bash -c "pip3 show pulpcore | sed -n -e 's/Version: //p'")
+          base_version=$(podman run --pull=never pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} bash -c "pip3 show pulpcore | sed -n -e 's/Version: //p'")
           base_branch=$(echo ${base_version} | grep -oP '\d+\.\d+')
 
           echo "BASE_VERSION: ${base_version}"
