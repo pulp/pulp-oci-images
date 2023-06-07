@@ -1,0 +1,9 @@
+[baseos]
+name=CentOS Stream $releasever - BaseOS
+# mirrorlist=http://mirrorlist.centos.org/?release=$stream&arch=$basearch&repo=BaseOS&infra=$infra
+#baseurl=http://mirror.centos.org/$contentdir/$stream/BaseOS/$basearch/os/
+baseurl=http://mirror.centos.org/centos/8-stream/BaseOS/x86_64/os/
+gpgcheck=0
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+priority=100
