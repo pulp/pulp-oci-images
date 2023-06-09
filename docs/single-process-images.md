@@ -26,6 +26,7 @@ pulp-minimal is currently built with the following plugins:
 - [pulp_maven](https://docs.pulpproject.org/pulp_maven/)
 - [pulp_python](https://docs.pulpproject.org/pulp_python/)
 - [pulp_rpm](https://docs.pulpproject.org/pulp_rpm/)
+- [pulp_ostree](https://docs.pulpproject.org/pulp_ostree/)
 
 ### Tags
 
