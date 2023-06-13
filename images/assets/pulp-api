@@ -1,5 +1,9 @@
 #!/bin/bash -x
 
+mkdir -p /var/lib/pulp/media \
+         /var/lib/pulp/assets \
+         /var/lib/pulp/tmp
+
 /usr/bin/wait_on_postgres.py
 
 # Get list of installed plugins via pip
@@ -26,10 +30,6 @@ if [ -n "${PULP_ADMIN_PASSWORD}" ]; then
     /usr/local/bin/pulpcore-manager reset-admin-password --password "${PULP_ADMIN_PASSWORD}"
 fi
 set -x
-
-mkdir -p /var/lib/pulp/media \
-         /var/lib/pulp/assets \
-         /var/lib/pulp/tmp
 
 # NOTE: Due to the Linux dual-stack functionality, this will listen on both IPv4
 # IPv6, even though netstat may seem to indicate it is IPv6 only.
