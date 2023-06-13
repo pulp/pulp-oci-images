@@ -79,7 +79,6 @@ services:
     depends_on:
       - redis
       - postgres
-    hostname: pulp-worker
     user: pulp
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
