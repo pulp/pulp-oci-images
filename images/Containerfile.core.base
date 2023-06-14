@@ -38,30 +38,27 @@ RUN dnf -y module enable nginx:1.22
 # TODO: Investigate differences between `dnf builddep createrepo_c` vs the list
 # of dependencies below. For example, drpm-devel.
 RUN dnf -y install python38 python38-cryptography python38-devel && \
-    dnf -y install openssl openssl-devel && \
-    dnf -y install openldap-devel && \
-    dnf -y install wget git && \
-    dnf -y install python3-psycopg2 && \
-    dnf -y install redhat-rpm-config gcc cargo libffi-devel && \
-    dnf -y install glibc-langpack-en && \
-    dnf -y install python3-libmodulemd && \
-    dnf -y install python3-libcomps && \
-    dnf -y install libpq-devel && \
-    dnf -y install python3-setuptools && \
-    dnf -y install swig && \
-    dnf -y install buildah --exclude container-selinux && \
-    dnf -y install xz && \
-    dnf -y install libmodulemd-devel && \
-    dnf -y install libcomps-devel && \
-    dnf -y install zchunk-devel && \
-    dnf -y install ninja-build && \
-    dnf -y install cairo-devel cmake gobject-introspection-devel cairo-gobject-devel && \
-    dnf -y install libcurl-devel libxml2-devel sqlite-devel file-devel && \
-    dnf -y install ostree-libs ostree && \
-    dnf -y install skopeo && \
-    dnf -y install podman && \
-    dnf -y install sudo && \
-    dnf -y install zstd && \
+    dnf -y install --setopt=install_weak_deps=False openssl openssl-devel && \
+    dnf -y install --setopt=install_weak_deps=False openldap-devel && \
+    dnf -y install --setopt=install_weak_deps=False wget git && \
+    dnf -y install --setopt=install_weak_deps=False python3-psycopg2 && \
+    dnf -y install --setopt=install_weak_deps=False python3-createrepo_c && \
+    dnf -y install --setopt=install_weak_deps=False redhat-rpm-config gcc cargo libffi-devel && \
+    dnf -y install --setopt=install_weak_deps=False glibc-langpack-en && \
+    dnf -y install --setopt=install_weak_deps=False libpq-devel && \
+    dnf -y install --setopt=install_weak_deps=False python3-setuptools && \
+    dnf -y install --setopt=install_weak_deps=False buildah --exclude container-selinux && \
+    dnf -y install --setopt=install_weak_deps=False xz && \
+    dnf -y install --setopt=install_weak_deps=False libmodulemd-devel && \
+    dnf -y install --setopt=install_weak_deps=False libcomps-devel && \
+    dnf -y install --setopt=install_weak_deps=False zchunk-devel && \
+    dnf -y install --setopt=install_weak_deps=False cmake gobject-introspection-devel cairo-gobject-devel && \
+    dnf -y install --setopt=install_weak_deps=False libcurl-devel libxml2-devel sqlite-devel file-devel && \
+    dnf -y install --setopt=install_weak_deps=False ostree-libs ostree && \
+    dnf -y install --setopt=install_weak_deps=False skopeo && \
+    dnf -y install --setopt=install_weak_deps=False podman && \
+    dnf -y install --setopt=install_weak_deps=False sudo && \
+    dnf -y install --setopt=install_weak_deps=False zstd && \
     dnf clean all
 
 # Needed to prevent the wrong version of cryptography from being installed,
