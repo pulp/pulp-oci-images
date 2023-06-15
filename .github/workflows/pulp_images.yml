@@ -242,7 +242,11 @@ jobs:
             # Reuse the folders from the s6 mode tests
             FILE="docker-compose.folders.yml"
             # We'll pull the web image from a registry since we didn't build it.
-            WEB_TAG="${APP_BRANCH}"
+            if [ "${{ matrix.image_variant }}" == "nightly" ]; then
+              WEB_TAG="nightly"
+            else
+              WEB_TAG="${APP_BRANCH}"
+            fi
           else
             FILE="docker-compose.yml"
             WEB_TAG="${TEMP_APP_TAG}"
