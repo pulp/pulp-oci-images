@@ -186,6 +186,12 @@ jobs:
           echo ::endgroup::
           echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
           pip install podman-compose
+          if [[ $(dpkg-query --showformat='${Version}' --show podman) == "3.4.4+ds1-1ubuntu1.22.04.1" && $(dpkg-query --showformat='${Version}' --show containernetworking-plugins) == "0.9.1+ds1-1" ]]
+          then
+            echo "Working around https://bugs.launchpad.net/ubuntu/+source/libpod/+bug/2024394"
+            curl -O http://archive.ubuntu.com/ubuntu/pool/universe/g/golang-github-containernetworking-plugins/containernetworking-plugins_1.1.1+ds1-1_amd64.deb
+            sudo dpkg -i containernetworking-plugins_1.1.1+ds1-1_amd64.deb
+          fi
         shell: bash
       - name: Build images
         run: |
