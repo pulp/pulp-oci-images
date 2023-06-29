@@ -115,7 +115,7 @@ $ podman run --detach \
              -e "GALAXY_HOSTNAME=my.galaxy.host.example.com" \
              -e "PULP_HTTPS=true" \
              -e "GALAXY_PORT=443" \
-             --volume "$(pwd)/certs":/etc/pulp/certs:Z \
+             --volume "$(pwd)/settings/certs":/etc/pulp/certs:Z \
              --volume "$(pwd)/pulp_storage":/var/lib/pulp:Z \
              --volume "$(pwd)/pgsql":/var/lib/pgsql:Z \
              --volume "$(pwd)/containers":/var/lib/containers:Z \
