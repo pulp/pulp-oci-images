@@ -67,6 +67,7 @@ RUN dnf -y install python38 python38-cryptography python38-devel && \
 # Needed to prevent the wrong version of cryptography from being installed,
 # which would break PyOpenSSL.
 # Need to install optional dep, rhsm, for pulp-certguard
+# Need to install importlib-metadata to work around a temporary bug
 RUN pip3 install --upgrade pip setuptools wheel && \
     rm -rf /root/.cache/pip && \
     pip3 install  \
@@ -75,7 +76,8 @@ RUN pip3 install --upgrade pip setuptools wheel && \
          gunicorn \
          python-nginx \
          django-storages\[boto3,azure]\>=1.12.2 \
-         requests\[use_chardet_on_py3] && \
+         requests\[use_chardet_on_py3] \
+         importlib-metadata && \
          rm -rf /root/.cache/pip
 
 RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
