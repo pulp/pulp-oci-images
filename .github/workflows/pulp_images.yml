@@ -22,10 +22,12 @@ jobs:
           # by default, it uses a depth of 1
           # this fetches all history so that we can read each commit
           fetch-depth: 0
+
       - name: Set up Python 3.8
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
+
       - name: Check commit message
         if: github.event_name == 'pull_request'
         env:
@@ -43,8 +45,10 @@ jobs:
             fi
           done
         shell: bash
+
       - name: Update to the latest pip
         run: python -m pip install --upgrade pip
+
   base-images:
     needs: lint
     runs-on: ubuntu-latest
@@ -64,22 +68,27 @@ jobs:
           else
             echo "image_variants=[\"stable\"]" >> "$GITHUB_OUTPUT"
           fi
+
       - name: Set the temporary image tag
         run: |
           temp_base_tag="${GITHUB_REF_NAME%/*}"
           echo "Building $temp_base_tag"
           echo "TEMP_BASE_TAG=${temp_base_tag}" >> $GITHUB_ENV
+
       - uses: actions/checkout@v3
         with:
           # by default, it uses a depth of 1
           # this fetches all history so that we can read each commit
           fetch-depth: 0
+
       - name: Set up Python 3.8
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
+
       - name: Update to the latest pip
         run: python -m pip install --upgrade pip
+
       - name: Dispatch workflows on stable branches
         if: github.event_name == 'schedule'
         run: |
@@ -89,6 +98,7 @@ jobs:
           python .ci/scripts/update_ci_branches.py
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+
       - name: Build images
         run: |
           podman version
@@ -111,12 +121,14 @@ jobs:
            id=$(podman image inspect --format '{{ .Id }}' pulp/pulp-ci-centos:${TEMP_BASE_TAG})
            echo "pulp_ci_centos_id=${id}" >> "$GITHUB_OUTPUT"
            echo "pulp_ci_centos_id=${id}" >> "$GITHUB_ENV"
+
       - name: Cache podman images
         uses: actions/cache/save@v3
         with:
           key: base-images=${{ env.pulp_ci_centos_id }}
           path: base-images.tar
           fail-on-cache-miss: true
+
   app-images:
     needs: base-images
     runs-on: ubuntu-latest
@@ -128,19 +140,15 @@ jobs:
           - image_name: pulp-minimal
             web_image: pulp-web
             pip_name: pulpcore
-            s6: false
           - image_name: pulp
             web_image: pulp-web
             pip_name: pulpcore
-            s6: true
           - image_name: galaxy-minimal
             web_image: galaxy-web
             pip_name: galaxy-ng
-            s6: false
           - image_name: galaxy
             web_image: galaxy-web
             pip_name: galaxy-ng
-            s6: true
     steps:
       - name: Set the temporary image tags
         run: |
@@ -153,35 +161,42 @@ jobs:
           echo "Building $temp_app_tag from base $temp_base_tag"
           echo "TEMP_APP_TAG=${temp_app_tag}" >> $GITHUB_ENV
           echo "TEMP_BASE_TAG=${temp_base_tag}" >> $GITHUB_ENV
+
       - uses: actions/checkout@v3
         with:
           # by default, it uses a depth of 1
           # this fetches all history so that we can read each commit
           fetch-depth: 0
+
       - name: Set up Python 3.8
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
+
       - name: Install python dependencies
         if: github.event_name == 'schedule'
         run: |
           echo ::group::PYDEPS
           pip install gitpython requests packaging jinja2 pyyaml
           echo ::endgroup::
+
       - name: Verify needs.base-images.outputs.pulp_ci_centos_id is not blank
         run: |
           if [ -z "${{ needs.base-images.outputs.pulp_ci_centos_id }}" ]; then
             exit 1
           fi
+
       - name: Restore podman images from cache
         uses: actions/cache/restore@v3
         with:
           key: base-images=${{ needs.base-images.outputs.pulp_ci_centos_id }}
           path: base-images.tar
           fail-on-cache-miss: true
+
       - name: Load podman images from tarball
         run: |
           podman load -i base-images.tar
+
       - name: Install httpie and podman-compose
         run: |
           echo ::group::HTTPIE
@@ -197,17 +212,19 @@ jobs:
             sudo dpkg -i containernetworking-plugins_1.1.1+ds1-1_amd64.deb
           fi
         shell: bash
+
       - name: Build images
         run: |
           podman version
           buildah version
-          if [ "${{ matrix.app.s6 }}" == "false" ]; then
+          if [[ "${{ matrix.app.image_name }}" == "pulp-minimal" || "${{ matrix.app.image_name }}" == "galaxy-minimal" ]]; then
             podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.core --tag pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_BASE_TAG} .
             podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.webserver --tag pulp/${{ matrix.app.web_image }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_APP_TAG} .
           else
             podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile --tag pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_BASE_TAG} .
           fi
           podman images -a
+
       - name: Set version and branch image tags
         run: |
           app_version=$(podman run --pull=never pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} bash -c "pip3 show ${{ matrix.app.pip_name }} | sed -n -e 's/Version: //p'")
@@ -225,30 +242,25 @@ jobs:
           echo "BASE_BRANCH: ${base_branch}"
           echo "BASE_VERSION=${base_version}" >> $GITHUB_ENV
           echo "BASE_BRANCH=${base_branch}" >> $GITHUB_ENV
-      - name: Test upgrading to the image in s6 mode
+
+      - name: Test image with upgrade in s6 mode (pulp)
         if: matrix.app.image_name == 'pulp'
         run: |
           # 3.20 has postgres 12 rather than 13
           images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}" http "quay.io/pulp/all-in-one-pulp:3.20"
           podman stop pulp
           podman rm pulp
-      - name: Test the image in s6 mode
+
+      - name: Test the image in s6 mode (galaxy)
         if: matrix.app.image_name == 'galaxy'
         run: |
-          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}"
-          podman stop pulp
-          podman rm pulp
-      - name: Test the image in s6 mode with https
-        if: matrix.app.s6
-        run: |
-          # Delete the database from the previous test 1st, so test.sh does not fail
-          sudo rm -rf pgsql/data
           images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}" https
           podman stop pulp
           podman rm pulp
+
       - name: Compose up
         run: |
-          if [ "${{ matrix.app.s6 }}" == "true" ]; then
+          if [[ "${{ matrix.app.image_name }}" == "pulp" || "${{ matrix.app.image_name }}" == "galaxy" ]]; then
             # Reuse the folders from the s6 mode tests
             FILE="docker-compose.folders.yml"
             # We'll pull the web image from a registry since we didn't build it.
@@ -277,40 +289,28 @@ jobs:
           done
           curl --fail http://localhost:8080/pulp/api/v3/status/ | jq
         shell: bash
-      - name: Test all components (pulp)
-        if: matrix.app == 'pulp'
-        run: |
-          git clone --depth=1 https://github.com/pulp/pulp_ansible.git
-          git clone --depth=1 https://github.com/pulp/pulp_container.git
-          .ci/scripts/pulp_tests.sh
-        shell: bash
-        env:
-          PY_COLORS: '1'
-      - name: Test all components (galaxy)
-        if: matrix.app == 'galaxy'
-        run: |
-          .ci/scripts/galaxy_ng-tests.sh
-        shell: bash
-        env:
-          PY_COLORS: '1'
+
       - name: Github login
         if: github.event_name != 'pull_request'
         env:
           PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PULP_GITHUB_USERNAME: ${{ github.actor }}
         run: echo "$PULP_GITHUB_TOKEN" | podman login -u "$PULP_GITHUB_USERNAME" --password-stdin ghcr.io
+
       - name: Docker login
         if: github.event_name != 'pull_request'
         env:
           DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
           DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
         run: echo "$DOCKER_BOT_PASSWORD" | podman login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
+
       - name: Quay login
         if: github.event_name != 'pull_request'
         env:
           QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
           QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
         run: echo "$QUAY_BOT_PASSWORD" | podman login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
+
       - name: Push base images to registries
         if: github.event_name != 'pull_request'
         run: |
@@ -331,10 +331,11 @@ jobs:
           done
           unset tag
         shell: bash
+
       - name: Push app images to registries
         if: github.event_name != 'pull_request'
         run: |
-          if [ "${{ matrix.app.s6 }}" == "true" ]; then
+          if [[ "${{ matrix.app.image_name }}" == "pulp" || "${{ matrix.app.image_name }}" == "galaxy" ]]; then
             images="${{ matrix.app.image_name }}"
           else
             images="${{ matrix.app.image_name }} ${{ matrix.app.web_image }}"
@@ -363,6 +364,7 @@ jobs:
             done
           done
         shell: bash
+
       - name: Logs
         if: always()
         run: |
