@@ -5,8 +5,8 @@ ARG PULPCORE_VERSION=""
 ARG GALAXY_NG_VERSION=""
 
 RUN pip3 install --upgrade \
-  pulpcore${PULPCORE_VERSION} \
-  galaxy-ng${GALAXY_NG_VERSION} && \
+  galaxy-ng${GALAXY_NG_VERSION} \
+  pulpcore${PULPCORE_VERSION} && \
   rm -rf /root/.cache/pip
 
 USER pulp:pulp
