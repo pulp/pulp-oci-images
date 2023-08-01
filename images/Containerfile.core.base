@@ -62,6 +62,7 @@ RUN dnf -y install python38 python38-cryptography python38-devel && \
     dnf -y install podman && \
     dnf -y install sudo && \
     dnf -y install zstd && \
+    dnf -y install which && \
     dnf clean all
 
 # Needed to prevent the wrong version of cryptography from being installed,
