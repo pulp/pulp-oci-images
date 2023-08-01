@@ -4,8 +4,8 @@ FROM pulp/pulp-ci-centos:${FROM_TAG}
 ARG GALAXY_NG_VERSION=""
 
 RUN pip3 install --upgrade \
-  requests \
-  git+https://github.com/ansible/galaxy_ng.git@master && \
+  git+https://github.com/ansible/galaxy_ng.git@master \
+  requests && \
   rm -rf /root/.cache/pip
 
 USER pulp:pulp
