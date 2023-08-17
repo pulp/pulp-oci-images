@@ -254,8 +254,12 @@ jobs:
       - name: Compose up
         run: |
           if [[ "${{ matrix.app.image_name }}" == "pulp" || "${{ matrix.app.image_name }}" == "galaxy" ]]; then
+
             # Reuse the folders from the s6 mode tests
             FILE="compose.folders.yml"
+            echo "host all all 10.0.0.0/8 trust" | sudo tee -a pgsql/data/pg_hba.conf > /dev/null
+            echo "listen_addresses = '*'" | sudo tee -a pgsql/data/postgresql.conf > /dev/null
+
             # We'll pull the web image from a registry since we didn't build it.
             if [ "${{ matrix.image_variant }}" == "nightly" ]; then
               WEB_TAG="nightly"
