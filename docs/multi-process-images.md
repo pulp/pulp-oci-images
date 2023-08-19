@@ -106,7 +106,8 @@ $ podman run -p 8080:80 -e "PULP_GALAXY_REQUIRE_CONTENT_APPROVAL=false" ghcr.io/
 
 Mount the storage directories for persistent data and https:
 
-NOTE: don't mount volumes to `/etc/pulp/` as you would with the vanilla pulp images, as this will override the default settings.py file.
+NOTE: don't mount volumes to `/etc/pulp/` as you would with the vanilla pulp images, as this will
+override the default settings.py file.
 
 ```
 $ podman run --detach \
@@ -139,7 +140,9 @@ CACHE_ENABLED=True" >> settings/settings.py
 
 * For a complete list of available settings for `settings.py`, see [the Pulpcore Settings](https://docs.pulpproject.org/pulpcore/configuration/settings.html).
 
-* These 4 directories `settings pulp_storage pgsql containers` must be be preserved. `settings` has your settings, generated certificates, and generated database encrypted fields key. The `pulp_storage pgsql containers` are the application data.
+* These 4 directories `settings pulp_storage pgsql containers` must be preserved. `settings` has
+  your settings, generated certificates, and generated database encrypted fields key. The
+  `pulp_storage pgsql containers` are the application data.
 
 ### Starting the Container
 
