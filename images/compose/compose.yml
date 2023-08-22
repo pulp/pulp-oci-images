@@ -11,21 +11,29 @@ services:
       POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256'
       POSTGRES_HOST_AUTH_METHOD: 'scram-sha-256'
     volumes:
-      - "../../pgsql:/var/lib/postgresql:Z"
+      - "pg_data:/var/lib/postgresql"
       - "./assets/postgres/passwd:/etc/passwd:Z"
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U pulp" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: "docker.io/library/redis:latest"
     volumes:
       - "redis_data:/data"
+    restart: always
 
   pulp_web:
     image: "pulp/pulp-web:latest"
     command: ['/usr/bin/nginx.sh']
     depends_on:
-      - postgres
-      - pulp_api
-      - pulp_content
+      postgres:
+        condition: service_healthy
+      pulp_api:
+      pulp_content:
     ports:
       - "8080:8080"
     hostname: pulp
@@ -33,6 +41,7 @@ services:
     volumes:
       - "./assets/bin/nginx.sh:/usr/bin/nginx.sh:Z"
       - "./assets/nginx/nginx.conf.template:/etc/opt/rh/rh-nginx116/nginx/nginx.conf.template:Z"
+    restart: always
 
   pulp_api:
     image: "pulp/pulp-minimal:latest"
@@ -40,18 +49,20 @@ services:
       replicas: 2
     command: ['pulp-api']
     depends_on:
-      - redis
-      - postgres
+      redis:
+      postgres:
+        condition: service_healthy
     hostname: pulp-api
     user: pulp
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
-      - "../../pulp_storage:/var/lib/pulp:z"
+      - "pulp:/var/lib/pulp"
     environment:
       POSTGRES_SERVICE_PORT: 5432
       POSTGRES_SERVICE_HOST: postgres
       PULP_ADMIN_PASSWORD: password
+    restart: always
 
   pulp_content:
     image: "pulp/pulp-minimal:latest"
@@ -59,17 +70,19 @@ services:
       replicas: 2
     command: ['pulp-content']
     depends_on:
-      - redis
-      - postgres
+      redis:
+      postgres:
+        condition: service_healthy
     hostname: pulp-content
     user: pulp
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
-      - "../../pulp_storage:/var/lib/pulp:z"
+      - "pulp:/var/lib/pulp"
     environment:
       POSTGRES_SERVICE_PORT: 5432
       POSTGRES_SERVICE_HOST: postgres
+    restart: always
 
   pulp_worker:
     image: "pulp/pulp-minimal:latest"
@@ -77,17 +90,23 @@ services:
         replicas: 2
     command: ['pulp-worker']
     depends_on:
-      - redis
-      - postgres
+      redis:
+      postgres:
+        condition: service_healthy
     user: pulp
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
-      - "../../pulp_storage:/var/lib/pulp:z"
+      - "pulp:/var/lib/pulp"
     environment:
       POSTGRES_SERVICE_PORT: 5432
       POSTGRES_SERVICE_HOST: postgres
+    restart: always
 
 volumes:
+  pulp:
+    name: pulp${DEV_VOLUME_SUFFIX:-dev}
+  pg_data:
+    name: pg_data${DEV_VOLUME_SUFFIX:-dev}
   redis_data:
     name: redis_data${DEV_VOLUME_SUFFIX:-dev}
