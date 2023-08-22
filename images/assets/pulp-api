@@ -31,12 +31,19 @@ if [ -n "${PULP_ADMIN_PASSWORD}" ]; then
 fi
 set -x
 
+if which pulpcore-api
+then
+  PULP_API_ENTRYPOINT=("pulpcore-api")
+else
+  PULP_API_ENTRYPOINT=("gunicorn" "pulpcore.app.wsgi:application" "--bind" "[::]:24817" "--name" "pulp-api" "--access-logformat" "pulp [%({correlation-id}o)s]: %(h)s %(l)s %(u)s %(t)s \"%(r)s\" %(s)s %(b)s \"%(f)s\" \"%(a)s\"")
+fi
+
 # NOTE: Due to the Linux dual-stack functionality, this will listen on both IPv4
 # IPv6, even though netstat may seem to indicate it is IPv6 only.
 # Due to containers using network namespaces, even if the host has this disabled
 # with /proc/sys/net/ipv6/bindv6only=1, the container will still have
 # it enabled with /proc/sys/net/ipv6/bindv6only=0 .
-exec gunicorn --bind '[::]:24817' pulpcore.app.wsgi:application \
---name pulp-api \
+exec "${PULP_API_ENTRYPOINT[@]}" \
 --timeout "${PULP_GUNICORN_TIMEOUT}" \
---workers "${PULP_API_WORKERS}"
+--workers "${PULP_API_WORKERS}" \
+--access-logfile -
