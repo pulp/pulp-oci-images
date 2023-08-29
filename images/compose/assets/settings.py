@@ -14,5 +14,5 @@ TOKEN_AUTH_DISABLED = False
 TOKEN_SIGNATURE_ALGORITHM = "ES256"
 PUBLIC_KEY_PATH = "/etc/pulp/keys/container_auth_public_key.pem"
 PRIVATE_KEY_PATH = "/etc/pulp/keys/container_auth_private_key.pem"
-TELEMETRY = False
+ANALYTICS = False
 STATIC_ROOT = "/var/lib/operator/static/"
