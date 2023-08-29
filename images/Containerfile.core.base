@@ -63,6 +63,7 @@ RUN dnf -y install python38 python38-cryptography python38-devel && \
     dnf -y install sudo && \
     dnf -y install zstd && \
     dnf -y install which && \
+    getcap /usr/bin/newuidmap  | grep cap_setuid || dnf -y reinstall -y shadow-utils && \
     dnf clean all
 
 # Needed to prevent the wrong version of cryptography from being installed,
@@ -79,11 +80,17 @@ RUN pip3 install --upgrade pip setuptools wheel && \
          requests\[use_chardet_on_py3] && \
          rm -rf /root/.cache/pip
 
-RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
 
 RUN groupadd -g 700 --system pulp
 RUN useradd -d /var/lib/pulp --system -u 700 -g pulp pulp
-RUN usermod --add-subuids 100000-165535 --add-subgids 100000-165535 pulp
+
+# Rootless podman inside rootless podman/docker
+# https://www.redhat.com/sysadmin/podman-inside-container
+RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
+RUN usermod --add-subuids 10000-65535 --add-subgids 10000-65535 pulp
+VOLUME /var/lib/containers
+RUN mkdir -p /var/lib/pulp/.local/share/containers && chown -R pulp:pulp /var/lib/pulp/.local
+VOLUME /var/lib/pulp/.local/share/containers
 
 RUN mkdir -p /database \
              /etc/nginx/pulp \

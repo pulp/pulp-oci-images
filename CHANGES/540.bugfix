@@ -1,0 +1,1 @@
+Fix buildah/skopeo (for pulp_container) when pulp is run inside of a container based on RHEL8.8's podman 4.4 or later.
