@@ -87,7 +87,12 @@ RUN useradd -d /var/lib/pulp --system -u 700 -g pulp pulp
 # Rootless podman inside rootless podman/docker
 # https://www.redhat.com/sysadmin/podman-inside-container
 RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
-RUN usermod --add-subuids 10000-65535 --add-subgids 10000-65535 pulp
+# We modified the example so that we have a UID range of upto 65535.
+# Because, for example, the image docker.io/library/busybox actually uses the user nobody(65534) for
+# /home rather than the traditional nobody/nfsnbody usage (not an owner on a permanent filesystem.)
+# This does however mean that a user must have a UID range for the pulp container of at least 75535
+# large (UID 0 is in addition), contrary to many examples out there that are only 65536 large.
+RUN usermod --add-subuids 10000-75534 --add-subgids 10000-75534 pulp
 VOLUME /var/lib/containers
 RUN mkdir -p /var/lib/pulp/.local/share/containers && chown -R pulp:pulp /var/lib/pulp/.local
 VOLUME /var/lib/pulp/.local/share/containers
