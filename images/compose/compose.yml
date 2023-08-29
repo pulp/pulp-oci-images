@@ -59,8 +59,6 @@ services:
       - "./assets/certs:/etc/pulp/certs:z"
       - "pulp:/var/lib/pulp"
     environment:
-      POSTGRES_SERVICE_PORT: 5432
-      POSTGRES_SERVICE_HOST: postgres
       PULP_ADMIN_PASSWORD: password
     restart: always
 
@@ -79,9 +77,6 @@ services:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
       - "pulp:/var/lib/pulp"
-    environment:
-      POSTGRES_SERVICE_PORT: 5432
-      POSTGRES_SERVICE_HOST: postgres
     restart: always
 
   pulp_worker:
@@ -98,9 +93,6 @@ services:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
       - "pulp:/var/lib/pulp"
-    environment:
-      POSTGRES_SERVICE_PORT: 5432
-      POSTGRES_SERVICE_HOST: postgres
     restart: always
 
 volumes:
