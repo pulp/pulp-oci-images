@@ -6,13 +6,15 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_USER: pulp
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD_FILE: "/run/secrets/db_password"
       POSTGRES_DB: pulp
       POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256'
       POSTGRES_HOST_AUTH_METHOD: 'scram-sha-256'
     volumes:
       - "../../pgsql/data:/var/lib/postgresql/data:Z"
       - "./assets/postgres/passwd:/etc/passwd:Z"
+    secrets:
+      - db_password
     restart: always
     healthcheck:
       test: pg_isready -U pulp
@@ -39,8 +41,11 @@ services:
     command: pulpcore-manager migrate --noinput
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
-      - "./assets/certs:/etc/pulp/certs:z"
       - "../../pulp_storage:/var/lib/pulp:z"
+    secrets:
+      - app_secret
+      - db_password
+      - db_encryption_key
 
   signing_key_service:
     image: "pulp/pulp-minimal:latest"
@@ -52,8 +57,11 @@ services:
         condition: service_completed_successfully
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
-      - "./assets/certs:/etc/pulp/certs:z"
       - "../../pulp_storage:/var/lib/pulp:z"
+    secrets:
+      - app_secret
+      - db_password
+      - db_encryption_key
 
   set_init_password_service:
     image: "pulp/pulp-minimal:latest"
@@ -65,8 +73,11 @@ services:
       PULP_DEFAULT_ADMIN_PASSWORD: password
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
-      - "./assets/certs:/etc/pulp/certs:z"
       - "../../pulp_storage:/var/lib/pulp:z"
+    secrets:
+      - app_secret
+      - db_password
+      - db_encryption_key
 
   pulp_web:
     image: "pulp/pulp-web:latest"
@@ -103,8 +114,11 @@ services:
     user: pulp
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
-      - "./assets/certs:/etc/pulp/certs:z"
       - "../../pulp_storage:/var/lib/pulp:z"
+    secrets:
+      - app_secret
+      - db_password
+      - db_encryption_key
     restart: always
     healthcheck:
       test: readyz.py /pulp/api/v3/status/
@@ -128,8 +142,11 @@ services:
     user: pulp
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
-      - "./assets/certs:/etc/pulp/certs:z"
       - "../../pulp_storage:/var/lib/pulp:z"
+    secrets:
+      - app_secret
+      - db_password
+      - db_encryption_key
     restart: always
     healthcheck:
       test: readyz.py /pulp/content
@@ -152,9 +169,20 @@ services:
     user: pulp
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
-      - "./assets/certs:/etc/pulp/certs:z"
       - "../../pulp_storage:/var/lib/pulp:z"
+    secrets:
+      - app_secret
+      - db_password
+      - db_encryption_key
     restart: always
+
+secrets:
+  app_secret:
+    file: ./assets/app_secret.txt
+  db_password:
+    file: ./assets/db_password.txt
+  db_encryption_key:
+    file: ./assets/db_encryption_key.txt
 
 volumes:
   redis_data:

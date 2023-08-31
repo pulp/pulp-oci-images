@@ -1,6 +1,14 @@
-SECRET_KEY = "aabbcc"
+with open("/run/secrets/app_secret", "r") as fp:
+    app_secret = fp.readline()[:-1]
+
+with open("/run/secrets/db_password", "r") as fp:
+    db_password = fp.readline()[:-1]
+
+
+SECRET_KEY = app_secret
 CONTENT_ORIGIN = "http://pulp_content:24816"
-DATABASES = {"default": {"HOST": "postgres", "ENGINE": "django.db.backends.postgresql", "NAME": "pulp", "USER": "pulp", "PASSWORD": "password", "PORT": "5432", "CONN_MAX_AGE": 0, "OPTIONS": {"sslmode": "prefer"}}}
+DATABASES = {"default": {"HOST": "postgres", "ENGINE": "django.db.backends.postgresql", "NAME": "pulp", "USER": "pulp", "PASSWORD": db_password, "PORT": "5432", "CONN_MAX_AGE": 0, "OPTIONS": {"sslmode": "prefer"}}}
+DB_ENCRYPTION_KEY = "/run/secrets/db_encryption_key"
 CACHE_ENABLED = True
 REDIS_HOST = "redis"
 REDIS_PORT = 6379
