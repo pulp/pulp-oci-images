@@ -51,8 +51,6 @@ services:
       - "./assets/certs:/etc/pulp/certs:z"
       - "../../pulp_storage:/var/lib/pulp:z"
     environment:
-      POSTGRES_SERVICE_PORT: 5432
-      POSTGRES_SERVICE_HOST: postgres
       PULP_ADMIN_PASSWORD: password
 
   pulp_content:
@@ -70,9 +68,6 @@ services:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
       - "../../pulp_storage:/var/lib/pulp:z"
-    environment:
-      POSTGRES_SERVICE_PORT: 5432
-      POSTGRES_SERVICE_HOST: postgres
 
   pulp_worker:
     image: "pulp/pulp-minimal:latest"
@@ -88,9 +83,6 @@ services:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
       - "../../pulp_storage:/var/lib/pulp:z"
-    environment:
-      POSTGRES_SERVICE_PORT: 5432
-      POSTGRES_SERVICE_HOST: postgres
 
 volumes:
   redis_data:
