@@ -3,6 +3,5 @@
 /usr/bin/wait_on_postgres.py
 /usr/bin/wait_on_database_migrations.sh
 
-export PULP_SETTINGS=/etc/pulp/settings.py
 export PATH=/usr/local/bin:/usr/bin/
 exec pulpcore-worker

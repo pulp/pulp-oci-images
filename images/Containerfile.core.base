@@ -105,15 +105,11 @@ COPY images/assets/readyz.py /usr/bin/readyz.py
 COPY images/assets/route_paths.py /usr/bin/route_paths.py
 COPY images/assets/wait_on_postgres.py /usr/bin/wait_on_postgres.py
 COPY images/assets/wait_on_database_migrations.sh /usr/bin/wait_on_database_migrations.sh
-COPY images/assets/pulp-common-entrypoint.sh /pulp-common-entrypoint.sh
 COPY images/assets/pulp-api /usr/bin/pulp-api
 COPY images/assets/pulp-content /usr/bin/pulp-content
-COPY images/assets/pulp-resource-manager /usr/bin/pulp-resource-manager
 COPY images/assets/pulp-worker /usr/bin/pulp-worker
 
 # Need to precreate when running pulp as the pulp user
 RUN touch /var/log/galaxy_api_access.log && \
     chown pulp:pulp /var/log/galaxy_api_access.log && \
     chmod u+rw /var/log/galaxy_api_access.log
-
-ENTRYPOINT ["/pulp-common-entrypoint.sh"]
