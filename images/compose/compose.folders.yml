@@ -51,7 +51,7 @@ services:
       - "./assets/certs:/etc/pulp/certs:z"
       - "../../pulp_storage:/var/lib/pulp:z"
     environment:
-      PULP_ADMIN_PASSWORD: password
+      PULP_DEFAULT_ADMIN_PASSWORD: password
 
   pulp_content:
     image: "pulp/pulp-minimal:latest"

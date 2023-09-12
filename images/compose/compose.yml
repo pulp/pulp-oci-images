@@ -59,7 +59,7 @@ services:
       - "./assets/certs:/etc/pulp/certs:z"
       - "pulp:/var/lib/pulp"
     environment:
-      PULP_ADMIN_PASSWORD: password
+      PULP_DEFAULT_ADMIN_PASSWORD: password
     restart: always
 
   pulp_content:
