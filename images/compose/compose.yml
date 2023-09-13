@@ -25,13 +25,16 @@ services:
     volumes:
       - "redis_data:/data"
     restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   pulp_web:
     image: "pulp/pulp-web:latest"
     command: ['/usr/bin/nginx.sh']
     depends_on:
-      postgres:
-        condition: service_healthy
       pulp_api:
       pulp_content:
     ports:
@@ -50,6 +53,7 @@ services:
     command: ['pulp-api']
     depends_on:
       redis:
+        condition: service_healthy
       postgres:
         condition: service_healthy
     hostname: pulp-api
@@ -61,6 +65,11 @@ services:
     environment:
       PULP_DEFAULT_ADMIN_PASSWORD: password
     restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "readyz.py /pulp/api/v3/status/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   pulp_content:
     image: "pulp/pulp-minimal:latest"
@@ -69,6 +78,7 @@ services:
     command: ['pulp-content']
     depends_on:
       redis:
+        condition: service_healthy
       postgres:
         condition: service_healthy
     hostname: pulp-content
@@ -78,6 +88,11 @@ services:
       - "./assets/certs:/etc/pulp/certs:z"
       - "pulp:/var/lib/pulp"
     restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "readyz.py /pulp/content/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   pulp_worker:
     image: "pulp/pulp-minimal:latest"
@@ -86,6 +101,7 @@ services:
     command: ['pulp-worker']
     depends_on:
       redis:
+        condition: service_healthy
       postgres:
         condition: service_healthy
     user: pulp
