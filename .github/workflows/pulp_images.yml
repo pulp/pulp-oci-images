@@ -103,8 +103,9 @@ jobs:
         run: |
           podman version
           buildah version
-          podman build --format docker --file images/Containerfile.core.base --tag pulp/base:${TEMP_BASE_TAG} .
-          podman build --format docker --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:${TEMP_BASE_TAG} --build-arg FROM_TAG=${TEMP_BASE_TAG} .
+          sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --file images/Containerfile.core.base --tag pulp/base:${TEMP_BASE_TAG} .
+          podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:${TEMP_BASE_TAG} --build-arg FROM_TAG=${TEMP_BASE_TAG} .
       # we use the docker format (default), even though it may not be the fastest,
       # because it supports saving both images at once.
       # However, it seems to export the common layers twice.
@@ -212,11 +213,12 @@ jobs:
         run: |
           podman version
           buildah version
+          sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
           if [[ "${{ matrix.app.image_name }}" == "pulp-minimal" || "${{ matrix.app.image_name }}" == "galaxy-minimal" ]]; then
-            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.core --tag pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_BASE_TAG} .
-            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.webserver --tag pulp/${{ matrix.app.web_image }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_APP_TAG} .
+            podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.core --tag pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_BASE_TAG} .
+            podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.webserver --tag pulp/${{ matrix.app.web_image }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_APP_TAG} .
           else
-            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile --tag pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_BASE_TAG} .
+            podman build --platform linux/arm64,linux/amd64,linux/ppc64le --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile --tag pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_BASE_TAG} .
           fi
           podman images -a
 
