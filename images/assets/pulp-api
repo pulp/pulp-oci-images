@@ -4,32 +4,37 @@ mkdir -p /var/lib/pulp/media \
          /var/lib/pulp/assets \
          /var/lib/pulp/tmp
 
-/usr/bin/wait_on_postgres.py
+if [[ "${SKIP_MIGRATIONS}" = false ]]; then
+  echo "Running migrations..."
+  /usr/bin/wait_on_postgres.py
 
-# Get list of installed plugins via pip
-# Assumes they are all named like "pulp-file" -> "file", with no 2nd dash.
-# (Was previously needed when we ran `pulpcore-manager makemigrations`)
-# PLUGINS=$(pip list | awk -F '[[:space:]]+|[-]' '/pulp-/{printf $2 " " }')
-
-/usr/local/bin/pulpcore-manager migrate --noinput
-
-set +x
+  # Get list of installed plugins via pip
+  # Assumes they are all named like "pulp-file" -> "file", with no 2nd dash.
+  # (Was previously needed when we ran `pulpcore-manager makemigrations`)
+  # PLUGINS=$(pip list | awk -F '[[:space:]]+|[-]' '/pulp-/{printf $2 " " }')
+  
+  /usr/local/bin/pulpcore-manager migrate --noinput
+fi
 
 if [ -n "${PULP_SIGNING_KEY_FINGERPRINT}" ]; then
+  echo "Configuring the signing service..."
     /usr/local/bin/pulpcore-manager add-signing-service "${COLLECTION_SIGNING_SERVICE}" /var/lib/pulp/scripts/collection_sign.sh "${PULP_SIGNING_KEY_FINGERPRINT}"
     /usr/local/bin/pulpcore-manager add-signing-service "${CONTAINER_SIGNING_SERVICE}" /var/lib/pulp/scripts/container_sign.sh "${PULP_SIGNING_KEY_FINGERPRINT}" --class container:ManifestSigningService
 fi
 
-ADMIN_PASSWORD_FILE=/etc/pulp/pulp-admin-password
-if [[ -f "$ADMIN_PASSWORD_FILE" ]]; then
-   echo "pulp admin can be initialized."
-   PULP_ADMIN_PASSWORD=$(cat $ADMIN_PASSWORD_FILE)
-fi
+if [[ "${NO_ADMIN_PASSWORD}" = false ]]; then
+  echo "Setting the admin password..."
+  ADMIN_PASSWORD_FILE=/etc/pulp/pulp-admin-password
+  if [[ -f "$ADMIN_PASSWORD_FILE" ]]; then
+     echo "pulp admin can be initialized."
+     PULP_ADMIN_PASSWORD=$(cat $ADMIN_PASSWORD_FILE)
+  fi
 
-if [ -n "${PULP_ADMIN_PASSWORD}" ]; then
-    /usr/local/bin/pulpcore-manager reset-admin-password --password "${PULP_ADMIN_PASSWORD}"
+  if [ -n "${PULP_ADMIN_PASSWORD}" ]; then
+      /usr/local/bin/pulpcore-manager reset-admin-password --password "${PULP_ADMIN_PASSWORD}"
+  fi
+
 fi
-set -x
 
 if which pulpcore-api
 then

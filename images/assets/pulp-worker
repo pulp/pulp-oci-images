@@ -1,7 +1,9 @@
 #!/bin/bash -x
 
-/usr/bin/wait_on_postgres.py
-/usr/bin/wait_on_database_migrations.sh
+if [ "${SKIP_MIGRATIONS}" = false ]; then
+  /usr/bin/wait_on_postgres.py
+  /usr/bin/wait_on_database_migrations.sh
+fi
 
 export PULP_SETTINGS=/etc/pulp/settings.py
 export PATH=/usr/local/bin:/usr/bin/

@@ -1,7 +1,8 @@
 #!/bin/bash -x
-
-/usr/bin/wait_on_postgres.py
-/usr/bin/wait_on_database_migrations.sh
+if [ "${SKIP_MIGRATIONS}" = false ]; then
+  /usr/bin/wait_on_postgres.py
+  /usr/bin/wait_on_database_migrations.sh
+fi
 
 if which pulpcore-content
 then
