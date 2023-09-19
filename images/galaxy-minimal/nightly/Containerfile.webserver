@@ -3,9 +3,9 @@ FROM pulp/galaxy-minimal:${FROM_TAG} as builder
 
 RUN mkdir -p /etc/nginx/pulp \
              /www/data
-RUN ln /usr/local/lib/python3.8/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
-RUN ln /usr/local/lib/python3.8/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
-RUN ln /usr/local/lib/python3.8/site-packages/galaxy_ng/app/webserver_snippets/nginx.conf /etc/nginx/pulp/galaxy_ng.conf
+RUN ln /usr/local/lib/python3.9/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
+RUN ln /usr/local/lib/python3.9/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
+RUN ln /usr/local/lib/python3.9/site-packages/galaxy_ng/app/webserver_snippets/nginx.conf /etc/nginx/pulp/galaxy_ng.conf
 
 RUN cp -fr /usr/local/lib/python3.8/site-packages/galaxy_ng/app/static/galaxy_ng/. /www/data
 
