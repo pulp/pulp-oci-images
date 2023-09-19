@@ -334,7 +334,7 @@ The Container file and all other assets used to build the container image are av
 
 ```bash
 $ <docker build | buildah bud> --file images/Containerfile.core.base --tag pulp/base:latest .
-$ <docker build | buildah bud> --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
+$ <docker build | buildah bud> --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos9:latest .
 $ <docker build | buildah bud> --file images/pulp/Containerfile --tag pulp/pulp:latest .
 $ <docker build | buildah bud> --file images/galaxy/Containerfile --tag pulp/galaxy:latest .
 ```

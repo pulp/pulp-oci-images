@@ -103,7 +103,7 @@ jobs:
           for ARCH in arm64 amd64
           do
             podman build --platform linux/$ARCH --format docker --file images/Containerfile.core.base --tag pulp/base:${TEMP_BASE_TAG}-${ARCH} .
-            podman build --platform linux/$ARCH --format docker --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:${TEMP_BASE_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_BASE_TAG}-${ARCH} .
+            podman build --platform linux/$ARCH --format docker --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos9:${TEMP_BASE_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_BASE_TAG}-${ARCH} .
           done
       # we use the docker format (default), even though it may not be the fastest,
       # because it supports saving both images at once.
@@ -113,12 +113,12 @@ jobs:
       - name: Save podman images to tarball
         id: pulp_ci_centos_id
         run: |
-           podman save -m -o base-images.tar pulp/base:${TEMP_BASE_TAG}-arm64 pulp/base:${TEMP_BASE_TAG}-amd64 pulp/pulp-ci-centos:${TEMP_BASE_TAG}-arm64 pulp/pulp-ci-centos:${TEMP_BASE_TAG}-amd64
+           podman save -m -o base-images.tar pulp/base:${TEMP_BASE_TAG}-arm64 pulp/base:${TEMP_BASE_TAG}-amd64 pulp/pulp-ci-centos9:${TEMP_BASE_TAG}-arm64 pulp/pulp-ci-centos9:${TEMP_BASE_TAG}-amd64
            # The id is unique to the image build (not the Containerfile) and will be used in the cache key
            # If a workflow completes successfully, every workflow will generate a new cache.
            # And if we re-run the entire workflow ("Re-run all jobs"), it will generate a new cache too.
            # If we re-run a failed app-images job, it will use the existing cache from base-images
-           id=$(podman image inspect --format '{{ .Id }}' pulp/pulp-ci-centos:${TEMP_BASE_TAG}-amd64)
+           id=$(podman image inspect --format '{{ .Id }}' pulp/pulp-ci-centos9:${TEMP_BASE_TAG}-amd64)
            echo "pulp_ci_centos_id=${id}" >> "$GITHUB_OUTPUT"
            echo "pulp_ci_centos_id=${id}" >> "$GITHUB_ENV"
 
@@ -319,7 +319,7 @@ jobs:
           for registry in ghcr.io docker.io quay.io; do
             # Technically multiple jobs will build and push these 2 images
             # but it is created once in the base-images job, and will be identical
-            for image_name_looped in base pulp-ci-centos; do
+            for image_name_looped in base pulp-ci-centos9; do
               if [ "${TEMP_BASE_TAG}" == "latest" ]; then
                 tags="${BASE_BRANCH} ${BASE_VERSION} latest"
               else
