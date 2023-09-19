@@ -17,7 +17,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # by default, it uses a depth of 1
           # this fetches all history so that we can read each commit
@@ -75,7 +75,7 @@ jobs:
           echo "Building $temp_base_tag"
           echo "TEMP_BASE_TAG=${temp_base_tag}" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # by default, it uses a depth of 1
           # this fetches all history so that we can read each commit
@@ -162,7 +162,7 @@ jobs:
           echo "TEMP_APP_TAG=${temp_app_tag}" >> $GITHUB_ENV
           echo "TEMP_BASE_TAG=${temp_base_tag}" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # by default, it uses a depth of 1
           # this fetches all history so that we can read each commit
@@ -271,14 +271,14 @@ jobs:
           sed -i "s/pulp-web:latest/${{ matrix.app.web_image }}:${WEB_TAG}/g" $FILE
           id | grep "(root)" || sudo usermod -G root $(whoami)
           podman-compose -f $FILE up -d
-          sleep 30
+          podman exec compose_pulp_api_1 /usr/bin/wait_on_database_migrations.sh
           for _ in $(seq 20)
           do
-            sleep 3
             if curl --fail http://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1
             then
               break
             fi
+            sleep 3
           done
           curl --fail http://localhost:8080/pulp/api/v3/status/ | jq
         shell: bash
