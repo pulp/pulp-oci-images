@@ -48,7 +48,7 @@ PID 1 value (/proc/1/cmdline) may vary based on the gunicorn install method (RPM
 The cmdline value for this PID looks like:
 ```
 # pip installation
-gunicorn: master \[pulp-{content,api,worker,resource-manager}\]
+gunicorn: master \[pulp-{content,api}\]
 ```
 OR
 ```
