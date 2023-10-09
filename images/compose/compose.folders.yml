@@ -31,6 +31,43 @@ services:
       timeout: 5s
       retries: 5
 
+  migration_service:
+    image: "pulp/pulp-minimal:latest"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: pulpcore-manager migrate --noinput
+    volumes:
+      - "./assets/settings.py:/etc/pulp/settings.py:z"
+      - "./assets/certs:/etc/pulp/certs:z"
+      - "../../pulp_storage:/var/lib/pulp:z"
+
+  signing_key_service:
+    image: "pulp/pulp-minimal:latest"
+    command: sh -c "add_signing_service.sh"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migration_service: 
+        condition: service_completed_successfully
+    volumes:
+      - "./assets/settings.py:/etc/pulp/settings.py:z"
+      - "./assets/certs:/etc/pulp/certs:z"
+      - "../../pulp_storage:/var/lib/pulp:z"
+
+  set_init_password_service:
+    image: "pulp/pulp-minimal:latest"
+    command: set_init_password.sh
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PULP_DEFAULT_ADMIN_PASSWORD: password
+    volumes:
+      - "./assets/settings.py:/etc/pulp/settings.py:z"
+      - "./assets/certs:/etc/pulp/certs:z"
+      - "../../pulp_storage:/var/lib/pulp:z"
+
   pulp_web:
     image: "pulp/pulp-web:latest"
     command: ['/usr/bin/nginx.sh']
@@ -56,14 +93,18 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      migration_service:
+        condition: service_completed_successfully
+      set_init_password_service:
+        condition: service_completed_successfully
+      signing_key_service:
+        condition: service_completed_successfully
     hostname: pulp-api
     user: pulp
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"
       - "./assets/certs:/etc/pulp/certs:z"
       - "../../pulp_storage:/var/lib/pulp:z"
-    environment:
-      PULP_DEFAULT_ADMIN_PASSWORD: password
     restart: always
     healthcheck:
       test: [ "CMD-SHELL", "readyz.py /pulp/api/v3/status/" ]
@@ -81,6 +122,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      migration_service:
+        condition: service_completed_successfully
     hostname: pulp-content
     user: pulp
     volumes:
@@ -104,6 +147,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      migration_service:
+        condition: service_completed_successfully
     user: pulp
     volumes:
       - "./assets/settings.py:/etc/pulp/settings.py:z"

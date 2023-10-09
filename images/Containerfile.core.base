@@ -105,6 +105,8 @@ COPY images/assets/readyz.py /usr/bin/readyz.py
 COPY images/assets/route_paths.py /usr/bin/route_paths.py
 COPY images/assets/wait_on_postgres.py /usr/bin/wait_on_postgres.py
 COPY images/assets/wait_on_database_migrations.sh /usr/bin/wait_on_database_migrations.sh
+COPY images/assets/set_init_password.sh /usr/bin/set_init_password.sh
+COPY images/assets/add_signing_service.sh /usr/bin/add_signing_service.sh
 COPY images/assets/pulp-api /usr/bin/pulp-api
 COPY images/assets/pulp-content /usr/bin/pulp-content
 COPY images/assets/pulp-worker /usr/bin/pulp-worker

@@ -2,7 +2,7 @@
 
 echo "Checking for database migrations"
 while true; do
-  /usr/local/bin/pulpcore-manager showmigrations | grep '\[ \]'
+  /usr/local/bin/pulpcore-manager showmigrations | grep '\[ \]' &> /dev/null
   exit_code=$?
   if [ $exit_code -eq 1 ]; then
     # grep returning 1 means that the searched-for string was not found.
