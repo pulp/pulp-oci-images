@@ -52,5 +52,8 @@ podman exec -u pulp -i pulp bash -c "cat > /var/lib/pulp/scripts/sign_deb_releas
 podman exec -u pulp pulp chmod a+rx /var/lib/pulp/scripts/sign_deb_release.sh
 podman exec -u pulp pulp bash -c "pulpcore-manager add-signing-service --class deb:AptReleaseSigningService sign_deb_release /var/lib/pulp/scripts/sign_deb_release.sh 'Pulp QE'"
 
+# Test buildah for pulp_container's usage
+podman exec -u pulp pulp podman build https://github.com/openshift-examples/web.git
+
 echo "Run all CLI tests"
 make test

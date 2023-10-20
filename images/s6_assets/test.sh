@@ -10,6 +10,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# "--security-opt unmask=none" needed on rhel8 for `podman run`, but we only
+# ever need to run buildah & skopeo (pulp_container does)
+# "--device /dev/net/tun" needed for `podman run`, but we only ever need to run
+# buildah & skopeo (pulp_container does)
+
 start_container_and_wait() {
   podman run --detach \
              --publish 8080:$port \
