@@ -9,8 +9,7 @@ RUN ln /usr/local/lib/python3.8/site-packages/pulp_python/app/webserver_snippets
 
 
 
-FROM docker.io/centos/nginx-116-centos7:1.16
-
+FROM docker.io/library/nginx:stable
 
 COPY --from=builder /etc/nginx/pulp/*.conf "${NGINX_DEFAULT_CONF_PATH}"/
 

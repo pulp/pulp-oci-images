@@ -10,8 +10,7 @@ RUN ln /usr/local/lib/python3.8/site-packages/galaxy_ng/app/webserver_snippets/n
 RUN cp -fr /usr/local/lib/python3.8/site-packages/galaxy_ng/app/static/galaxy_ng/. /www/data
 
 
-FROM docker.io/centos/nginx-116-centos7:1.16
-
+FROM docker.io/library/nginx:stable
 
 COPY --from=builder /www/data .
 COPY --from=builder /etc/nginx/pulp/*.conf "${NGINX_DEFAULT_CONF_PATH}"/
