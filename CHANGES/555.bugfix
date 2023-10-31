@@ -1,0 +1,1 @@
+Fixed buildah/skopeo failing with images containing files owned by the nobody or nfsnobody users on UIDs/GIDs 65534 or 65535.

@@ -57,6 +57,12 @@ else
   pulp_https=true
 fi
 
+# Configure the GHA host for buildah/skopeo running within the pulp container
+# Default range is 165536-231071, 64K long
+# sudo usermod --add-subuids 231072-241071 --add-subgid 231072-241071 runner
+sudo sed -i "s\runner:165536:65536\runner:165536:75536\g" /etc/subuid /etc/subgid
+podman system migrate
+
 mkdir -p settings pulp_storage pgsql containers
 echo "CONTENT_ORIGIN='$scheme://localhost:8080'" >> settings/settings.py
 echo "ALLOWED_EXPORT_PATHS = ['/tmp']" >> settings/settings.py
