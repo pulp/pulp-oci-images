@@ -7,6 +7,7 @@ These instructions will migrate you from a [pulp_installer deployment](https://d
 The same host will be running Pulp, but in a container now.
 
 All of pulp_installer 3.23's supported distros are documented, but instructions will have extra steps depending upon the PostgreSQL version (the container runs PostgreSQL 13). These steps are all listed in the instructions per distro, but here is an overview:
+
 | Distro | PostgreSQL Version | Extra Steps |
 | ------ | ------------------ | ------------- |
 | Debian 11 | 13 | |
