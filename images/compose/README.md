@@ -29,7 +29,7 @@ docker-compose scale pulp_api=4 pulp_content=4
 pip install podman-compose
 git clone git@github.com:pulp/pulp-oci-images.git
 cd images/compose
-mkdir ../../pgsql ../../pulp_storage
+mkdir -p ../../pgsql/data ../../pulp_storage
 podman unshare chown 700:700 ../../pulp_storage
 podman-compose -f compose.folders.yml up
 ```
@@ -39,7 +39,7 @@ podman-compose -f compose.folders.yml up
 pip install podman-compose
 git clone git@github.com:pulp/pulp-oci-images.git
 cd images/compose
-mkdir ../../pgsql ../../pulp_storage
+mkdir -p ../../pgsql/data ../../pulp_storage
 sudo chown 700:700 ../../pulp_storage
 podman-compose -f compose.folders.yml up
 ```
