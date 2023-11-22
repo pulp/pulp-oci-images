@@ -366,7 +366,7 @@ jobs:
                 fi
               fi
               for tag in $tags; do
-                podman manifest create ${registry}/pulp/${image_name_looped}:${tag} pulp/${image_name_looped}:${TEMP_BASE_TAG}-amd64 pulp/${image_name_looped}:${TEMP_BASE_TAG}-arm64
+                podman manifest create ${registry}/pulp/${image_name_looped}:${tag} containers-storage:localhost/pulp/${image_name_looped}:${TEMP_BASE_TAG}-amd64 containers-storage:localhost/pulp/${image_name_looped}:${TEMP_BASE_TAG}-arm64
                 podman manifest push --all ${registry}/pulp/${image_name_looped}:${tag}
               done
             done
