@@ -103,8 +103,12 @@ jobs:
         run: |
           podman version
           buildah version
-          podman build --format docker --file images/Containerfile.core.base --tag pulp/base:${TEMP_BASE_TAG} .
-          podman build --format docker --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:${TEMP_BASE_TAG} --build-arg FROM_TAG=${TEMP_BASE_TAG} .
+          sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          for ARCH in arm64 amd64
+          do
+            podman build --platform linux/$ARCH --format docker --file images/Containerfile.core.base --tag pulp/base:${TEMP_BASE_TAG}-${ARCH} .
+            podman build --platform linux/$ARCH --format docker --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:${TEMP_BASE_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_BASE_TAG}-${ARCH} .
+          done
       # we use the docker format (default), even though it may not be the fastest,
       # because it supports saving both images at once.
       # However, it seems to export the common layers twice.
@@ -113,12 +117,12 @@ jobs:
       - name: Save podman images to tarball
         id: pulp_ci_centos_id
         run: |
-           podman save -m -o base-images.tar pulp/base:${TEMP_BASE_TAG} pulp/pulp-ci-centos:${TEMP_BASE_TAG}
+           podman save -m -o base-images.tar pulp/base:${TEMP_BASE_TAG}-arm64 pulp/base:${TEMP_BASE_TAG}-amd64 pulp/pulp-ci-centos:${TEMP_BASE_TAG}-arm64 pulp/pulp-ci-centos:${TEMP_BASE_TAG}-amd64
            # The id is unique to the image build (not the Containerfile) and will be used in the cache key
            # If a workflow completes successfully, every workflow will generate a new cache.
            # And if we re-run the entire workflow ("Re-run all jobs"), it will generate a new cache too.
            # If we re-run a failed app-images job, it will use the existing cache from base-images
-           id=$(podman image inspect --format '{{ .Id }}' pulp/pulp-ci-centos:${TEMP_BASE_TAG})
+           id=$(podman image inspect --format '{{ .Id }}' pulp/pulp-ci-centos:${TEMP_BASE_TAG}-amd64)
            echo "pulp_ci_centos_id=${id}" >> "$GITHUB_OUTPUT"
            echo "pulp_ci_centos_id=${id}" >> "$GITHUB_ENV"
 
@@ -213,17 +217,21 @@ jobs:
         run: |
           podman version
           buildah version
-          if [[ "${{ matrix.app.image_name }}" == "pulp-minimal" || "${{ matrix.app.image_name }}" == "galaxy-minimal" ]]; then
-            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.core --tag pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_BASE_TAG} .
-            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.webserver --tag pulp/${{ matrix.app.web_image }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_APP_TAG} .
-          else
-            podman build --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile --tag pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} --build-arg FROM_TAG=${TEMP_BASE_TAG} .
-          fi
+          sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          for ARCH in arm64 amd64
+          do
+            if [[ "${{ matrix.app.image_name }}" == "pulp-minimal" || "${{ matrix.app.image_name }}" == "galaxy-minimal" ]]; then
+              podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.core --tag pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_BASE_TAG}-${ARCH} .
+              podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.webserver --tag pulp/${{ matrix.app.web_image }}:${TEMP_APP_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_APP_TAG}-${ARCH} .
+            else
+              podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile --tag pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_BASE_TAG}-${ARCH} .
+            fi
+          done
           podman images -a
 
       - name: Set version and branch image tags
         run: |
-          app_version=$(podman run --pull=never pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} bash -c "pip3 show ${{ matrix.app.pip_name }} | sed -n -e 's/Version: //p'")
+          app_version=$(podman run --pull=never pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG}-amd64 bash -c "pip3 show ${{ matrix.app.pip_name }} | sed -n -e 's/Version: //p'")
           app_branch=$(echo ${app_version} | grep -oP '\d+\.\d+')
 
           echo "APP_VERSION: ${app_version}"
@@ -231,7 +239,7 @@ jobs:
           echo "APP_VERSION=${app_version}" >> $GITHUB_ENV
           echo "APP_BRANCH=${app_branch}" >> $GITHUB_ENV
 
-          base_version=$(podman run --pull=never pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG} bash -c "pip3 show pulpcore | sed -n -e 's/Version: //p'")
+          base_version=$(podman run --pull=never pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG}-amd64 bash -c "pip3 show pulpcore | sed -n -e 's/Version: //p'")
           base_branch=$(echo ${base_version} | grep -oP '\d+\.\d+')
 
           echo "BASE_VERSION: ${base_version}"
@@ -243,14 +251,14 @@ jobs:
         if: matrix.app.image_name == 'pulp'
         run: |
           # 3.20 has postgres 12 rather than 13
-          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}" http "quay.io/pulp/all-in-one-pulp:3.20"
+          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}-amd64" http "quay.io/pulp/all-in-one-pulp:3.20"
           podman stop pulp
           podman rm pulp
 
       - name: Test the image in s6 mode (galaxy)
         if: matrix.app.image_name == 'galaxy'
         run: |
-          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}" https
+          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}-amd64" https
           podman stop pulp
           podman rm pulp
 
@@ -271,10 +279,10 @@ jobs:
             fi
           else
             FILE="compose.yml"
-            WEB_TAG="${TEMP_APP_TAG}"
+            WEB_TAG="${TEMP_APP_TAG}-amd64"
           fi
           cd images/compose
-          sed -i "s/pulp-minimal:latest/${{ matrix.app.image_name }}:${TEMP_APP_TAG}/g" $FILE
+          sed -i "s/pulp-minimal:latest/${{ matrix.app.image_name }}:${TEMP_APP_TAG}-amd64/g" $FILE
           sed -i "s/pulp-web:latest/${{ matrix.app.web_image }}:${WEB_TAG}/g" $FILE
           id | grep "(root)" || sudo usermod -G root $(whoami)
           podman-compose -f $FILE up -d
@@ -324,8 +332,8 @@ jobs:
                 tags="${BASE_BRANCH} ${BASE_VERSION}"
               fi
               for tag in $tags; do
-                podman tag pulp/${image_name_looped}:${TEMP_BASE_TAG} ${registry}/pulp/${image_name_looped}:${tag}
-                podman push ${registry}/pulp/${image_name_looped}:${tag}
+                podman manifest create ${registry}/pulp/${image_name_looped}:${tag} containers-storage:localhost/pulp/${image_name_looped}:${TEMP_BASE_TAG}-amd64 containers-storage:localhost/pulp/${image_name_looped}:${TEMP_BASE_TAG}-arm64
+                podman manifest push --all ${registry}/pulp/${image_name_looped}:${tag} ${registry}/pulp/${image_name_looped}:${tag}
               done
             done
           done
@@ -358,8 +366,8 @@ jobs:
                 fi
               fi
               for tag in $tags; do
-                podman tag pulp/${image_name_looped}:${TEMP_APP_TAG} ${registry}/pulp/${image_name_looped}:${tag}
-                podman push ${registry}/pulp/${image_name_looped}:${tag}
+                podman manifest create ${registry}/pulp/${image_name_looped}:${tag} containers-storage:localhost/pulp/${image_name_looped}:${TEMP_BASE_TAG}-amd64 containers-storage:localhost/pulp/${image_name_looped}:${TEMP_BASE_TAG}-arm64
+                podman manifest push --all ${registry}/pulp/${image_name_looped}:${tag} ${registry}/pulp/${image_name_looped}:${tag}
               done
             done
           done
