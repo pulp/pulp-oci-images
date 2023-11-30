@@ -36,21 +36,21 @@ fi
 
 echo "Setup the signing services"
 # Setup key on the Pulp container
-curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-KEY-pulp-qe | podman exec -i pulp su pulp -c "cat > /tmp/GPG-KEY-pulp-qe"
-curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-PRIVATE-KEY-pulp-qe | podman exec -i pulp su pulp -c "gpg --import"
-echo "6EDF301256480B9B801EBA3D05A5E6DA269D9D98:6:" | podman exec -i pulp gpg --import-ownertrust
+curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-KEY-fixture-signing | podman exec -i pulp su pulp -c "cat > /tmp/GPG-KEY-fixture-signing"
+curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-PRIVATE-KEY-fixture-signing | podman exec -i pulp su pulp -c "gpg --import"
+echo "0C1A894EBB86AFAE218424CADDEF3019C2D4A8CF:6:" | podman exec -i pulp gpg --import-ownertrust
 # Setup key on the test machine
-curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-KEY-pulp-qe | cat > /tmp/GPG-KEY-pulp-qe
-curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-PRIVATE-KEY-pulp-qe | gpg --import
-echo "6EDF301256480B9B801EBA3D05A5E6DA269D9D98:6:" | gpg --import-ownertrust
+curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-KEY-fixture-signing | cat > /tmp/GPG-KEY-fixture-signing
+curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-PRIVATE-KEY-fixture-signing | gpg --import
+echo "0C1A894EBB86AFAE218424CADDEF3019C2D4A8CF:6:" | gpg --import-ownertrust
 echo "Setup ansible signing service"
 podman exec -u pulp -i pulp bash -c "cat > /var/lib/pulp/scripts/sign_detached.sh" < "${PWD}/tests/assets/sign_detached.sh"
 podman exec -u pulp pulp chmod a+rx /var/lib/pulp/scripts/sign_detached.sh
-podman exec -u pulp pulp bash -c "pulpcore-manager add-signing-service --class core:AsciiArmoredDetachedSigningService sign_ansible /var/lib/pulp/scripts/sign_detached.sh 'Pulp QE'"
+podman exec -u pulp pulp bash -c "pulpcore-manager add-signing-service --class core:AsciiArmoredDetachedSigningService sign_ansible /var/lib/pulp/scripts/sign_detached.sh 'pulp-fixture-signing-key'"
 echo "Setup deb release signing service"
 podman exec -u pulp -i pulp bash -c "cat > /var/lib/pulp/scripts/sign_deb_release.sh" < "${PWD}/tests/assets/sign_deb_release.sh"
 podman exec -u pulp pulp chmod a+rx /var/lib/pulp/scripts/sign_deb_release.sh
-podman exec -u pulp pulp bash -c "pulpcore-manager add-signing-service --class deb:AptReleaseSigningService sign_deb_release /var/lib/pulp/scripts/sign_deb_release.sh 'Pulp QE'"
+podman exec -u pulp pulp bash -c "pulpcore-manager add-signing-service --class deb:AptReleaseSigningService sign_deb_release /var/lib/pulp/scripts/sign_deb_release.sh 'pulp-fixture-signing-key'"
 
 echo "Run all CLI tests"
 make test
