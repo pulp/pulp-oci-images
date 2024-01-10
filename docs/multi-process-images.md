@@ -44,7 +44,7 @@ This image can also function the same as the single-process image `pulp-minimal`
 #### Discontinued tags
 
 - `https`: These were built nightly, with latest released version of each plugin. Nginx webserver ran with SSL/TLS. Now, use `stable` instead with `-e PULP_HTTPS=true`.
-- `3.y-https`:  Pulpcore 3.y version and its compatible plugins. These were built whenever there is a z-release. 
+- `3.y-https`:  Pulpcore 3.y version and its compatible plugins. These were built whenever there is a z-release.
   Nginx webserver ran with SSL/TLS. Now, use `3.y` instead with `-e PULP_HTTPS=true`.
 
 ### galaxy
@@ -235,8 +235,8 @@ To add one of them, modify the command you use to start pulp to include syntax l
 
 ### Adding Signing Services
 
-Administrators can add signing services to Pulp using the command line tools. Users may then associate the signing services with repositories that support content signing.  
-See [Signing Services](signing_script) documentation for more information.
+Administrators can add signing services to Pulp using the command line tools. Users may then associate the signing services with repositories that support content signing.
+See *Signing Services* documentation for more information: https://github.com/pulp/pulp-oci-images/blob/latest/docs/signing_script.md
 
 ### Certificates and Keys
 
@@ -335,8 +335,8 @@ The Container file and all other assets used to build the container image are av
 ```bash
 $ <docker build | buildah bud> --file images/Containerfile.core.base --tag pulp/base:latest .
 $ <docker build | buildah bud> --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
-$ <docker build | buildah bud> --file images/pulp/Containerfile --tag pulp/pulp:latest .
-$ <docker build | buildah bud> --file images/galaxy/Containerfile --tag pulp/galaxy:latest .
+$ <docker build | buildah bud> --file images/pulp/stable/Containerfile --tag pulp/pulp:latest .
+$ <docker build | buildah bud> --file images/galaxy/stable/Containerfile --tag pulp/galaxy:latest .
 ```
 
 ### Specifying versions
