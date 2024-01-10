@@ -231,12 +231,20 @@ The following environment variables configure the container's behavior.
 
 * `PULP_OTEL_ENABLED` Set to "true" (all lowercase) if you wish to enable pulp telemetry.
 
-To add one of them, modify the command you use to start pulp to include syntax like the following at the beginning: Instead of `podman run`, specify `podman run -e PULP_WORKERS=4 -e PULP_GUNICORN_TIMEOUT=30 ...`
+* `PULP_API_WORKERS_MAX_REQUESTS` The maximum number of requests a worker will process before restarting API workers. If this is set to zero (the default) then the automatic worker restarts are disabled.
+
+* `PULP_API_WORKERS_MAX_REQUESTS_JITTER` The maximum jitter to add to the max_requests setting for API workers.
+
+* `PULP_CONTENT_WORKERS_MAX_REQUESTS` The maximum number of requests a worker will process before restarting Content workers. If this is set to zero (the default) then the automatic worker restarts are disabled.
+
+* `PULP_CONTENT_WORKERS_MAX_REQUESTS_JITTER` The maximum jitter to add to the max_requests setting for Content workers.
+
+To add one of them, modify the command you use to start pulp to include syntax like the following at the beginning: Instead of `podman run`, specify `podman run -e PULP_WORKERS=4 -e PULP_GUNICORN_TIMEOUT=30 -e PULP_API_WORKERS_MAX_REQUESTS=1000 -e PULP_API_WORKERS_MAX_REQUESTS_JITTER=50 ...`
 
 ### Adding Signing Services
 
 Administrators can add signing services to Pulp using the command line tools. Users may then associate the signing services with repositories that support content signing.
-See *Signing Services* documentation for more information: https://github.com/pulp/pulp-oci-images/blob/latest/docs/signing_script.md
+See [Signing Services](signing_script) documentation for more information.
 
 ### Certificates and Keys
 
