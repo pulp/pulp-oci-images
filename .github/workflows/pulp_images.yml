@@ -23,10 +23,8 @@ jobs:
           # this fetches all history so that we can read each commit
           fetch-depth: 0
 
-      - name: Set up Python 3.8
+      - name: Set up Python
         uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
 
       - name: Check commit message
         if: github.event_name == 'pull_request'
@@ -81,10 +79,8 @@ jobs:
           # this fetches all history so that we can read each commit
           fetch-depth: 0
 
-      - name: Set up Python 3.8
+      - name: Set up Python
         uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
 
       - name: Update to the latest pip
         run: python -m pip install --upgrade pip
@@ -168,10 +164,8 @@ jobs:
           # this fetches all history so that we can read each commit
           fetch-depth: 0
 
-      - name: Set up Python 3.8
+      - name: Set up Python
         uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
 
       - name: Install python dependencies
         if: github.event_name == 'schedule'
