@@ -236,13 +236,13 @@ To add one of them, modify the command you use to start pulp to include syntax l
 ### Adding Signing Services
 
 Administrators can add signing services to Pulp using the command line tools. Users may then associate the signing services with repositories that support content signing.  
-See *Signing Services* documentation for more information: https://github.com/pulp/pulp-oci-images/blob/latest/docs/signing_script.md
+See [Signing Services](signing_script) documentation for more information.
 
 ### Certificates and Keys
 
-Follow the instructions from *certificates* documentation for more information about how to configure custom certificates: https://github.com/pulp/pulp-oci-images/blob/latest/docs/certificates.md
+Follow the instructions from [certificates](certificates) documentation for more information about how to configure custom certificates.
 
-Check *database encryption* documentation for more information about the key to encrypt sensitive fields in the database: https://github.com/pulp/pulp-oci-images/blob/latest/docs/database-encryption.md
+Check [database encryption](database-encryption) documentation for more information about the key to encrypt sensitive fields in the database.
 
 ### Command to specify
 
