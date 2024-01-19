@@ -16,5 +16,7 @@ fi
 exec ${OTEL_PREFIX} "${PULP_API_ENTRYPOINT[@]}" \
   --timeout "${PULP_GUNICORN_TIMEOUT}" \
   --workers "${PULP_API_WORKERS}" \
+  --max-requests "${PULP_API_WORKERS_MAX_REQUESTS}" \
+  --max-requests-jitter "${PULP_API_WORKERS_MAX_REQUESTS_JITTER}" \
   --access-logfile - \
   ${PULP_GUNICORN_RELOAD_STRING}
