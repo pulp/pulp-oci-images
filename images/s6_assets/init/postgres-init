@@ -13,7 +13,7 @@ export C035="\e[35m"
 export C036="\e[36m"
 export C037="\e[37m"
 
-PGVERSION=$(postgres --version | egrep -o "1[0-9]")
+PGVERSION=$(postgres --version | egrep -o "1[0-9]" | head -n1)
 PGHOME="/var/lib/pgsql"
 PGDATA="${PGHOME}/data"
 PGDATA_OLD="${PGHOME}/data_old"
