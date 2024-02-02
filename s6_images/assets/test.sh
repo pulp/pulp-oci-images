@@ -46,6 +46,7 @@ if [[ ${image} != *"galaxy"* ]];then
   git clone --depth=1 https://github.com/pulp/pulp-cli.git
   cd pulp-cli
   pip install -r test_requirements.txt || pip install --no-build-isolation -r test_requirements.txt
+  pip install pulp-cli
   pulp config create --base-url $scheme://pulp:8080 --username "admin" --password "password" --location tests/cli.toml
   if [[ "$scheme" == "https" ]];then
     sudo docker cp pulp:/etc/pulp/certs/pulp_webserver.crt /usr/local/share/ca-certificates/pulp_webserver.crt
