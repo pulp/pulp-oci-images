@@ -55,7 +55,12 @@ podman exec -u pulp pulp bash -c "pulpcore-manager add-signing-service --class d
 
 # Test buildah for pulp_container's usage
 podman exec -u pulp pulp podman system migrate
-podman exec -u pulp pulp podman build https://github.com/openshift-examples/web.git
+# This is currently not working due to a bug in it, so workaround below
+# podman exec -u pulp pulp podman build https://github.com/openshift-examples/web.git
+podman exec -u pulp pulp git clone https://github.com/openshift-examples/web.git /tmp/web
+podman exec -u pulp pulp git -C /tmp/web checkout 7a5e95bbf7111f32be27b5fc9bc0070f844a03a3
+podman exec -u pulp pulp podman build /tmp/web
+
 # Test skopeo for pulp_container's usage with an image with the nobody uid 65534
 # (And the image that pulp_container CI actually tests with)
 podman exec -u pulp pulp podman pull docker.io/library/busybox
