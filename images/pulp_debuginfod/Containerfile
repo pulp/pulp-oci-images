@@ -1,5 +1,5 @@
 ARG FROM_TAG="latest"
-FROM pulp/pulp-ci-centos:${FROM_TAG}
+FROM pulp/pulp-ci-centos9:${FROM_TAG}
 
 ARG PULPCORE_VERSION=""
 ARG PULP_ANSIBLE_VERSION=""
@@ -30,9 +30,9 @@ RUN pip3 install --upgrade \
   requests && \
   rm -rf /root/.cache/pip
 
-RUN ln /usr/local/lib/python3.8/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
-RUN ln /usr/local/lib/python3.8/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
-RUN ln /usr/local/lib/python3.8/site-packages/pulp_python/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_python.conf
+RUN ln /usr/local/lib/python3.9/site-packages/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
+RUN ln /usr/local/lib/python3.9/site-packages/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
+RUN ln /usr/local/lib/python3.9/site-packages/pulp_python/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_python.conf
 
 # Install debuginfod and run as a background process
 RUN dnf -y install elfutils-debuginfod
