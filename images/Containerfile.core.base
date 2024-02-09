@@ -64,6 +64,7 @@ RUN dnf -y install python38 python38-cryptography python38-devel && \
     dnf -y install zstd && \
     dnf -y install jq && \
     dnf -y install which && \
+    dnf -y install rpm-sign && \
     getcap /usr/bin/newuidmap  | grep cap_setuid || dnf -y reinstall -y shadow-utils && \
     dnf clean all
 
