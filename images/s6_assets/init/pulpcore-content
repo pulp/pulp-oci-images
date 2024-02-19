@@ -17,14 +17,14 @@ fi
 # due to https://github.com/pulp/pulpcore/issues/4679
 if python3 -c \
   'import importlib.metadata; \
-   import semantic_version; \
+   from packaging.version import Version; \
    exit(\
     int(\
       not(\
-        semantic_version.Version(\
+        Version(\
           importlib.metadata.version("pulpcore")\
         ) >= \
-        semantic_version.Version("3.41.0")\
+        Version("3.41.0")\
       )\
     )\
   )'
