@@ -13,8 +13,28 @@ else
   PULP_API_ENTRYPOINT=("gunicorn" "pulpcore.app.wsgi:application" "--bind" "127.0.0.1:24817" "--name" "pulp-api" "--access-logformat" "pulp [%({correlation-id}o)s]: %(h)s %(l)s %(u)s %(t)s \"%(r)s\" %(s)s %(b)s \"%(f)s\" \"%(a)s\"")
 fi
 
+# Process recycling only supported for pulpcore >= 3.41.0
+# due to https://github.com/pulp/pulpcore/issues/4679
+if python3 -c \
+  'import importlib.metadata; \
+   import semantic_version; \
+   exit(\
+    int(\
+      not(\
+        semantic_version.Version(\
+          importlib.metadata.version("pulpcore")\
+        ) >= \
+        semantic_version.Version("3.41.0")\
+      )\
+    )\
+  )'
+then
+  PULP_GUNICORN_PROCESS_RECYCLING_STRING="--max-requests ${PULP_API_WORKERS_MAX_REQUESTS} --max-requests-jitter ${PULP_API_WORKERS_MAX_REQUESTS_JITTER}"
+fi
+
 exec ${OTEL_PREFIX} "${PULP_API_ENTRYPOINT[@]}" \
   --timeout "${PULP_GUNICORN_TIMEOUT}" \
   --workers "${PULP_API_WORKERS}" \
+  ${PULP_GUNICORN_PROCESS_RECYCLING_STRING} \
   --access-logfile - \
   ${PULP_GUNICORN_RELOAD_STRING}

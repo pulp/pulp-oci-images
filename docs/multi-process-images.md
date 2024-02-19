@@ -44,7 +44,7 @@ This image can also function the same as the single-process image `pulp-minimal`
 #### Discontinued tags
 
 - `https`: These were built nightly, with latest released version of each plugin. Nginx webserver ran with SSL/TLS. Now, use `stable` instead with `-e PULP_HTTPS=true`.
-- `3.y-https`:  Pulpcore 3.y version and its compatible plugins. These were built whenever there is a z-release. 
+- `3.y-https`:  Pulpcore 3.y version and its compatible plugins. These were built whenever there is a z-release.
   Nginx webserver ran with SSL/TLS. Now, use `3.y` instead with `-e PULP_HTTPS=true`.
 
 ### galaxy
@@ -231,11 +231,19 @@ The following environment variables configure the container's behavior.
 
 * `PULP_OTEL_ENABLED` Set to "true" (all lowercase) if you wish to enable pulp telemetry.
 
-To add one of them, modify the command you use to start pulp to include syntax like the following at the beginning: Instead of `podman run`, specify `podman run -e PULP_WORKERS=4 -e PULP_GUNICORN_TIMEOUT=30 ...`
+* `PULP_API_WORKERS_MAX_REQUESTS` The maximum number of requests a worker will process before restarting API workers. If this is set to zero (the default) then the automatic worker restarts are disabled. NOTE: Only supported for pulpcore >= 3.41.0
+
+* `PULP_API_WORKERS_MAX_REQUESTS_JITTER` The maximum jitter to add to the max_requests setting for API workers. NOTE: Only supported for pulpcore >= 3.41.0
+
+* `PULP_CONTENT_WORKERS_MAX_REQUESTS` The maximum number of requests a worker will process before restarting Content workers. If this is set to zero (the default) then the automatic worker restarts are disabled. NOTE: Only supported for pulpcore >= 3.41.0
+
+* `PULP_CONTENT_WORKERS_MAX_REQUESTS_JITTER` The maximum jitter to add to the max_requests setting for Content workers. NOTE: Only supported for pulpcore >= 3.41.0
+
+To add one of them, modify the command you use to start pulp to include syntax like the following at the beginning: Instead of `podman run`, specify `podman run -e PULP_WORKERS=4 -e PULP_GUNICORN_TIMEOUT=30 -e PULP_API_WORKERS_MAX_REQUESTS=1000 -e PULP_API_WORKERS_MAX_REQUESTS_JITTER=50 ...`
 
 ### Adding Signing Services
 
-Administrators can add signing services to Pulp using the command line tools. Users may then associate the signing services with repositories that support content signing.  
+Administrators can add signing services to Pulp using the command line tools. Users may then associate the signing services with repositories that support content signing.
 See [Signing Services](signing_script) documentation for more information.
 
 ### Certificates and Keys
@@ -335,8 +343,8 @@ The Container file and all other assets used to build the container image are av
 ```bash
 $ <docker build | buildah bud> --file images/Containerfile.core.base --tag pulp/base:latest .
 $ <docker build | buildah bud> --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos9:latest .
-$ <docker build | buildah bud> --file images/pulp/Containerfile --tag pulp/pulp:latest .
-$ <docker build | buildah bud> --file images/galaxy/Containerfile --tag pulp/galaxy:latest .
+$ <docker build | buildah bud> --file images/pulp/stable/Containerfile --tag pulp/pulp:latest .
+$ <docker build | buildah bud> --file images/galaxy/stable/Containerfile --tag pulp/galaxy:latest
 ```
 
 ### Specifying versions
@@ -345,8 +353,8 @@ By default, containers get built using the latest version of each Pulp component
 specify a version of a particular component, you can do so with args:
 
 ```bash
-$ <docker build | buildah bud> --build_arg PULPCORE_VERSION="==3.5.0" --file images/pulp/Containerfile
-$ <docker build | buildah bud> --build_arg PULP_FILE_VERSION=">=1.0.0" --file images/pulp/Containerfile
+$ <docker build | buildah bud> --build-arg PULPCORE_VERSION="==3.5.0" --file images/pulp/Containerfile
+$ <docker build | buildah bud> --build-arg PULP_FILE_VERSION=">=1.0.0" --file images/pulp/Containerfile
 ```
 
 ## Debugging instructions
