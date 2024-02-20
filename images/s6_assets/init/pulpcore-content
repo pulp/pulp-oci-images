@@ -13,8 +13,28 @@ else
   PULP_CONTENT_ENTRYPOINT=("gunicorn" "pulpcore.content:server" "--worker-class" "aiohttp.GunicornWebWorker" "--name" "pulp-content" "--bind" "127.0.0.1:24816")
 fi
 
+# Process recycling only supported for pulpcore >= 3.41.0
+# due to https://github.com/pulp/pulpcore/issues/4679
+if python3 -c \
+  'import importlib.metadata; \
+   from packaging.version import Version; \
+   exit(\
+    int(\
+      not(\
+        Version(\
+          importlib.metadata.version("pulpcore")\
+        ) >= \
+        Version("3.41.0")\
+      )\
+    )\
+  )'
+then
+  PULP_GUNICORN_PROCESS_RECYCLING_STRING="--max-requests ${PULP_CONTENT_WORKERS_MAX_REQUESTS} --max-requests-jitter ${PULP_CONTENT_WORKERS_MAX_REQUESTS_JITTER}"
+fi
+
 exec ${OTEL_PREFIX} "${PULP_CONTENT_ENTRYPOINT[@]}" \
   --timeout "${PULP_GUNICORN_TIMEOUT}" \
   --workers "${PULP_CONTENT_WORKERS}" \
+  ${PULP_GUNICORN_PROCESS_RECYCLING_STRING} \
   --access-logfile - \
   ${PULP_GUNICORN_RELOAD_STRING}
