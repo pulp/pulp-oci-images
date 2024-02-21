@@ -35,32 +35,20 @@ RUN dnf -y module enable nginx:1.22
 
 # glibc-langpack-en is needed to provide the en_US.UTF-8 locale, which Pulp
 # seems to need.
-#
-# The last 5 lines (before clean) are needed until python3-createrepo_c gets an
-# RPM upgrade to 0.16.2. Until then, we install & build it from PyPI.
-#
-# TODO: Investigate differences between `dnf builddep createrepo_c` vs the list
-# of dependencies below. For example, drpm-devel.
 RUN dnf -y install python3 python3-cryptography python3-devel && \
     dnf -y install openssl openssl-devel && \
     dnf -y install openldap-devel && \
     dnf -y install wget git && \
-    dnf -y install python3-psycopg2 && \
     dnf -y install redhat-rpm-config gcc cargo libffi-devel && \
     dnf -y install glibc-langpack-en && \
     dnf -y install python3-libmodulemd && \
     dnf -y install python3-libcomps && \
+    dnf -y install python3-createrepo_c && \
     dnf -y install libpq-devel && \
     dnf -y install python3-setuptools && \
     dnf -y install swig && \
     dnf -y install buildah --exclude container-selinux && \
     dnf -y install xz && \
-    dnf -y install libmodulemd-devel && \
-    dnf -y install libcomps-devel && \
-    dnf -y install zchunk-devel && \
-    dnf -y install ninja-build && \
-    dnf -y install cairo-devel cmake gobject-introspection-devel cairo-gobject-devel && \
-    dnf -y install libcurl-devel libxml2-devel sqlite-devel file-devel && \
     dnf -y install ostree-libs ostree && \
     dnf -y install skopeo && \
     dnf -y install podman && \
@@ -69,25 +57,8 @@ RUN dnf -y install python3 python3-cryptography python3-devel && \
     dnf -y install jq && \
     dnf -y install which && \
     dnf -y install rpm-sign && \
-    dnf -y install lsof && \
     getcap /usr/bin/newuidmap  | grep cap_setuid || dnf -y reinstall -y shadow-utils && \
     dnf clean all
-
-# Needed to prevent the wrong version of cryptography from being installed,
-# which would break PyOpenSSL.
-# Need to install optional dep, rhsm, for pulp-certguard
-RUN pip3 install --upgrade pip setuptools wheel && \
-    rm -rf /root/.cache/pip && \
-    pip3 install  \
-         rhsm \
-         setproctitle \
-         gunicorn \
-         python-nginx \
-         django-auth-ldap \
-         django-storages\[boto3,azure]\>=1.12.2 \
-         requests\[use_chardet_on_py3] && \
-         rm -rf /root/.cache/pip
-
 
 RUN groupadd -g 700 --system pulp
 RUN useradd -d /var/lib/pulp --system -u 700 -g pulp pulp
