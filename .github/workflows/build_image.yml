@@ -1,0 +1,109 @@
+# Build one of the App images (pulp, pulp-minimal, galaxy, galaxy-minimal)
+---
+name: Build App Images
+on:
+  workflow_call:
+    inputs:
+      image_variant:
+        description: 'Whether the image is a stable or nightly build'
+        default: 'stable'
+        required: false
+        type: string
+      image_name:
+        description: 'Name of the image to be built'
+        required: true
+        type: string
+      image_cache_key:
+        description: 'The key value used to store the base images in the cache'
+        required: true
+        type: string
+    outputs:
+      app_version: ${{ jobs.build.outputs.app_version }}
+      app_branch: ${{ jobs.build.outputs.app_branch }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.image_version_branch.outputs.app_version }}
+      app_branch: ${{ steps.image_version_branch.outputs.app_branch }}
+
+    steps:
+      - name: Set the temporary image tags
+        id: image_tags
+        run: |
+          if [ "${{ inputs.image_variant }}" == "nightly" ]; then
+            temp_app_tag="nightly"
+          else
+            temp_app_tag="${GITHUB_REF_NAME%/*}"
+          fi
+          temp_base_tag="${GITHUB_REF_NAME%/*}"
+          echo "Building $temp_app_tag from base $temp_base_tag"
+          echo "TEMP_APP_TAG=${temp_app_tag}" >> $GITHUB_ENV
+          echo "TEMP_BASE_TAG=${temp_base_tag}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
+        with:
+          # by default, it uses a depth of 1
+          # this fetches all history so that we can read each commit
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+
+      - name: Restore podman images from cache
+        uses: actions/cache/restore@v3
+        with:
+          key: base-images=${{ inputs.image_cache_key }}
+          path: base-images.tar
+          fail-on-cache-miss: true
+
+      - name: Load podman images from tarball
+        run: |
+          podman load -i base-images.tar
+
+      - name: Install httpie and podman-compose
+        run: |
+          echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
+          echo "Working around https://bugs.launchpad.net/ubuntu/+source/libpod/+bug/2024394"
+          curl -O http://archive.ubuntu.com/ubuntu/pool/universe/g/golang-github-containernetworking-plugins/containernetworking-plugins_1.1.1+ds1-3_amd64.deb
+          sudo dpkg -i containernetworking-plugins_1.1.1+ds1-3_amd64.deb
+          # Ubuntu 22.04 has old podman 3.4.4, we need podman-compose==1.0.3 to avoid an
+          # error with dependency contianers not being detected as running.
+          # "error generating dependency graph for container"
+          pip install httpie podman-compose==1.0.3
+        shell: bash
+
+      - name: Build images
+        run: |
+          podman version
+          buildah version
+          sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          for ARCH in arm64 amd64
+          do
+            if [[ "${{ inputs.image_name }}" == "pulp-minimal" || "${{ inputs.image_name }}" == "galaxy-minimal" ]]; then
+              base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
+              podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile.core --tag pulp/${{ inputs.image_name }}:${TEMP_APP_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_BASE_TAG}-${ARCH} .
+              podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile.webserver --tag pulp/${base_image}-web:${TEMP_APP_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_APP_TAG}-${ARCH} .
+            else
+              podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile --tag pulp/${{ inputs.image_name }}:${TEMP_APP_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_BASE_TAG}-${ARCH} .
+            fi
+          done
+          podman images -a
+
+      - name: Set version and branch image tags
+        id: image_version_branch
+        run: |
+          base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
+          if [[ "${base_image}" == "pulp" ]]; then
+            pip_name="pulpcore"
+          else
+            pip_name="galaxy-ng"
+          fi
+          app_version=$(podman run --pull=never pulp/${{ inputs.image_name }}:${TEMP_APP_TAG}-amd64 bash -c "pip3 show ${pip_name} | sed -n -e 's/Version: //p'")
+          app_branch=$(echo ${app_version} | grep -oP '\d+\.\d+')
+
+          echo "APP_VERSION: ${app_version}"
+          echo "APP_BRANCH: ${app_branch}"
+          echo "app_version=${app_version}" >> "$GITHUB_OUTPUT"
+          echo "app_branch=${app_branch}" >> "$GITHUB_OUTPUT"

@@ -1,0 +1,167 @@
+name: pulp-oci-images CI
+
+on:
+  pull_request:
+env:
+  COLORTERM: 'yes'
+  TERM: 'xterm-256color'
+  PYTEST_ADDOPTS: '--color=yes'
+
+concurrency:
+  group: ${{ github.ref_name }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # by default, it uses a depth of 1
+          # this fetches all history so that we can read each commit
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+
+      - name: Check commit message
+        env:
+          GITHUB_CONTEXT: ${{ github.event.pull_request.commits_url }}
+        run: |
+          echo ::group::REQUESTS
+          pip install pygithub
+          echo ::endgroup::
+          for sha in $(curl $GITHUB_CONTEXT | jq '.[].sha' | sed 's/"//g')
+          do
+            python .ci/scripts/validate_commit_message.py $sha
+            VALUE=$?
+            if [ "$VALUE" -gt 0 ]; then
+              exit $VALUE
+            fi
+          done
+        shell: bash
+
+  base-images:
+    needs: lint
+    runs-on: ubuntu-latest
+    outputs:
+      image_variants: "${{ steps.image_variants.outputs.image_variants }}"
+      pulp_ci_centos_id: "${{ steps.build_base_images.outputs.pulp_ci_centos_id }}"
+    steps:
+      # We do not want to build nightly images unless it's a PR to the latest branch,
+      # or a branch/dispatch build on the latest branch.
+      - name: Set the list of image_variants for later jobs
+        id: image_variants
+        run: |
+          if [ "${{ github.base_ref }}" == "latest" ] || [ "${{ github.ref_name }}" == "latest" ]; then
+            echo "image_variants=[\"nightly\",\"stable\"]" >> "$GITHUB_OUTPUT"
+          else
+            echo "image_variants=[\"stable\"]" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Build base images
+        id: build_base_images
+        uses: "./.github/workflows/base_images.yml"
+        with:
+          python_version: "3.9"
+
+  app-images:
+    needs: base-images
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.build_image.outputs.app_version }}
+      app_branch: ${{ steps.build_image.outputs.app_branch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image_variant: ${{ fromJSON(needs.base-images.outputs.image_variants) }}
+        image_name:
+          - pulp-minimal
+          - pulp
+          - galaxy-minimal
+          - galaxy
+    steps:
+      - name: Build App Image
+        id: build_image
+        uses: "./.github/workflows/build_image.yml"
+        with:
+          image_name: ${{ matrix.image_name }}
+          image_variant: ${{ matrix.image_variant }}
+          image_cache_key: ${{ needs.base-images.outputs.pulp_ci_centos_id }}
+
+      - name: Test image with upgrade in s6 mode (pulp)
+        if: matrix.image_name == 'pulp'
+        run: |
+          # 3.20 has postgres 12 rather than 13
+          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}-amd64" http "quay.io/pulp/all-in-one-pulp:3.20"
+          podman stop pulp
+          podman rm pulp
+
+      - name: Test the image in s6 mode (galaxy)
+        if: matrix.image_name == 'galaxy'
+        run: |
+          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}-amd64" https
+          podman stop pulp
+          podman rm pulp
+
+      - name: Test Compose up
+        run: |
+          if [[ "${{ matrix.image_name }}" == "pulp" || "${{ matrix.image_name }}" == "galaxy" ]]; then
+
+            # Reuse the folders from the s6 mode tests
+            FILE="compose.folders.yml"
+            echo "host all all 10.0.0.0/8 trust" | sudo tee -a pgsql/data/pg_hba.conf > /dev/null
+            echo "listen_addresses = '*'" | sudo tee -a pgsql/data/postgresql.conf > /dev/null
+
+            # We'll pull the web image from a registry since we didn't build it.
+            if [ "${{ matrix.image_variant }}" == "nightly" ]; then
+              WEB_TAG="nightly"
+              TEMP_APP_TAG="nightly"
+            else
+              WEB_TAG="${{ steps.build_image.outputs.app_branch }}"
+              TEMP_APP_TAG="${GITHUB_REF_NAME%/*}"
+            fi
+          else
+            FILE="compose.yml"
+            WEB_TAG="${TEMP_APP_TAG}-amd64"
+          fi
+          base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
+          cd images/compose
+          sed -i "s/pulp-minimal:latest/${{ matrix.image_name }}:${TEMP_APP_TAG}-amd64/g" $FILE
+          sed -i "s/pulp-web:latest/${base_image}-web:${WEB_TAG}/g" $FILE
+          id | grep "(root)" || sudo usermod -G root $(whoami)
+          podman-compose -f $FILE up -d
+          podman exec compose_pulp_api_1 /usr/bin/wait_on_database_migrations.sh
+          for _ in $(seq 20)
+          do
+            if curl --fail http://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1
+            then
+              break
+            fi
+            sleep 3
+          done
+          curl --fail http://localhost:8080/pulp/api/v3/status/ | jq
+        shell: bash
+
+      - name: Logs
+        if: always()
+        run: |
+          set +e
+          podman ps -a
+          podman images -a
+          podman logs pulp
+          cd images/compose
+          podman-compose logs
+          podman logs --tail=10000 compose_pulp_api_1
+          podman logs --tail=10000 compose_pulp_content_1
+          podman logs --tail=10000 compose_pulp_worker_1
+          podman logs --tail=10000 compose_pulp_worker_2
+          podman logs --tail=10000 compose_pulp_web_1
+          VOLUME_PATH=$(podman volume inspect pulpdev | jq -r .[].Mountpoint)
+          sudo ls -al $VOLUME_PATH
+          sudo tree $VOLUME_PATH
+          http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true
