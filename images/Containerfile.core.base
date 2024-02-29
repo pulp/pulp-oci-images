@@ -1,5 +1,6 @@
 FROM quay.io/centos/centos:stream9
 # https://ryandaniels.ca/blog/docker-dockerfile-arg-from-arg-trouble/
+ARG PYTHON_VERSION=3.9
 
 # https://superuser.com/questions/959380/how-do-i-install-generate-all-locales-on-fedora
 # This may not be necessary anymore because Fedora 30, unlike CentOS 7, has
@@ -34,7 +35,7 @@ RUN dnf -y module enable nginx:1.22
 #
 # TODO: Investigate differences between `dnf builddep createrepo_c` vs the list
 # of dependencies below. For example, drpm-devel.
-RUN dnf -y install python3 python3-cryptography python3-devel && \
+RUN dnf -y install python${PYTHON_VERSION} python3-cryptography python${PYTHON_VERSION}-devel && \
     dnf -y install openssl openssl-devel && \
     dnf -y install openldap-devel && \
     dnf -y install wget git && \
