@@ -60,12 +60,10 @@ jobs:
           fi
 
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
       - name: Build base images
         id: build_base_images
-        uses: "./.github/workflows/base_images.yml"
+        uses: "./.github/actions/base_images"
         with:
           python_version: "3.9"
 
@@ -85,9 +83,11 @@ jobs:
           - galaxy-minimal
           - galaxy
     steps:
+      - uses: actions/checkout@v4
+
       - name: Build App Image
         id: build_image
-        uses: "./.github/workflows/build_image.yml"
+        uses: "./.github/actions/build_image"
         with:
           image_name: ${{ matrix.image_name }}
           image_variant: ${{ matrix.image_variant }}

@@ -1,0 +1,62 @@
+---
+name: Build Base Images
+description: Build the base images (pulp/base & pulp/pulp-ci-centos9)
+# Both ARM64 & x86-64 versions of each are built
+# Save the images to a tar and upload to a cache using output 'pulp_ci_centos_id' as the key
+inputs:
+  python_version:
+    required: true
+    description: "Python Version to use to build, e.g '3.9'"
+outputs:
+  pulp_ci_centos_id:
+    value: ${{ steps.pulp_ci_centos_id.outputs.pulp_ci_centos_id }}
+    description: "The cache key the built images were uploaded to."
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+
+    - name: Set the temporary image tag
+      run: |
+        temp_base_tag="${GITHUB_REF_NAME%/*}"
+        python_version="${{ inputs.python_version }}"
+        echo "Building $temp_base_tag with python $python_version"
+        echo "TEMP_BASE_TAG=${temp_base_tag}" >> $GITHUB_ENV
+        echo "PYTHON_VERSION=${python_version}" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Build images
+      run: |
+        podman version
+        buildah version
+        sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
+        for ARCH in arm64 amd64
+        do
+          podman build --platform linux/$ARCH --format docker --file images/Containerfile.core.base --tag pulp/base:${TEMP_BASE_TAG}-${ARCH} --build-arg PYTHON_VERSION=${PYTHON_VERSION} .
+          podman build --platform linux/$ARCH --format docker --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos9:${TEMP_BASE_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_BASE_TAG}-${ARCH} .
+        done
+      shell: bash
+    # we use the docker format (default), even though it may not be the fastest,
+    # because it supports saving both images at once.
+    # However, it seems to export the common layers twice.
+    # We should look into whether its possible to export just pulp-ci-centos,
+    # and tag the base image manually.
+    - name: Save podman images to tarball
+      id: pulp_ci_centos_id
+      run: |
+        podman save -m -o base-images.tar pulp/base:${TEMP_BASE_TAG}-arm64 pulp/base:${TEMP_BASE_TAG}-amd64 pulp/pulp-ci-centos9:${TEMP_BASE_TAG}-arm64 pulp/pulp-ci-centos9:${TEMP_BASE_TAG}-amd64
+        # The id is unique to the image build (not the Containerfile) and will be used in the cache key
+        # If a workflow completes successfully, every workflow will generate a new cache.
+        # And if we re-run the entire workflow ("Re-run all jobs"), it will generate a new cache too.
+        # If we re-run a failed app-images job, it will use the existing cache from base-images
+        id=$(podman image inspect --format '{{ .Id }}' pulp/pulp-ci-centos9:${TEMP_BASE_TAG}-amd64)
+        echo "pulp_ci_centos_id=${id}" >> "$GITHUB_OUTPUT"
+        echo "pulp_ci_centos_id=${id}" >> "$GITHUB_ENV"
+      shell: bash
+
+    - name: Cache podman images
+      uses: actions/cache/save@v3
+      with:
+        key: base-images=${{ env.pulp_ci_centos_id }}
+        path: base-images.tar

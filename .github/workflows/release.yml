@@ -61,10 +61,6 @@ jobs:
           exit 1
 
       - uses: actions/checkout@v4
-        with:
-          # by default, it uses a depth of 1
-          # this fetches all history so that we can read each commit
-          fetch-depth: 1
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -88,7 +84,7 @@ jobs:
 
       - name: Build base images
         id: build_base_images
-        uses: "./.github/workflows/build.yml"
+        uses: "./.github/actions/base_images"
         with:
           python_version: ${{ inputs.python_version }}
 
@@ -132,7 +128,7 @@ jobs:
           echo "TAGS=${tags}" >> $GITHUB_ENV
 
       - name: Publish base images
-        uses: "./.github/workflows/publish.yml"
+        uses: "./.github/actions/publish_images"
         with:
           image_names: "base pulp-ci-centos9"
           tags: ${{ env.TAGS }}
@@ -154,9 +150,11 @@ jobs:
           - galaxy-minimal
           - galaxy
     steps:
+      - uses: actions/checkout@v4
+
       - name: Build App Image
         id: build_image
-        uses: "./.github/workflows/build_image.yml"
+        uses: "./.github/actions/build_image"
         with:
           image_name: ${{ matrix.image_name }}
           image_variant: ${{ matrix.image_variant }}
@@ -216,7 +214,6 @@ jobs:
           curl --fail http://localhost:8080/pulp/api/v3/status/ | jq
         shell: bash
 
-
       - name: Set tags
         run: |
           base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
@@ -244,7 +241,7 @@ jobs:
           echo "TAGS=${tags}" >> $GITHUB_ENV
 
       - name: Publish App Image
-        uses: "./.github/workflows/publish.yml"
+        uses: "./.github/actions/publish_images"
         with:
           image_names: ${{ env.IMAGES }}
           tags: ${{ env.TAGS }}
