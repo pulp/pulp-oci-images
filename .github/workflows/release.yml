@@ -140,6 +140,7 @@ jobs:
     outputs:
       app_version: ${{ steps.build_image.outputs.app_version }}
       app_branch: ${{ steps.build_image.outputs.app_branch }}
+      app_arch_tag: ${{ steps.build_image.outputs.app_arch_tag }}
     strategy:
       fail-fast: false
       matrix:
@@ -164,59 +165,38 @@ jobs:
         if: matrix.image_name == 'pulp'
         run: |
           # 3.20 has postgres 12 rather than 13
-          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}-amd64" http "quay.io/pulp/all-in-one-pulp:3.20"
+          images/s6_assets/test.sh "pulp/${{ matrix.image_name }}:${{ steps.build_image.outputs.app_arch_tag }}" http "quay.io/pulp/all-in-one-pulp:3.20"
           podman stop pulp
           podman rm pulp
 
       - name: Test the image in s6 mode (galaxy)
         if: matrix.image_name == 'galaxy'
         run: |
-          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}-amd64" https
+          images/s6_assets/test.sh "pulp/${{ matrix.image_name }}:${{ steps.build_image.outputs.app_arch_tag }}" https
           podman stop pulp
           podman rm pulp
 
       - name: Test Compose up
         run: |
           if [[ "${{ matrix.image_name }}" == "pulp" || "${{ matrix.image_name }}" == "galaxy" ]]; then
-
-            # Reuse the folders from the s6 mode tests
             FILE="compose.folders.yml"
-            echo "host all all 10.0.0.0/8 trust" | sudo tee -a pgsql/data/pg_hba.conf > /dev/null
-            echo "listen_addresses = '*'" | sudo tee -a pgsql/data/postgresql.conf > /dev/null
-
             # We'll pull the web image from a registry since we didn't build it.
             if [ "${{ matrix.image_variant }}" == "nightly" ]; then
               WEB_TAG="nightly"
-              TEMP_APP_TAG="nightly"
             else
               WEB_TAG="${{ steps.build_image.outputs.app_branch }}"
-              TEMP_APP_TAG="${GITHUB_REF_NAME%/*}"
             fi
           else
             FILE="compose.yml"
-            WEB_TAG="${TEMP_APP_TAG}-amd64"
+            WEB_TAG="${{ steps.build_image.outputs.app_arch_tag }}"
           fi
-          base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
-          cd images/compose
-          sed -i "s/pulp-minimal:latest/${{ matrix.image_name }}:${TEMP_APP_TAG}-amd64/g" $FILE
-          sed -i "s/pulp-web:latest/${base_image}-web:${WEB_TAG}/g" $FILE
-          id | grep "(root)" || sudo usermod -G root $(whoami)
-          podman-compose -f $FILE up -d
-          podman exec compose_pulp_api_1 /usr/bin/wait_on_database_migrations.sh
-          for _ in $(seq 20)
-          do
-            if curl --fail http://localhost:8080/pulp/api/v3/status/ > /dev/null 2>&1
-            then
-              break
-            fi
-            sleep 3
-          done
-          curl --fail http://localhost:8080/pulp/api/v3/status/ | jq
+          base_image=$(echo ${{ matrix.image_name }} | cut -d '-' -f1)
+          images/compose/test.sh "${{ matrix.image_name }}:${{ steps.build_image.outputs.app_arch_tag }}" "${base_image}-web:${WEB_TAG}" $FILE
         shell: bash
 
       - name: Set tags
         run: |
-          base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
+          base_image=$(echo ${{ matrix.image_name }} | cut -d '-' -f1)
           if [[ "${{ matrix.image_name }}" == "pulp" || "${{ matrix.image_name }}" == "galaxy" ]]; then
             images="${{ matrix.image_name }}"
           else
@@ -226,11 +206,11 @@ jobs:
           echo "IMAGES=${images}" >> $GITHUB_ENV
           
           if [ "${{ matrix.image_variant }}" == "stable" ]; then
-            # latest branch stable variant gets tagged as both "latest" and "stable"
             app_branch=${{ steps.build_image.outputs.app_branch }}
             app_version=${{ steps.build_image.outputs.app_version }}
+            # latest branch stable variant gets tagged as both "latest" and "stable"
             if [ "${GITHUB_REF_NAME%/*}" == "latest" ]; then
-              tags="${app_branch} ${app_version} ${{ matrix.image_variant }} latest"
+              tags="${app_branch} ${app_version} stable latest"
             else
               tags="${app_branch} ${app_version}"
             fi
