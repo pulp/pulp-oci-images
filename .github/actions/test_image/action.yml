@@ -1,0 +1,55 @@
+---
+name: Test Images
+description: Test the built app image
+inputs:
+  image_name:
+    description: 'Name of the image to be tested'
+    required: true
+  image_variant:
+    description: 'Stable or nightly build'
+    required: true
+    default: 'stable'
+  app_branch:
+    description: 'The branch the app was built on'
+    required: true
+  app_arch_tag:
+    description: 'The temporary amd64 arch tag of the built app image'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Test image with upgrade in s6 mode (pulp)
+      if: inputs.image_name == 'pulp'
+      run: |
+        # 3.20 has postgres 12 rather than 13
+        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:${{ inputs.app_arch_tag }}" http "quay.io/pulp/all-in-one-pulp:3.20"
+        podman stop pulp
+        podman rm pulp
+      shell: bash
+
+    - name: Test the image in s6 mode (galaxy)
+      if: inputs.image_name == 'galaxy'
+      run: |
+        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:${{ inputs.app_arch_tag }}" https
+        podman stop pulp
+        podman rm pulp
+      shell: bash
+
+    - name: Test Compose up
+      run: |
+        if [[ "${{ inputs.image_name }}" == "pulp" || "${{ inputs.image_name }}" == "galaxy" ]]; then
+          FILE="compose.folders.yml"
+          # We'll pull the web image from a registry since we didn't build it.
+          if [ "${{ inputs.image_variant }}" == "nightly" ]; then
+            WEB_TAG="nightly"
+          else
+            WEB_TAG="${{ inputs.app_branch }}"
+          fi
+        else
+          FILE="compose.yml"
+          WEB_TAG="${{ inputs.app_arch_tag }}"
+        fi
+        base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
+        images/compose/test.sh "${{ inputs.image_name }}:${{ inputs.app_arch_tag }}" "${base_image}-web:${WEB_TAG}" $FILE
+      shell: bash
