@@ -13,18 +13,23 @@ if __name__ == "__main__":
     )
     opts = parser.parse_args()
     version = ""
-
     if opts.branch == "main":
         # Used for nightly image, find the pulpcore version from @main
         r = requests.get("https://raw.githubusercontent.com/pulp/pulpcore/main/.bumpversion.cfg")
-        if r.status_code != 200:
+        if r.status_code == 200:
             config = configparser.ConfigParser()
             config.read_string(r.text)
             if "bumpversion" in config:
                 version = config["bumpversion"]["current_version"]
+            else:
+                print("Failed to find current version on main")
+                exit(1)
+        else:
+            print("Failed to download current version on main")
+            exit(1)
     else:
         r = requests.get("https://pypi.org/pypi/pulpcore/json")
-        if r.status_code != 200:
+        if r.status_code == 200:
             metadata = r.json()
             if opts.branch == "latest":
                 version = metadata["info"]["version"]
@@ -38,4 +43,7 @@ if __name__ == "__main__":
                         if version > max_z_version:
                             max_z_version = version
                 version = f"{max_z_version.major}.{max_z_version.minor}.{max_z_version.micro}"
+        else:
+            print("Failed to download pulpcore metadata")
+            exit(1)
     print(version)

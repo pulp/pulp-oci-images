@@ -54,10 +54,16 @@ jobs:
       image_variants: ${{ steps.image_variants.outputs.image_variants }}
 
     steps:
-      - name: Check valid Python version
-        if: contains(fromJSON('["3.9", "3.10", "3.11", "3.12"]'), inputs.python_version)
+      - name: Set Python Version variable
         run: |
-          echo "Invalid Python Version (${{ inputs.python_version }}), must be 3.9-3.12"
+          python_version=${{ inputs.python_version && inputs.python_version || '3.9' }}
+          echo "Using Python Version $python_version"
+          echo "PYTHON_VERSION=${python_version}" >> $GITHUB_ENV
+
+      - name: Check valid Python version
+        if: !contains(fromJSON('["3.9", "3.10", "3.11", "3.12"]'), env.PYTHON_VERSION)
+        run: |
+          echo "Invalid Python Version (${{ env.PYTHON_VERSION }}), must be 3.9-3.12"
           exit 1
 
       - uses: actions/checkout@v4
@@ -86,7 +92,7 @@ jobs:
         id: build_base_images
         uses: "./.github/actions/base_images"
         with:
-          python_version: ${{ inputs.python_version }}
+          python_version: ${{ env.PYTHON_VERSION }}
 
       # The published base images are tagged with the pulpcore version + python version, however
       # the base images don't have Pulp installed. Will need to use our context clues of this run
@@ -112,7 +118,7 @@ jobs:
       # to maintain our prior tagging scheme before customizable python versions
       - name: Set image tags
         run: |
-          python_version=${{ inputs.python_version }}
+          python_version=${{ env.PYTHON_VERSION }}
           python_version="python${python_version//.}"
           tags="${PULPCORE_VERSION}-${python_version} ${PULPCORE_BRANCH}-${python_version}"
           if [ "${{ github.ref_name }}" == "latest" ]; then
