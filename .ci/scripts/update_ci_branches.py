@@ -31,7 +31,9 @@ for branch in branches:
     print(f"Updating {branch}")
     if isfloat(branch) and version.parse(branch) < version.parse("3.22"):
         workflow_path = "/actions/workflows/publish_images.yaml/dispatches"
-    else:
+    elif isfloat(branch) and version.parse(branch) < version.parse("3.47"):
         workflow_path = "/actions/workflows/pulp_images.yml/dispatches"
+    else:
+        workflow_path = "/actions/workflows/release.yml/dispatches"
     url = f"{github_api}/repos/pulp/pulp-oci-images{workflow_path}"
     requests.post(url, headers=headers, json={"ref": branch})

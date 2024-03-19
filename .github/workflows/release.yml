@@ -1,0 +1,222 @@
+# Builds and publishes Pulp images
+# Ran nightly performing latest, nightly, & supported version releases
+# Can be ran manually with specifying Python version for images to be built with
+---
+name: Release Image
+on:
+  workflow_dispatch:
+    inputs:
+      python_version:
+        description: 'The Python version the images will be built on'
+        required: false
+        default: '3.9'
+        type: string
+  schedule:
+    - cron: '0 1 * * *'
+  push:
+    branches:
+      - latest
+
+concurrency:
+  group: ${{ github.ref_name }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  supported-versions:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # by default, it uses a depth of 1
+          # this fetches all history so that we can read each commit
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+
+      - name: Update to the latest pip
+        run: python -m pip install --upgrade pip
+
+      - name: Dispatch workflows on stable branches
+        run: |
+          echo ::group::PYDEPS
+          pip install gitpython requests packaging jinja2 pyyaml
+          echo ::endgroup::
+          python .ci/scripts/update_ci_branches.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+
+  base-images:
+    runs-on: ubuntu-latest
+    outputs:
+      pulp_ci_centos_id: ${{ steps.build_base_images.outputs.pulp_ci_centos_id }}
+      image_variants: ${{ steps.image_variants.outputs.image_variants }}
+
+    steps:
+      - name: Check valid Python version
+        if: contains(fromJSON('["3.9", "3.10", "3.11", "3.12"]'), inputs.python_version)
+        run: |
+          echo "Invalid Python Version (${{ inputs.python_version }}), must be 3.9-3.12"
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+
+      - name: Install python deps
+        run: |
+          echo ::group::PYDEPS
+          pip install requests packaging
+          echo ::endgroup::
+
+      # We do not want to build nightly images unless it's a PR to the latest branch,
+      # or a branch/dispatch build on the latest branch.
+      - name: Set the list of image_variants for later jobs
+        id: image_variants
+        run: |
+          if [ "${{ github.base_ref }}" == "latest" ] || [ "${{ github.ref_name }}" == "latest" ]; then
+            echo "image_variants=[\"nightly\",\"stable\"]" >> "$GITHUB_OUTPUT"
+          else
+            echo "image_variants=[\"stable\"]" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build base images
+        id: build_base_images
+        uses: "./.github/actions/base_images"
+        with:
+          python_version: ${{ inputs.python_version }}
+
+      # The published base images are tagged with the pulpcore version + python version, however
+      # the base images don't have Pulp installed. Will need to use our context clues of this run
+      # to figure out which pulpcore version will be installed.
+      - name: Find pulpcore versions
+        run: |
+          pulpcore_version=$(python .ci/scripts/find_pulpcore_version.py --branch "${{ github.ref_name }}")
+          pulpcore_branch=$(echo ${pulpcore_version} | grep -oP '\d+\.\d+')
+          echo "Found pulpcore version $pulpcore_version on branch $pulpcore_branch"
+          echo "PULPCORE_VERSION=${pulpcore_version}" >> $GITHUB_ENV
+          echo "PULPCORE_BRANCH=${pulpcore_branch}" >> $GITHUB_ENV
+          if [ "${{ github.ref_name }}" == "latest" ]; then
+            # We also tag the latest base images with the nightly(main-branch) version of pulpcore
+            nightly_version=$(python .ci/scripts/find_pulpcore_version.py --branch main)
+            nightly_branch=$(echo ${nightly_version} | grep -oP '\d+\.\d+')
+            echo "Found nightly pulpcore version $nightly_version on branch $nightly_branch"
+            echo "NIGHTLY_VERSION=${nightly_version}" >> $GITHUB_ENV
+            echo "NIGHTLY_BRANCH=${nightly_branch}" >> $GITHUB_ENV
+          fi
+
+      # Base images on latest will also publish under the next pulpcore version on main.
+      # If python_version==3.9 (our default python) then publish with just the pulpcore version
+      # to maintain our prior tagging scheme before customizable python versions
+      - name: Set image tags
+        run: |
+          python_version=${{ inputs.python_version }}
+          python_version="python${python_version//.}"
+          tags="${PULPCORE_VERSION}-${python_version} ${PULPCORE_BRANCH}-${python_version}"
+          if [ "${{ github.ref_name }}" == "latest" ]; then
+            tags="${tags} ${NIGHTLY_VERSION}-${python_version} ${NIGHTLY_BRANCH}-${python_version}"
+          fi
+          if [ "${{ inputs.python_version }}" == "3.9" ]; then
+            tags="${tags} ${PULPCORE_VERSION} ${PULPCORE_BRANCH}"
+            if [ "${{ github.ref_name }}" == "latest" ]; then
+              tags="${tags} ${NIGHTLY_VERSION} ${NIGHTLY_BRANCH} latest"
+            fi
+          fi
+          echo "Set tags to: $tags"
+          echo "TAGS=${tags}" >> $GITHUB_ENV
+
+      - name: Publish base images
+        uses: "./.github/actions/publish_images"
+        with:
+          image_names: "base pulp-ci-centos9"
+          tags: ${{ env.TAGS }}
+          build_tag: ${{ github.ref_name }}
+
+  app-images:
+    needs: base-images
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.build_image.outputs.app_version }}
+      app_branch: ${{ steps.build_image.outputs.app_branch }}
+      app_arch_tag: ${{ steps.build_image.outputs.app_arch_tag }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image_variant: ${{ fromJSON(needs.base-images.outputs.image_variants) }}
+        image_name:
+          - pulp-minimal
+          - pulp
+          - galaxy-minimal
+          - galaxy
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build App Image
+        id: build_image
+        uses: "./.github/actions/build_image"
+        with:
+          image_name: ${{ matrix.image_name }}
+          image_variant: ${{ matrix.image_variant }}
+          image_cache_key: ${{ needs.base-images.outputs.pulp_ci_centos_id }}
+
+      - name: Test App Image
+        uses: "./.github/actions/test_image"
+        with:
+          image_name: ${{ matrix.image_name }}
+          image_variant: ${{ matrix.image_variant }}
+          app_branch: ${{ steps.build_image.outputs.app_branch }}
+          app_arch_tag: ${{ steps.build_image.outputs.app_arch_tag }}
+
+      - name: Set tags
+        run: |
+          base_image=$(echo ${{ matrix.image_name }} | cut -d '-' -f1)
+          if [[ "${{ matrix.image_name }}" == "pulp" || "${{ matrix.image_name }}" == "galaxy" ]]; then
+            images="${{ matrix.image_name }}"
+          else
+            images="${{ matrix.app.image_name }} ${base_image}-web"
+          fi
+          echo "Going to publish app images: $images"
+          echo "IMAGES=${images}" >> $GITHUB_ENV
+          
+          if [ "${{ matrix.image_variant }}" == "stable" ]; then
+            app_branch=${{ steps.build_image.outputs.app_branch }}
+            app_version=${{ steps.build_image.outputs.app_version }}
+            # latest branch stable variant gets tagged as both "latest" and "stable"
+            if [ "${GITHUB_REF_NAME%/*}" == "latest" ]; then
+              tags="${app_branch} ${app_version} stable latest"
+            else
+              tags="${app_branch} ${app_version}"
+            fi
+          else
+            tags="nightly"
+          fi
+          echo "Going to publish with tags: $tags"
+          echo "TAGS=${tags}" >> $GITHUB_ENV
+
+      - name: Publish App Image
+        uses: "./.github/actions/publish_images"
+        with:
+          image_names: ${{ env.IMAGES }}
+          tags: ${{ env.TAGS }}
+          build_tag: ${{ matrix.image_variant == "nightly" && "nightly" || github.ref_name }}
+
+      - name: Logs
+        if: always()
+        run: |
+          set +e
+          podman ps -a
+          podman images -a
+          podman logs pulp
+          cd images/compose
+          podman-compose logs
+          podman logs --tail=10000 compose_pulp_api_1
+          podman logs --tail=10000 compose_pulp_content_1
+          podman logs --tail=10000 compose_pulp_worker_1
+          podman logs --tail=10000 compose_pulp_worker_2
+          podman logs --tail=10000 compose_pulp_web_1
+          VOLUME_PATH=$(podman volume inspect pulpdev | jq -r .[].Mountpoint)
+          sudo ls -al $VOLUME_PATH
+          sudo tree $VOLUME_PATH
+          http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true

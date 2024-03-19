@@ -1,0 +1,49 @@
+---
+name: Publish Images
+description: Publish the passed in built Images to Docker/Quay/GitHub
+inputs:
+  image_names:
+    description: 'Names of the images to be published'
+    required: true
+  build_tag:
+    description: 'Current tag of the local built container'
+    required: true
+  tags:
+    description: 'List of tags the images are to be published under'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Github login
+      env:
+        PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PULP_GITHUB_USERNAME: ${{ github.actor }}
+      run: echo "$PULP_GITHUB_TOKEN" | podman login -u "$PULP_GITHUB_USERNAME" --password-stdin ghcr.io
+      shell: bash
+
+    - name: Docker login
+      env:
+        DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
+        DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
+      run: echo "$DOCKER_BOT_PASSWORD" | podman login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
+      shell: bash
+
+    - name: Quay login
+      env:
+        QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
+        QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
+      run: echo "$QUAY_BOT_PASSWORD" | podman login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
+      shell: bash
+
+    - name: Push image to registries
+      run: |
+        for registry in ghcr.io docker.io quay.io; do
+          for image in ${{ inputs.image_names }}; do
+            for tag in ${{ inputs.tags }}; do
+              podman manifest create ${registry}/pulp/${image}:${tag} containers-storage:localhost/pulp/${image}:${{ inputs.build_tag }}-amd64 containers-storage:localhost/pulp/${image}:${{ inputs.build_tag }}-arm64
+              podman manifest push --all ${registry}/pulp/${image}:${tag} ${registry}/pulp/${image}:${tag}
+            done
+          done
+        done
+      shell: bash

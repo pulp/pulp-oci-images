@@ -1,0 +1,122 @@
+name: pulp-oci-images CI
+
+on:
+  pull_request:
+env:
+  COLORTERM: 'yes'
+  TERM: 'xterm-256color'
+  PYTEST_ADDOPTS: '--color=yes'
+
+concurrency:
+  group: ${{ github.ref_name }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # by default, it uses a depth of 1
+          # this fetches all history so that we can read each commit
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+
+      - name: Check commit message
+        env:
+          GITHUB_CONTEXT: ${{ github.event.pull_request.commits_url }}
+        run: |
+          echo ::group::REQUESTS
+          pip install pygithub
+          echo ::endgroup::
+          for sha in $(curl $GITHUB_CONTEXT | jq '.[].sha' | sed 's/"//g')
+          do
+            python .ci/scripts/validate_commit_message.py $sha
+            VALUE=$?
+            if [ "$VALUE" -gt 0 ]; then
+              exit $VALUE
+            fi
+          done
+        shell: bash
+
+  base-images:
+    needs: lint
+    runs-on: ubuntu-latest
+    outputs:
+      image_variants: "${{ steps.image_variants.outputs.image_variants }}"
+      pulp_ci_centos_id: "${{ steps.build_base_images.outputs.pulp_ci_centos_id }}"
+    steps:
+      # We do not want to build nightly images unless it's a PR to the latest branch,
+      # or a branch/dispatch build on the latest branch.
+      - name: Set the list of image_variants for later jobs
+        id: image_variants
+        run: |
+          if [ "${{ github.base_ref }}" == "latest" ] || [ "${{ github.ref_name }}" == "latest" ]; then
+            echo "image_variants=[\"nightly\",\"stable\"]" >> "$GITHUB_OUTPUT"
+          else
+            echo "image_variants=[\"stable\"]" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+
+      - name: Build base images
+        id: build_base_images
+        uses: "./.github/actions/base_images"
+        with:
+          python_version: "3.9"
+
+  app-images:
+    needs: base-images
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.build_image.outputs.app_version }}
+      app_branch: ${{ steps.build_image.outputs.app_branch }}
+      app_arch_tag: ${{ steps.build_image.outputs.app_arch_tag }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image_variant: ${{ fromJSON(needs.base-images.outputs.image_variants) }}
+        image_name:
+          - pulp-minimal
+          - pulp
+          - galaxy-minimal
+          - galaxy
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build App Image
+        id: build_image
+        uses: "./.github/actions/build_image"
+        with:
+          image_name: ${{ matrix.image_name }}
+          image_variant: ${{ matrix.image_variant }}
+          image_cache_key: ${{ needs.base-images.outputs.pulp_ci_centos_id }}
+
+      - name: Test App Image
+        uses: "./.github/actions/test_image"
+        with:
+          image_name: ${{ matrix.image_name }}
+          image_variant: ${{ matrix.image_variant }}
+          app_branch: ${{ steps.build_image.outputs.app_branch }}
+          app_arch_tag: ${{ steps.build_image.outputs.app_arch_tag }}
+
+      - name: Logs
+        if: always()
+        run: |
+          set +e
+          podman ps -a
+          podman images -a
+          podman logs pulp
+          cd images/compose
+          podman-compose logs
+          podman logs --tail=10000 compose_pulp_api_1
+          podman logs --tail=10000 compose_pulp_content_1
+          podman logs --tail=10000 compose_pulp_worker_1
+          podman logs --tail=10000 compose_pulp_worker_2
+          podman logs --tail=10000 compose_pulp_web_1
+          VOLUME_PATH=$(podman volume inspect pulpdev | jq -r .[].Mountpoint)
+          sudo ls -al $VOLUME_PATH
+          sudo tree $VOLUME_PATH
+          http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true
