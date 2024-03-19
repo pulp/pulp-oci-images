@@ -61,7 +61,7 @@ jobs:
           echo "PYTHON_VERSION=${python_version}" >> $GITHUB_ENV
 
       - name: Check valid Python version
-        if: !contains(fromJSON('["3.9", "3.10", "3.11", "3.12"]'), env.PYTHON_VERSION)
+        if: ${{ ! contains(fromJSON('["3.9", "3.10", "3.11", "3.12"]'), env.PYTHON_VERSION) }}
         run: |
           echo "Invalid Python Version (${{ env.PYTHON_VERSION }}), must be 3.9-3.12"
           exit 1
