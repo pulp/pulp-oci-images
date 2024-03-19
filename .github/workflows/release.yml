@@ -200,7 +200,7 @@ jobs:
         with:
           image_names: ${{ env.IMAGES }}
           tags: ${{ env.TAGS }}
-          build_tag: ${{ matrix.image_variant == "nightly" && "nightly" || github.ref_name }}
+          build_tag: ${{ matrix.image_variant == 'nightly' && 'nightly' || github.ref_name }}
 
       - name: Logs
         if: always()
