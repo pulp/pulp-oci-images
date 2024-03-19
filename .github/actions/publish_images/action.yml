@@ -11,21 +11,36 @@ inputs:
   tags:
     description: 'List of tags the images are to be published under'
     required: true
+  github_token:
+    description: 'Github secret token'
+    required: true
+  docker_bot_username:
+    description: 'Docker username login'
+    required: true
+  docker_bot_password:
+    description: 'Docker password login'
+    required: true
+  quay_bot_username:
+    description: 'Quay username login'
+    required: true
+  quay_bot_password:
+    description: 'Quay password login'
+    required: true
 
 runs:
   using: "composite"
   steps:
     - name: Github login
       env:
-        PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PULP_GITHUB_TOKEN: ${{ inputs.github_token }}
         PULP_GITHUB_USERNAME: ${{ github.actor }}
       run: echo "$PULP_GITHUB_TOKEN" | podman login -u "$PULP_GITHUB_USERNAME" --password-stdin ghcr.io
       shell: bash
 
     - name: Docker login
       env:
-        DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
-        DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
+        DOCKER_BOT_PASSWORD: ${{ inputs.docker_bot_password }}
+        DOCKER_BOT_USERNAME: ${{ inputs.docker_bot_username }}
       run: echo "$DOCKER_BOT_PASSWORD" | podman login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
       shell: bash
 

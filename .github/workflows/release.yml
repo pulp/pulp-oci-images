@@ -124,7 +124,7 @@ jobs:
           if [ "${{ github.ref_name }}" == "latest" ]; then
             tags="${tags} ${NIGHTLY_VERSION}-${python_version} ${NIGHTLY_BRANCH}-${python_version}"
           fi
-          if [ "${{ inputs.python_version }}" == "3.9" ]; then
+          if [ "${{ env.PYTHON_VERSION }}" == "3.9" ]; then
             tags="${tags} ${PULPCORE_VERSION} ${PULPCORE_BRANCH}"
             if [ "${{ github.ref_name }}" == "latest" ]; then
               tags="${tags} ${NIGHTLY_VERSION} ${NIGHTLY_BRANCH} latest"
@@ -139,6 +139,11 @@ jobs:
           image_names: "base pulp-ci-centos9"
           tags: ${{ env.TAGS }}
           build_tag: ${{ github.ref_name }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          docker_bot_username: ${{ secrets.DOCKER_BOT_USERNAME }}
+          docker_bot_password: ${{ secrets.DOCKER_BOT_PASSWORD }}
+          quay_bot_username: ${{ secrets.QUAY_BOT_USERNAME }}
+          quay_bot_password: ${{ secrets.QUAY_BOT_PASSWORD }}
 
   app-images:
     needs: base-images
@@ -207,6 +212,11 @@ jobs:
           image_names: ${{ env.IMAGES }}
           tags: ${{ env.TAGS }}
           build_tag: ${{ matrix.image_variant == 'nightly' && 'nightly' || github.ref_name }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          docker_bot_username: ${{ secrets.DOCKER_BOT_USERNAME }}
+          docker_bot_password: ${{ secrets.DOCKER_BOT_PASSWORD }}
+          quay_bot_username: ${{ secrets.QUAY_BOT_USERNAME }}
+          quay_bot_password: ${{ secrets.QUAY_BOT_PASSWORD }}
 
       - name: Logs
         if: always()
