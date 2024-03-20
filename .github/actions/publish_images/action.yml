@@ -46,8 +46,8 @@ runs:
 
     - name: Quay login
       env:
-        QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
-        QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
+        QUAY_BOT_PASSWORD: ${{ inputs.quay_bot_password }}
+        QUAY_BOT_USERNAME: ${{ inputs.quay_bot_username }}
       run: echo "$QUAY_BOT_PASSWORD" | podman login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
       shell: bash
 
