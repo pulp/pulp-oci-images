@@ -186,7 +186,7 @@ jobs:
           if [[ "${{ matrix.image_name }}" == "pulp" || "${{ matrix.image_name }}" == "galaxy" ]]; then
             images="${{ matrix.image_name }}"
           else
-            images="${{ matrix.app.image_name }} ${base_image}-web"
+            images="${{ matrix.image_name }} ${base_image}-web"
           fi
           echo "Going to publish app images: $images"
           echo "IMAGES=${images}" >> $GITHUB_ENV
