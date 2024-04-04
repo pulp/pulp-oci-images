@@ -1,9 +1,5 @@
 #!/bin/bash
 
-if [ "${PULP_HTTPS,,}" = "true" ]; then
-  cp -avr /nginx/ssl_nginx.conf /etc/nginx/nginx.conf
-else
-  cp -avr /nginx/nginx.conf /etc/nginx/nginx.conf
-fi
+python3 /nginx/template_nginx.py /nginx/nginx.conf.j2 /etc/nginx/nginx.conf
 
 exec /usr/sbin/nginx
