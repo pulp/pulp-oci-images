@@ -30,7 +30,7 @@ if __name__ == "__main__":
     else:
         values["api_root"] = settings.API_ROOT
         values["content_path"] = settings.CONTENT_PATH_PREFIX
-        values["domain_enabled"] = settings.DOMAIN_ENABLED
+        values["domain_enabled"] = getattr(settings, "DOMAIN_ENABLED", False)
 
     template = Template(args.template_file.read())
     output = template.render(**values)
