@@ -41,8 +41,12 @@ jobs:
           done
         shell: bash
 
-  base-images:
+  docs:
     needs: lint
+    uses: "./.github/workflows/docs-ci.yml"
+
+  base-images:
+    needs: docs
     runs-on: ubuntu-latest
     outputs:
       image_variants: "${{ steps.image_variants.outputs.image_variants }}"
