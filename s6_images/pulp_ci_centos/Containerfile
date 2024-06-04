@@ -34,6 +34,8 @@ ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=1
 # https://github.com/just-containers/s6-overlay/issues/467
 ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0
 
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+RUN sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
 
 # use python38
 RUN dnf -y module disable python36
