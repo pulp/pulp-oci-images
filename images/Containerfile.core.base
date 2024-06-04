@@ -18,6 +18,9 @@ ENV PULP_GUNICORN_TIMEOUT=${PULP_GUNICORN_TIMEOUT:-90}
 ENV PULP_API_WORKERS=${PULP_API_WORKERS:-2}
 ENV PULP_CONTENT_WORKERS=${PULP_CONTENT_WORKERS:-2}
 
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+RUN sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+
 # Install updates & dnf plugins before disabling python36 to prevent errors
 RUN dnf -y install dnf-plugins-core && \
     dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && \
