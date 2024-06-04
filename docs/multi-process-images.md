@@ -248,9 +248,9 @@ See [Signing Services](signing_script) documentation for more information.
 
 ### Certificates and Keys
 
-Follow the instructions from [certificates](certificates) documentation for more information about how to configure custom certificates.
+Follow the instructions from [certificates](../certificates) documentation for more information about how to configure custom certificates.
 
-Check [database encryption](database-encryption) documentation for more information about the key to encrypt sensitive fields in the database.
+Check [database encryption](../database-encryption) documentation for more information about the key to encrypt sensitive fields in the database.
 
 ### Command to specify
 
