@@ -75,6 +75,7 @@ if [[ ${image} != *"galaxy"* ]];then
     cd pulp-cli
   fi
   pip install -r test_requirements.txt || pip install --no-build-isolation -r test_requirements.txt
+  pip install pulp-cli
   if [ -e tests/cli.toml ]; then
     mv tests/cli.toml "tests/cli.toml.bak.$(date -R)"
   fi
