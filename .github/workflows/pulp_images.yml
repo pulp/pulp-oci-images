@@ -325,6 +325,14 @@ jobs:
               else
                 tags="${BASE_BRANCH} ${BASE_VERSION}"
               fi
+              # Workaround the fact that the latest branch no longer pushes pulp-ci-centos (CentOS 8)
+              # so let's use this 3.39 branch for it.
+              # But let's not set the latest tag for the base image, that is EL9.
+              if [ "$image_name_looped" == "pulp-ci-centos" ]; then
+                if [ "${TEMP_BASE_TAG}" == "3.39" ]; then
+                  tags="${tags} latest"
+                fi
+              fi
               for tag in $tags; do
                 podman manifest create ${registry}/pulp/${image_name_looped}:${tag} containers-storage:localhost/pulp/${image_name_looped}:${TEMP_BASE_TAG}-amd64 containers-storage:localhost/pulp/${image_name_looped}:${TEMP_BASE_TAG}-arm64
                 podman manifest push --all ${registry}/pulp/${image_name_looped}:${tag} ${registry}/pulp/${image_name_looped}:${tag}
