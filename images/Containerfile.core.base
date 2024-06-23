@@ -71,6 +71,7 @@ RUN dnf -y install python${PYTHON_VERSION} python3-cryptography python${PYTHON_V
     dnf -y install which && \
     dnf -y install rpm-sign && \
     dnf -y install lsof && \
+    dnf -y install pinentry && \
     getcap /usr/bin/newuidmap  | grep cap_setuid || dnf -y reinstall -y shadow-utils && \
     dnf clean all
 
