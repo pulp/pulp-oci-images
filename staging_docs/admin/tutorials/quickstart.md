@@ -75,6 +75,10 @@ $ podman run --detach \
 
 * To use https instead of http, add `-e PULP_HTTPS=true` Also change `--publish 8080:80` to `--publish 8080:443`
 
+* Refer to plugin settings documentation for more before spinning up the container. For instance, the Pulp Container plugin [requires key pair generation](https://pulpproject.org/pulp_container/docs/admin/learn/authentication/).
+
+* When deploying, run `pulpcore-manager check --deploy` inside the container. Ensure that the [`SECRET_KEY` setting](https://pulpproject.org/pulpcore/docs/admin/reference/settings/#secret_key) is set to a unique, unpredictable value.
+
 
 ## Podman or Docker Compose
 
