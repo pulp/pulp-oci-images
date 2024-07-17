@@ -6,7 +6,7 @@ The available images can be divided into two types:
 
 - [Multi-Process Images](multi-process-images) - Images for running a [Pulp](https://github.com/pulp/pulpcore) or [Ansible Galaxy](https://github.com/ansible/galaxy_ng), as well as its [third-party services](#third-party-services),
 in a single Docker/Podman container.
-- [Single-Process Images](single-process-images) - Images containing a single Pulp service each, which collectively make up a Pulp instance. They can be used via docker-compose or podman-compose, example [here](https://github.com/pulp/pulp-oci-images/tree/latest/images/compose). These images are also used by [pulp operator](https://docs.pulpproject.org/pulp_operator/).
+- [Single-Process Images](single-process-images) - Images containing a single Pulp service each, which collectively make up a Pulp instance. They can be used via docker-compose or podman-compose, example [here](https://github.com/pulp/pulp-oci-images/tree/latest/images/compose). These images are also used by [pulp operator](site:pulp-operator).
 
 | Name | Description |
 | ---- | ----------- |

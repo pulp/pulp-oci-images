@@ -2,7 +2,8 @@
 
 ## Overview
 
-These instructions will migrate you from a [pulp_installer deployment](https://docs.pulpproject.org/pulp_installer/) to a [multi-process container deployment](multi-process-images).
+These instructions will migrate you from a [pulp_installer deployment](https://github.com/pulp/pulp_installer) to a
+[multi-process container deployment](site:pulp-oci-images/docs/admin/reference/available-images/multi-process-images/).
 
 The same host will be running Pulp, but in a container now.
 
@@ -22,7 +23,8 @@ All of pulp_installer 3.23's supported distros are documented, but instructions 
 
 ## Limitations
 
-1. All of your existing installed plugins must be installed in the multi-process container image. See the list of installed plugins [here.](multi-process-images#available-images)
+1. All of your existing installed plugins must be installed in the multi-process container image. See the list of installed plugins
+[here](site:pulp-oci-images/docs/admin/reference/available-images/multi-process-images/#available-images).
 
 ## Prerequisites
 
@@ -243,7 +245,9 @@ echo "net.ipv4.ip_unprivileged_port_start=443" | sudo tee /etc/sysctl.d/10-low_p
 
 ### Restore the database (EL7 or EL8 only)
 
-Run the container with the normal [command](multi-process-images#starting-the-container), but with `-it` instead of `-detach`, and with `/bin/bash` as the specified command. We also omit the "--publish 8080:80"
+Run the container with the normal
+[command](site:pulp-oci-images/docs/admin/reference/available-images/multi-process-images/#starting-the-container),
+but with `-it` instead of `-detach`, and with `/bin/bash` as the specified command. We also omit the "--publish 8080:80"
 ```
 podman run -it \
            --name pulp \
@@ -284,13 +288,17 @@ podman rm pulp
 
 ### Run the container like normal.
 
-Run the container with the normal [command](multi-process-images#starting-the-container).
+Run the container with the normal
+[command](site:pulp-oci-images/docs/admin/reference/available-images/multi-process-images/#starting-the-container).
+
 
 There are 2 migration-specific exceptions to the instructions on that page.
 
 The 1st exception is the port that Pulp listens on.
 
-https is the default for pulp_installer, so see the https instructions on [that page](multi-process-images#starting-the-container) if you wish to continue running https. However, instead of specifying `--publish 8080:443` or `--publish 80:80`, specify `--publish 443:443`. This will keep Pulp listening on port 443, thus avoiding the need to reconfigure clients. This will be part of your new normal command.
+https is the default for pulp_installer, so see the https instructions on
+[that page](site:pulp-oci-images/docs/admin/reference/available-images/multi-process-images/#starting-the-container).
+if you wish to continue running https. However, instead of specifying `--publish 8080:443` or `--publish 80:80`, specify `--publish 443:443`. This will keep Pulp listening on port 443, thus avoiding the need to reconfigure clients. This will be part of your new normal command.
 
 If you are not running https, the command below has been modified to listen on port 80 rather than
 8080. `--publish 8080:80` has been replaced with `--publish 80:80`. This will be part of your new

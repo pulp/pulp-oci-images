@@ -20,17 +20,18 @@ Podman has been tested at versions as low as 1.6.4, which is available on CentOS
 
 This image contains [Pulp](https://github.com/pulp/pulpcore) and the following plugins currently:
 
-- [pulp_ansible](https://docs.pulpproject.org/pulp_ansible/)
-- [pulp-certguard](https://docs.pulpproject.org/pulp_certguard/)
-- [pulp_container](https://docs.pulpproject.org/pulp_container/)
-- [pulp_deb](https://docs.pulpproject.org/pulp_deb/)
-- [pulp_file](https://docs.pulpproject.org/pulp_file/)
-- [pulp_maven](https://docs.pulpproject.org/pulp_maven/)
-- [pulp_python](https://docs.pulpproject.org/pulp_python/)
-- [pulp_rpm](https://docs.pulpproject.org/pulp_rpm/)
-- [pulp_ostree](https://docs.pulpproject.org/pulp_ostree/)
+- [pulp_ansible](site:pulp_ansible)
+- [pulp-certguard](site:pulp_certguard)
+- [pulp_container](site:pulp_container)
+- [pulp_deb](site:pulp_deb)
+- [pulp_file](site:pulp_file)
+- [pulp_maven](site:pulp_maven)
+- [pulp_python](site:pulp_python)
+- [pulp_rpm](site:pulp_rpm)
+- [pulp_ostree](site:pulp_ostree)
 
-This image can also function the same as the single-process image `pulp-minimal`. See the [Single-Process Images](single-process-images) page for usage.
+This image can also function the same as the single-process image `pulp-minimal`.
+See the [Single-Process Images](../single-process-images/) page for usage.
 
 #### Tags
 
@@ -52,7 +53,7 @@ This image can also function the same as the single-process image `pulp-minimal`
 This image contains Ansible [Galaxy](https://github.com/ansible/galaxy_ng).
 
 This image can also function the same as the single-process image `galaxy-minimal`.
-See the [Single-Process Images](single-process-images) page for usage.
+See the [Single-Process Images](../single-process-images/) page for usage.
 
 Note that this name `galaxy` used to be for single-process images. Version tags `4.6.3` and earlier
 are single-process rather than multi-process.
@@ -138,7 +139,8 @@ ANSIBLE_CONTENT_HOSTNAME='http://$(hostname):8080/pulp/content'
 CACHE_ENABLED=True" >> settings/settings.py
 ```
 
-* For a complete list of available settings for `settings.py`, see [the Pulpcore Settings](https://docs.pulpproject.org/pulpcore/configuration/settings.html).
+* For a complete list of available settings for `settings.py`,
+  see [the Pulpcore Settings](site:pulpcore/docs/admin/reference/settings/).
 
 * These 4 directories `settings pulp_storage pgsql containers` must be preserved. `settings` has
   your settings, generated certificates, and generated database encrypted fields key. The
@@ -204,7 +206,12 @@ curl localhost:8080/pulp/api/v3/status/
 
 ### What to do after the Quickstart
 
-To start working with Pulp, check out the [Workflows and Use Cases](https://docs.pulpproject.org/workflows/index.html). For individual plugin documentation, see [Pulp 3 Content Plugin Documentation](https://pulpproject.org/docs/#pulp-3-content-plugin-documentation).
+To start working with Pulp, check out the [Workflows and Use Cases](https://github.com/pulp/pulpcore/issues/5593)
+and explore individual Content Plugins documentation.
+
+If you are unsure what to pick first, try Python's
+[Setup Your Own Pypi](site:pulp_python/docs/user/guides/pypi/) or RPM's
+[Sync and Publish](site:pulp_rpm/docs/user/tutorials/create_sync_publish/).
 
 We recommend using [pulp-cli](https://github.com/pulp/pulp-cli) to interact with Pulp. If you have Python 3 installed on the host OS, you can run these commands to get started:
 
@@ -244,13 +251,13 @@ To add one of them, modify the command you use to start pulp to include syntax l
 ### Adding Signing Services
 
 Administrators can add signing services to Pulp using the command line tools. Users may then associate the signing services with repositories that support content signing.
-See [Signing Services](signing_script) documentation for more information.
+See [Signing Services](site:pulp-oci-images/docs/admin/guides/configure-signing-service/) documentation for more information.
 
 ### Certificates and Keys
 
-Follow the instructions from [certificates](../certificates) documentation for more information about how to configure custom certificates.
+Follow the instructions from [certificates](site:pulp-oci-images/docs/admin/guides/configure-certificates/) documentation for more information about how to configure custom certificates.
 
-Check [database encryption](../database-encryption) documentation for more information about the key to encrypt sensitive fields in the database.
+Check [database encryption](site:pulp-oci-images/docs/admin/guides/configure-database-encryption/) documentation for more information about the key to encrypt sensitive fields in the database.
 
 ### Command to specify
 
