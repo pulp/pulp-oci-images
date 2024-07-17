@@ -7,7 +7,8 @@ ARG GALAXY_NG_VERSION=""
 RUN pip3 install --upgrade \
   galaxy-ng${GALAXY_NG_VERSION} \
   pulpcore${PULPCORE_VERSION} \
-  requests && \
+  requests \
+  -c /constraints.txt && \
   rm -rf /root/.cache/pip
 
 USER pulp:pulp
