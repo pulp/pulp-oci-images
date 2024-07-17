@@ -1,7 +1,9 @@
 ARG FROM_TAG="latest"
 FROM pulp/base:${FROM_TAG}
 
-RUN pip3 install git+https://github.com/ansible/galaxy_ng
+RUN pip3 install git+https://github.com/ansible/galaxy_ng \
+  -c /constraints.txt && \
+  rm -rf /root/.cache/pip
 
 USER pulp:pulp
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
