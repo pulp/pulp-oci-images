@@ -1,4 +1,4 @@
-# Available Single-Process Images
+# Single-Process Images
 
 These images are currently used on [pulp operator](https://docs.pulpproject.org/pulp_operator/), but they can be used in docker-compose or podman-compose. You can find a compose example [here](https://github.com/pulp/pulp-oci-images/tree/latest/images/compose).
 

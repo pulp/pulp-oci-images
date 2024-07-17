@@ -36,8 +36,8 @@ must be installed on the host.
 
 1. The directory you run the commands in is one where you want the Pulp data and configuration directories to reside under. You can actually let them reside in their current (pulp_installer defaulted or specified) directories on the system if you'd prefer, just specify the absolute folder paths in the commands below, and do not run the move commands.
 2. If you are running rootless podman, you are running `podman` commands from the account that the container will run under. 
-3. sudo commands are run under an account that actually has sudo. This need not necessarily be the rootless podman account, but if it isn't, substitute `$USER:$(id -gn)` with the user and primary group (seperated by a colon) of the rootless podman account.
-4. If you are running docker, substitue `docker` for `podman` in the commands.
+3. sudo commands are run under an account that actually has sudo. This need not necessarily be the rootless podman account, but if it isn't, substitute `$USER:$(id -gn)` with the user and primary group (separated by a colon) of the rootless podman account.
+4. If you are running docker, substitute `docker` for `podman` in the commands.
 
 ## Step-By-Step-Guide
 

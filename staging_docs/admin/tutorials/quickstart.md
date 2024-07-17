@@ -19,6 +19,7 @@ In all cases, after deployment see
 ## Single Container
 
 This deployment is a 2-step process:
+
 1. [Creating persistent directories and settings](#create-the-directories-and-settings).
 2. [Starting the container](#starting-the-container)
 
