@@ -5,6 +5,7 @@ ARG GALAXY_NG_VERSION=""
 
 RUN pip3 install --upgrade \
   git+https://github.com/ansible/galaxy_ng.git@master \
+  pulpcore[s3] \
   requests \
   -c /constraints.txt && \
   rm -rf /root/.cache/pip

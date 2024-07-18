@@ -1,7 +1,9 @@
 ARG FROM_TAG="latest"
 FROM pulp/base:${FROM_TAG}
 
-RUN pip3 install git+https://github.com/ansible/galaxy_ng \
+RUN pip3 install \
+  git+https://github.com/ansible/galaxy_ng \
+  pulpcore[s3] \
   -c /constraints.txt && \
   rm -rf /root/.cache/pip
 
