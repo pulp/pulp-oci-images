@@ -2,7 +2,7 @@ ARG FROM_TAG="latest"
 FROM pulp/pulp-ci-centos9:${FROM_TAG}
 
 RUN pip3 install --upgrade \
-  git+https://github.com/pulp/pulpcore@main \
+  pulpcore[s3,google,azure]@git+https://github.com/pulp/pulpcore@main \
   git+https://github.com/pulp/pulp_ansible@main \
   git+https://github.com/pulp/pulp-certguard@main \
   git+https://github.com/pulp/pulp_container@main \

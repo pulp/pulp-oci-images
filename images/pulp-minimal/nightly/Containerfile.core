@@ -1,7 +1,8 @@
 ARG FROM_TAG="latest"
 FROM pulp/base:${FROM_TAG}
 
-RUN pip3 install git+https://github.com/pulp/pulpcore.git#egg=pulpcore \
+RUN pip3 install \
+  pulpcore[s3,google,azure]@git+https://github.com/pulp/pulpcore.git#egg=pulpcore \
   git+https://github.com/pulp/pulp_ansible.git \
   git+https://github.com/pulp/pulp-certguard.git \
   git+https://github.com/pulp/pulp_container.git \
