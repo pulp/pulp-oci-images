@@ -1,0 +1,2 @@
+rhsm
+django-auth-ldap
