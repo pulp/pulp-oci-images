@@ -13,6 +13,8 @@ ARG PULP_PYTHON_VERSION=""
 ARG PULP_RPM_VERSION=""
 ARG PULP_OSTREE_VERSION=""
 
+COPY images/assets/requirements.extra.txt /requirements.extra.txt
+
 RUN pip3 install --upgrade \
   pulpcore[s3,google,azure]${PULPCORE_VERSION} \
   pulp-ansible${PULP_ANSIBLE_VERSION} \
@@ -25,8 +27,7 @@ RUN pip3 install --upgrade \
   pulp-python${PULP_PYTHON_VERSION} \
   pulp-rpm${PULP_RPM_VERSION} \
   pulp-ostree${PULP_OSTREE_VERSION} \
-  rhsm \
-  requests \
+  -r /requirements.extra.txt \
   -c /constraints.txt && \
   rm -rf /root/.cache/pip
 
