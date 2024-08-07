@@ -1,7 +1,9 @@
 
 # Configure a Signing Service
 
-> :information_source: Content Signing is in tech-preview and may change in backwards incompatible ways in future releases.
+!!! warning
+
+     Content Signing is in tech-preview and may change in backwards incompatible ways in future releases.
 
 It is possible to sign Pulp's metadata so that users can verify the authenticity of an object.  
 This is done by enabling the *Signing Services* feature. The steps to enable it are:
@@ -11,8 +13,10 @@ This is done by enabling the *Signing Services* feature. The steps to enable it 
 * [create the signing services](#creating-the-signing-services)
 
 
-See pulpcore documentation for details on ***Content Signing***: https://docs.pulpproject.org/pulpcore/workflows/signed-metadata.html#metadata-signing  
-See pulp_container documentation for details on ***Container Image Signing***: https://docs.pulpproject.org/pulp_container/workflows/sign-images.html
+For further information, see:
+
+* [pulpcore documentation](site:pulpcore/docs/admin/guides/sign-metadata/) for details on ***Content Signing***
+* [pulp_container documentation](site:pulp_container/docs/admin/guides/sign-image/) for details on ***Container Image Signing***
 
 
 ## Creating a gpg key

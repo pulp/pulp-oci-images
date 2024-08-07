@@ -1,4 +1,4 @@
-# Deploy a Multi-Process Container
+# Multi-Process Images
 
 These images are also known as "Single Container", or "Pulp in One Container".
 
@@ -31,7 +31,7 @@ This image contains [Pulp](https://github.com/pulp/pulpcore) and the following p
 - [pulp_ostree](site:pulp_ostree)
 
 This image can also function the same as the single-process image `pulp-minimal`.
-See the [Single-Process Images](site:pulp-oci-images/docs/admin/reference/available-images/single-process-images/) page for usage.
+See the [Single-Process Images](../single-process-images/) page for usage.
 
 #### Tags
 
@@ -45,7 +45,7 @@ See the [Single-Process Images](site:pulp-oci-images/docs/admin/reference/availa
 #### Discontinued tags
 
 - `https`: These were built nightly, with latest released version of each plugin. Nginx webserver ran with SSL/TLS. Now, use `stable` instead with `-e PULP_HTTPS=true`.
-- `3.y-https`:  Pulpcore 3.y version and its compatible plugins. These were built whenever there is a z-release. 
+- `3.y-https`:  Pulpcore 3.y version and its compatible plugins. These were built whenever there is a z-release.
   Nginx webserver ran with SSL/TLS. Now, use `3.y` instead with `-e PULP_HTTPS=true`.
 
 ### galaxy
@@ -53,7 +53,7 @@ See the [Single-Process Images](site:pulp-oci-images/docs/admin/reference/availa
 This image contains Ansible [Galaxy](https://github.com/ansible/galaxy_ng).
 
 This image can also function the same as the single-process image `galaxy-minimal`.
-See the [Single-Process Images](site:pulp-oci-images/docs/admin/reference/available-images/single-process-images/) page for usage.
+See the [Single-Process Images](../single-process-images/) page for usage.
 
 Note that this name `galaxy` used to be for single-process images. Version tags `4.6.3` and earlier
 are single-process rather than multi-process.
@@ -139,8 +139,8 @@ ANSIBLE_CONTENT_HOSTNAME='http://$(hostname):8080/pulp/content'
 CACHE_ENABLED=True" >> settings/settings.py
 ```
 
-* For a complete list of available settings for `settings.py`, see
-  [the Pulpcore Settings](site:pulpcore/docs/admin/reference/settings/).
+* For a complete list of available settings for `settings.py`,
+  see [the Pulpcore Settings](site:pulpcore/docs/admin/reference/settings/).
 
 * These 4 directories `settings pulp_storage pgsql containers` must be preserved. `settings` has
   your settings, generated certificates, and generated database encrypted fields key. The
@@ -238,11 +238,19 @@ The following environment variables configure the container's behavior.
 
 * `PULP_OTEL_ENABLED` Set to "true" (all lowercase) if you wish to enable pulp telemetry.
 
-To add one of them, modify the command you use to start pulp to include syntax like the following at the beginning: Instead of `podman run`, specify `podman run -e PULP_WORKERS=4 -e PULP_GUNICORN_TIMEOUT=30 ...`
+* `PULP_API_WORKERS_MAX_REQUESTS` The maximum number of requests a worker will process before restarting API workers. If this is set to zero (the default) then the automatic worker restarts are disabled. NOTE: Only supported for pulpcore >= 3.41.0
+
+* `PULP_API_WORKERS_MAX_REQUESTS_JITTER` The maximum jitter to add to the max_requests setting for API workers. NOTE: Only supported for pulpcore >= 3.41.0
+
+* `PULP_CONTENT_WORKERS_MAX_REQUESTS` The maximum number of requests a worker will process before restarting Content workers. If this is set to zero (the default) then the automatic worker restarts are disabled. NOTE: Only supported for pulpcore >= 3.41.0
+
+* `PULP_CONTENT_WORKERS_MAX_REQUESTS_JITTER` The maximum jitter to add to the max_requests setting for Content workers. NOTE: Only supported for pulpcore >= 3.41.0
+
+To add one of them, modify the command you use to start pulp to include syntax like the following at the beginning: Instead of `podman run`, specify `podman run -e PULP_WORKERS=4 -e PULP_GUNICORN_TIMEOUT=30 -e PULP_API_WORKERS_MAX_REQUESTS=1000 -e PULP_API_WORKERS_MAX_REQUESTS_JITTER=50 ...`
 
 ### Adding Signing Services
 
-Administrators can add signing services to Pulp using the command line tools. Users may then associate the signing services with repositories that support content signing.  
+Administrators can add signing services to Pulp using the command line tools. Users may then associate the signing services with repositories that support content signing.
 See [Signing Services](site:pulp-oci-images/docs/admin/guides/configure-signing-service/) documentation for more information.
 
 ### Certificates and Keys
@@ -341,9 +349,9 @@ The Container file and all other assets used to build the container image are av
 
 ```bash
 $ <docker build | buildah bud> --file images/Containerfile.core.base --tag pulp/base:latest .
-$ <docker build | buildah bud> --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
-$ <docker build | buildah bud> --file images/pulp/Containerfile --tag pulp/pulp:latest .
-$ <docker build | buildah bud> --file images/galaxy/Containerfile --tag pulp/galaxy:latest .
+$ <docker build | buildah bud> --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos9:latest .
+$ <docker build | buildah bud> --file images/pulp/stable/Containerfile --tag pulp/pulp:latest .
+$ <docker build | buildah bud> --file images/galaxy/stable/Containerfile --tag pulp/galaxy:latest
 ```
 
 ### Specifying versions
@@ -352,8 +360,8 @@ By default, containers get built using the latest version of each Pulp component
 specify a version of a particular component, you can do so with args:
 
 ```bash
-$ <docker build | buildah bud> --build_arg PULPCORE_VERSION="==3.5.0" --file images/pulp/Containerfile
-$ <docker build | buildah bud> --build_arg PULP_FILE_VERSION=">=1.0.0" --file images/pulp/Containerfile
+$ <docker build | buildah bud> --build-arg PULPCORE_VERSION="==3.5.0" --file images/pulp/Containerfile
+$ <docker build | buildah bud> --build-arg PULP_FILE_VERSION=">=1.0.0" --file images/pulp/Containerfile
 ```
 
 ## Debugging instructions

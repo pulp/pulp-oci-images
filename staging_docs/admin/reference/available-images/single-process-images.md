@@ -1,6 +1,6 @@
-# Available Single-Process Images
+# Single-Process Images
 
-These images are currently used on [pulp operator](https://docs.pulpproject.org/pulp_operator/), but they can be used in docker-compose or podman-compose. You can find a compose example [here](https://github.com/pulp/pulp-oci-images/tree/latest/images/compose).
+These images are currently used on [pulp operator](site:pulp-operator), but they can be used in docker-compose or podman-compose. You can find a compose example [here](https://github.com/pulp/pulp-oci-images/tree/latest/images/compose).
 
 ## pulp-minimal
 
@@ -18,15 +18,15 @@ It is the reference on how this image can be used to create the 3 services/conta
 
 pulp-minimal is currently built with the following plugins:
 
-- [pulp_ansible](https://docs.pulpproject.org/pulp_ansible/)
-- [pulp-certguard](https://docs.pulpproject.org/pulp_certguard/)
-- [pulp_container](https://docs.pulpproject.org/pulp_container/)
-- [pulp_deb](https://docs.pulpproject.org/pulp_deb/)
-- [pulp_file](https://docs.pulpproject.org/pulp_file/)
-- [pulp_maven](https://docs.pulpproject.org/pulp_maven/)
-- [pulp_python](https://docs.pulpproject.org/pulp_python/)
-- [pulp_rpm](https://docs.pulpproject.org/pulp_rpm/)
-- [pulp_ostree](https://docs.pulpproject.org/pulp_ostree/)
+- [pulp_ansible](site:pulp_ansible)
+- [pulp-certguard](site:pulp_certguard)
+- [pulp_container](site:pulp_container)
+- [pulp_deb](site:pulp_deb)
+- [pulp_file](site:pulp_file)
+- [pulp_maven](site:pulp_maven)
+- [pulp_python](site:pulp_python)
+- [pulp_rpm](site:pulp_rpm)
+- [pulp_ostree](site:pulp_ostree)
 
 ### Tags
 

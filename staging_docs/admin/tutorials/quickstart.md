@@ -5,12 +5,11 @@ Here are some common deployment scenarios, each with a guide on how to get start
 1. To deploy to [K8s](https://kubernetes.io/),
    [EKS](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html), or
    [Openshift](https://www.redhat.com/en/technologies/cloud-computing/openshift) use the
-   [Pulp Operator](https://docs.pulpproject.org/pulp_operator/quickstart/) which was specially built
+   [Pulp Operator](site:pulp-operator/docs/admin/tutorials/quickstart-kubernetes/) which was specially built
    for this purpose.
 2. Local [deployment via a single container](#single-container). This is for small deployments that
    don't need to scale beyond the hardware available to a single container.
-3. Local [deployment with multiple containers using podman or docker compose](
-   #podman-or-docker-compose).
+3. Local [deployment with multiple containers using podman or docker compose](#podman-or-docker-compose).
 
 In all cases, after deployment see
 [what to do after the quickstart](#what-to-do-after-the-quickstart) to start using your installation.
@@ -19,6 +18,7 @@ In all cases, after deployment see
 ## Single Container
 
 This deployment is a 2-step process:
+
 1. [Creating persistent directories and settings](#create-the-directories-and-settings).
 2. [Starting the container](#starting-the-container)
 
@@ -32,7 +32,8 @@ $ mkdir -p settings/certs pulp_storage pgsql containers
 $ echo "CONTENT_ORIGIN='http://$(hostname):8080'" >> settings/settings.py
 ```
 
-* For a complete list of available settings for `settings.py`, see [the Pulpcore Settings](https://docs.pulpproject.org/pulpcore/configuration/settings.html).
+* For a complete list of available settings for `settings.py`, see
+  [the Pulpcore Settings](site:pulpcore/docs/admin/reference/settings/).
 
 * These 4 directories `settings`, `pulp_storage`, `pgsql`, `containers` must be preserved. `settings`
   has your settings, generated certificates, and generated database encrypted fields key. The
@@ -173,4 +174,9 @@ pulp config create --username admin --base-url http://localhost:8080 --password 
 
 ### Try out a workflow
 
-To start working with Pulp, check out the [Workflows and Use Cases](https://docs.pulpproject.org/workflows/index.html). For individual plugin documentation, see [Pulp 3 Content Plugin Documentation](https://pulpproject.org/docs/#pulp-3-content-plugin-documentation).
+To start working with Pulp, check out the [Workflows and Use Cases](https://github.com/pulp/pulpcore/issues/5593)
+and explore individual Content Plugins documentation.
+
+If you are unsure what to pick first, try Python's
+[Setup Your Own Pypi](site:pulp_python/docs/user/guides/pypi/) or RPM's
+[Sync and Publish](site:pulp_rpm/docs/user/tutorials/create_sync_publish/).
