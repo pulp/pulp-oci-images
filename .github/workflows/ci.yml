@@ -113,6 +113,8 @@ jobs:
           podman ps -a
           podman images -a
           podman logs pulp
+          echo "plottin'"
+          cat /var/lib/pgsql/data/log/*.log
           cd images/compose
           podman-compose logs
           podman logs --tail=10000 compose_pulp_api_1
