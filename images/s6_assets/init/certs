@@ -35,8 +35,7 @@ if ! [ -e /etc/pki/tls/certs/pulp_webserver.crt ]; then
   cp /etc/pulp/certs/pulp_webserver.crt /etc/pki/tls/certs/pulp_webserver.crt
   cp /etc/pulp/certs/pulp_webserver.csr /etc/pki/tls/private/pulp_webserver.csr
   cp /etc/pulp/certs/pulp_webserver.key /etc/pki/tls/private/pulp_webserver.key
-  update-ca-trust force-enable
-  update-ca-trust extract
+  update-ca-trust
   cat /etc/pulp/certs/pulp_webserver.crt >> /etc/pki/tls/cert.pem
   echo -e "${PREFIX} ${GREEN}finished adding webserver certificate to the certificate store${ENDCOLOR}"
 fi
