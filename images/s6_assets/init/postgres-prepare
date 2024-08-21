@@ -13,6 +13,11 @@ export C035="\e[35m"
 export C036="\e[36m"
 export C037="\e[37m"
 
+if [ ! -d "/var/run/postgresql" ]; then
+  mkdir -p /var/run/postgresql
+  chown postgres:postgres /var/run/postgresql
+fi
+
 PG_ISREADY=1
 while [ "$PG_ISREADY" != "0"  ]; do
   sleep 1
