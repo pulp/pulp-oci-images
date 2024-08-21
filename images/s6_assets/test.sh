@@ -16,6 +16,7 @@ trap cleanup EXIT
 # buildah & skopeo (pulp_container does)
 
 start_container_and_wait() {
+
   podman run --detach \
              --publish 8080:$port \
              --name pulp \
@@ -27,6 +28,12 @@ start_container_and_wait() {
              -e PULP_DEFAULT_ADMIN_PASSWORD=password \
              -e PULP_HTTPS=${pulp_https} \
              "$1"
+
+  #echo ::group::VERSIONSPSQL
+  #podman exec -it pulp bash 'pg_config --version'
+  #podman exec -it pulp bash -c 'psql --version'
+  #echo ::endgroup::
+
   sleep 10
   for _ in $(seq 30)
   do

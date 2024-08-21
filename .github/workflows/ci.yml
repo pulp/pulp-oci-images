@@ -1,7 +1,6 @@
 name: pulp-oci-images CI
 
-on:
-  pull_request:
+on: [push]
 env:
   COLORTERM: 'yes'
   TERM: 'xterm-256color'
@@ -106,6 +105,9 @@ jobs:
           app_branch: ${{ steps.build_image.outputs.app_branch }}
           app_arch_tag: ${{ steps.build_image.outputs.app_arch_tag }}
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: always()
       - name: Logs
         if: always()
         run: |
