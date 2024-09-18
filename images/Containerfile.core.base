@@ -44,7 +44,7 @@ RUN dnf -y module enable nginx:1.22
 # of dependencies below. For example, drpm-devel.
 RUN dnf -y install python${PYTHON_VERSION} python3-cryptography python${PYTHON_VERSION}-devel && \
     dnf -y install openssl openssl-devel && \
-    dnf -y install openldap-devel && \
+    dnf -y install openldap-devel --exclude selinux* && \
     dnf -y install wget git && \
     dnf -y install python3-psycopg2 && \
     dnf -y install redhat-rpm-config gcc cargo libffi-devel && \
@@ -54,7 +54,7 @@ RUN dnf -y install python${PYTHON_VERSION} python3-cryptography python${PYTHON_V
     dnf -y install libpq-devel && \
     dnf -y install python3-setuptools && \
     dnf -y install swig && \
-    dnf -y install buildah --exclude container-selinux && \
+    dnf -y install podman fuse-overlayfs buildah --exclude container-selinux && \
     dnf -y install xz && \
     dnf -y install libmodulemd-devel && \
     dnf -y install libcomps-devel && \
@@ -64,7 +64,6 @@ RUN dnf -y install python${PYTHON_VERSION} python3-cryptography python${PYTHON_V
     dnf -y install libcurl-devel libxml2-devel sqlite-devel file-devel && \
     dnf -y install ostree-libs ostree && \
     dnf -y install skopeo && \
-    dnf -y install podman && \
     dnf -y install sudo && \
     dnf -y install zstd && \
     dnf -y install jq && \
