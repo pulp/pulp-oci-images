@@ -1,18 +1,18 @@
 # Pulp 3 Containers
 
 The [pulp-oci-images](https://github.com/pulp/pulp-oci-images) repository is used to provide container images for running Pulp.
-These images represent one of several officially supported [Pulp installation methods](https://docs.pulpproject.org/pulpcore/installation/instructions.html).
+These images represent one of the officially supported Pulp installation methods.
 The available images can be divided into two types:
 
 - [Multi-Process Images](multi-process-images) - Images for running a [Pulp](https://github.com/pulp/pulpcore) or [Ansible Galaxy](https://github.com/ansible/galaxy_ng), as well as its [third-party services](#third-party-services),
 in a single Docker/Podman container.
-- [Single-Process Images](single-process-images) - Images containing a single Pulp service each, which collectively make up a Pulp instance. They can be used via docker-compose or podman-compose, example [here](https://github.com/pulp/pulp-oci-images/tree/latest/images/compose). These images are also used by [pulp operator](https://docs.pulpproject.org/pulp_operator/).
+- [Single-Process Images](single-process-images) - Images containing a single Pulp service each, which collectively make up a Pulp instance. They can be used via docker-compose or podman-compose, example [here](https://github.com/pulp/pulp-oci-images/tree/latest/images/compose). These images are also used by [pulp operator](https://pulpproject.org/pulp-operator/).
 
 Note that OCI stands for "Open Container Initiative", see [here](https://opencontainers.org/).
 
 ## Quickstart
 
-See the [quickstart guide for deploying](quickstart).
+See the [quickstart guide for deploying](https://pulpproject.org/pulp-oci-images/docs/admin/tutorials/quickstart/).
 
 
 ## Available Images
@@ -45,7 +45,7 @@ both pulp-api and pulp-content into one service.
 
 ## Get Help
 
-Documentation: [https://docs.pulpproject.org/pulp_oci_images/](https://docs.pulpproject.org/pulp_oci_images/)
+Documentation: [https://pulpproject.org/pulp-oci-images/](https://pulpproject.org/pulp-oci-images/)
 
 Issue Tracker: [https://github.com/pulp/pulp-oci-images/issues](https://github.com/pulp/pulp-oci-images/issues)
 
