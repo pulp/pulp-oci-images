@@ -1,6 +1,6 @@
 ---
 name: Build App Images
-description: Build one of the App images (pulp, pulp-minimal, galaxy, galaxy-minimal)
+description: Build one of the App images (pulp, pulp-minimal)
 inputs:
   image_variant:
     description: 'Whether the image is a stable or nightly build'
@@ -48,7 +48,7 @@ runs:
         sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
         for ARCH in arm64 amd64
         do
-          if [[ "${{ inputs.image_name }}" == "pulp-minimal" || "${{ inputs.image_name }}" == "galaxy-minimal" ]]; then
+          if [[ "${{ inputs.image_name }}" == "pulp-minimal" ]]; then
             base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
             podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile.core --tag pulp/${{ inputs.image_name }}:ci-${ARCH} --build-arg FROM_TAG=ci-${ARCH} .
             podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile.webserver --tag pulp/${base_image}-web:ci-${ARCH} --build-arg FROM_TAG=ci-${ARCH} .
@@ -63,12 +63,7 @@ runs:
       id: image_version_branch
       run: |
         base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
-        if [[ "${base_image}" == "pulp" ]]; then
-          pip_name="pulpcore"
-        else
-          pip_name="galaxy-ng"
-        fi
-        app_version=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci-amd64 bash -c "pip3 show ${pip_name} | sed -n -e 's/Version: //p'")
+        app_version=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci-amd64 bash -c "pip3 show pulpcore | sed -n -e 's/Version: //p'")
         app_branch=$(echo ${app_version} | grep -oP '\d+\.\d+')
 
         echo "APP_VERSION: ${app_version}"

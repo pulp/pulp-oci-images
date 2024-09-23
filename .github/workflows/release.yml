@@ -162,8 +162,6 @@ jobs:
         image_name:
           - pulp-minimal
           - pulp
-          - galaxy-minimal
-          - galaxy
     steps:
       - uses: actions/checkout@v4
 
@@ -185,7 +183,7 @@ jobs:
       - name: Set tags
         run: |
           base_image=$(echo ${{ matrix.image_name }} | cut -d '-' -f1)
-          if [[ "${{ matrix.image_name }}" == "pulp" || "${{ matrix.image_name }}" == "galaxy" ]]; then
+          if [[ "${{ matrix.image_name }}" == "pulp" ]]; then
             images="${{ matrix.image_name }}"
           else
             images="${{ matrix.image_name }} ${base_image}-web"
