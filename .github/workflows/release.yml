@@ -50,7 +50,7 @@ jobs:
   base-images:
     runs-on: ubuntu-latest
     outputs:
-      pulp_ci_centos_id: ${{ steps.build_base_images.outputs.pulp_ci_centos_id }}
+      base_cache_key: ${{ steps.build_base_images.outputs.base_cache_key }}
       image_variants: ${{ steps.image_variants.outputs.image_variants }}
 
     steps:
@@ -138,7 +138,6 @@ jobs:
         with:
           image_names: "base pulp-ci-centos9"
           tags: ${{ env.TAGS }}
-          build_tag: ${{ github.ref_name }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           docker_bot_username: ${{ secrets.DOCKER_BOT_USERNAME }}
           docker_bot_password: ${{ secrets.DOCKER_BOT_PASSWORD }}
@@ -151,7 +150,6 @@ jobs:
     outputs:
       app_version: ${{ steps.build_image.outputs.app_version }}
       app_branch: ${{ steps.build_image.outputs.app_branch }}
-      app_arch_tag: ${{ steps.build_image.outputs.app_arch_tag }}
     strategy:
       fail-fast: false
       matrix:
@@ -170,7 +168,7 @@ jobs:
         with:
           image_name: ${{ matrix.image_name }}
           image_variant: ${{ matrix.image_variant }}
-          image_cache_key: ${{ needs.base-images.outputs.pulp_ci_centos_id }}
+          image_cache_key: ${{ needs.base-images.outputs.base_cache_key }}
 
       - name: Test App Image
         uses: "./.github/actions/test_image"
@@ -178,7 +176,6 @@ jobs:
           image_name: ${{ matrix.image_name }}
           image_variant: ${{ matrix.image_variant }}
           app_branch: ${{ steps.build_image.outputs.app_branch }}
-          app_arch_tag: ${{ steps.build_image.outputs.app_arch_tag }}
 
       - name: Set tags
         run: |
@@ -211,7 +208,6 @@ jobs:
         with:
           image_names: ${{ env.IMAGES }}
           tags: ${{ env.TAGS }}
-          build_tag: ${{ matrix.image_variant == 'nightly' && 'nightly' || github.ref_name }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           docker_bot_username: ${{ secrets.DOCKER_BOT_USERNAME }}
           docker_bot_password: ${{ secrets.DOCKER_BOT_PASSWORD }}

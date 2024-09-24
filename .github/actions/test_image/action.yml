@@ -12,18 +12,27 @@ inputs:
   app_branch:
     description: 'The branch the app was built on'
     required: true
-  app_arch_tag:
-    description: 'The temporary amd64 arch tag of the built app image'
-    required: true
 
 runs:
   using: "composite"
   steps:
+    - name: Install httpie and podman-compose
+      run: |
+        echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
+        echo "Working around https://bugs.launchpad.net/ubuntu/+source/libpod/+bug/2024394"
+        curl -O http://archive.ubuntu.com/ubuntu/pool/universe/g/golang-github-containernetworking-plugins/containernetworking-plugins_1.1.1+ds1-3_amd64.deb
+        sudo dpkg -i containernetworking-plugins_1.1.1+ds1-3_amd64.deb
+        # Ubuntu 22.04 has old podman 3.4.4, we need podman-compose==1.0.3 to avoid an
+        # error with dependency contianers not being detected as running.
+        # "error generating dependency graph for container"
+        pip install httpie podman-compose==1.0.3
+      shell: bash
+
     - name: Test image with upgrade in s6 mode (pulp)
       if: inputs.image_name == 'pulp'
       run: |
         # 3.20 has postgres 12 rather than 13
-        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:${{ inputs.app_arch_tag }}" http "quay.io/pulp/all-in-one-pulp:3.20"
+        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:ci-amd64" http "quay.io/pulp/all-in-one-pulp:3.20"
         podman stop pulp
         podman rm pulp
       shell: bash
@@ -31,7 +40,7 @@ runs:
     - name: Test the image in s6 mode (galaxy)
       if: inputs.image_name == 'galaxy'
       run: |
-        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:${{ inputs.app_arch_tag }}" https
+        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:ci-amd64" https
         podman stop pulp
         podman rm pulp
       shell: bash
@@ -48,8 +57,8 @@ runs:
           fi
         else
           FILE="compose.yml"
-          WEB_TAG="${{ inputs.app_arch_tag }}"
+          WEB_TAG="ci-amd64"
         fi
         base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
-        images/compose/test.sh "${{ inputs.image_name }}:${{ inputs.app_arch_tag }}" "${base_image}-web:${WEB_TAG}" $FILE
+        images/compose/test.sh "${{ inputs.image_name }}:ci-amd64" "${base_image}-web:${WEB_TAG}" $FILE
       shell: bash
