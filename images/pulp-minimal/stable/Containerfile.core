@@ -22,7 +22,9 @@ RUN pip3 install --upgrade \
   pulp-maven${PULP_MAVEN_VERSION} \
   pulp-python${PULP_PYTHON_VERSION} \
   pulp-rpm${PULP_RPM_VERSION} \
-  pulp-ostree${PULP_OSTREE_VERSION} && \
+  pulp-ostree${PULP_OSTREE_VERSION} \
+  rhsm \
+  -c /constraints.txt && \
   rm -rf /root/.cache/pip
 
 # Prevent pip-installed /usr/local/bin/pulp-content from getting run instead of

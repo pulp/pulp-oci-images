@@ -73,22 +73,6 @@ RUN dnf -y install python${PYTHON_VERSION} python3-cryptography python${PYTHON_V
     getcap /usr/bin/newuidmap  | grep cap_setuid || dnf -y reinstall -y shadow-utils && \
     dnf clean all
 
-# Needed to prevent the wrong version of cryptography from being installed,
-# which would break PyOpenSSL.
-# Need to install optional dep, rhsm, for pulp-certguard
-RUN pip3 install --upgrade pip setuptools wheel && \
-    rm -rf /root/.cache/pip && \
-    pip3 install  \
-         rhsm \
-         setproctitle \
-         gunicorn \
-         python-nginx \
-         django-auth-ldap \
-         django-storages\[boto3,azure]\>=1.12.2 \
-         requests\[use_chardet_on_py3] && \
-         rm -rf /root/.cache/pip
-
-
 RUN groupadd -g 700 --system pulp
 RUN useradd -d /var/lib/pulp --system -u 700 -g pulp pulp
 
@@ -130,6 +114,7 @@ COPY images/assets/add_signing_service.sh /usr/bin/add_signing_service.sh
 COPY images/assets/pulp-api /usr/bin/pulp-api
 COPY images/assets/pulp-content /usr/bin/pulp-content
 COPY images/assets/pulp-worker /usr/bin/pulp-worker
+COPY images/assets/constraints.txt /constraints.txt
 
 # Need to precreate when running pulp as the pulp user
 RUN touch /var/log/galaxy_api_access.log && \

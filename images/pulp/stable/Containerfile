@@ -25,7 +25,9 @@ RUN pip3 install --upgrade \
   pulp-python${PULP_PYTHON_VERSION} \
   pulp-rpm${PULP_RPM_VERSION} \
   pulp-ostree${PULP_OSTREE_VERSION} \
-  requests && \
+  rhsm \
+  requests \
+  -c /constraints.txt && \
   rm -rf /root/.cache/pip
 
 USER pulp:pulp

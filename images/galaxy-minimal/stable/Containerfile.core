@@ -6,7 +6,8 @@ ARG GALAXY_NG_VERSION=""
 
 RUN pip3 install --upgrade \
   galaxy-ng${GALAXY_NG_VERSION} \
-  pulpcore${PULPCORE_VERSION} && \
+  pulpcore${PULPCORE_VERSION} \
+  -c /constraints.txt && \
   rm -rf /root/.cache/pip
 
 # Prevent pip-installed /usr/local/bin/pulp-content from getting run instead of
