@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image_variants: "${{ steps.image_variants.outputs.image_variants }}"
-      pulp_ci_centos_id: "${{ steps.build_base_images.outputs.pulp_ci_centos_id }}"
+      base_cache_key: "${{ steps.build_base_images.outputs.base_cache_key }}"
     steps:
       # We do not want to build nightly images unless it's a PR to the latest branch,
       # or a branch/dispatch build on the latest branch.
@@ -76,7 +76,6 @@ jobs:
     outputs:
       app_version: ${{ steps.build_image.outputs.app_version }}
       app_branch: ${{ steps.build_image.outputs.app_branch }}
-      app_arch_tag: ${{ steps.build_image.outputs.app_arch_tag }}
     strategy:
       fail-fast: false
       matrix:
@@ -95,7 +94,7 @@ jobs:
         with:
           image_name: ${{ matrix.image_name }}
           image_variant: ${{ matrix.image_variant }}
-          image_cache_key: ${{ needs.base-images.outputs.pulp_ci_centos_id }}
+          image_cache_key: ${{ needs.base-images.outputs.base_cache_key }}
 
       - name: Test App Image
         uses: "./.github/actions/test_image"
@@ -103,7 +102,6 @@ jobs:
           image_name: ${{ matrix.image_name }}
           image_variant: ${{ matrix.image_variant }}
           app_branch: ${{ steps.build_image.outputs.app_branch }}
-          app_arch_tag: ${{ steps.build_image.outputs.app_arch_tag }}
 
       - name: Logs
         if: always()

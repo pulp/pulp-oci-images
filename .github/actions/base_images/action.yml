@@ -1,15 +1,15 @@
 ---
 name: Build Base Images
-description: Build the base images (pulp/base & pulp/pulp-ci-centos9)
+description: Build the base images (pulp/base & pulp/pulp-ci-centos9) if needed
 # Both ARM64 & x86-64 versions of each are built
-# Save the images to a tar and upload to a cache using output 'pulp_ci_centos_id' as the key
+# Use hashFiles(base_image_files, pulp-ci_image_files) + python_version as the key to the cache
 inputs:
   python_version:
     required: true
     description: "Python Version to use to build, e.g '3.9'"
 outputs:
-  pulp_ci_centos_id:
-    value: ${{ steps.pulp_ci_centos_id.outputs.pulp_ci_centos_id }}
+  base_cache_key:
+    value: ${{ steps.hash_key.outputs.base_cache_key }}
     description: "The cache key the built images were uploaded to."
 
 runs:
@@ -17,24 +17,76 @@ runs:
   steps:
     - uses: actions/checkout@v4
 
-    - name: Set the temporary image tag
+    - name: Calculate base images hash
+      id: hash_key
       run: |
-        temp_base_tag="${GITHUB_REF_NAME%/*}"
-        python_version="${{ inputs.python_version }}"
-        echo "Building $temp_base_tag with python $python_version"
-        echo "TEMP_BASE_TAG=${temp_base_tag}" >> $GITHUB_ENV
-        echo "PYTHON_VERSION=${python_version}" >> $GITHUB_ENV
+        hash=${{ hashFiles('images/Containerfile.core.base', 'images/pulp_ci_centos/Containerfile', 'images/assets/**', 'images/s6_assets/**') }}
+        echo "base image hash is ${hash}, python version is ${{ inputs.python_version }}"
+        echo "base_cache_key=${hash}-${{ inputs.python_version }}" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Restore previously cached images
+      id: cache
+      uses: actions/cache/restore@v3
+      with:
+        key: base-images=${{ steps.hash_key.outputs.base_cache_key }}
+        path: base-images.tar.gz
+
+    - name: Extract images if cached
+      if: steps.cache.outputs.cache-hit == 'true'
+      run: |
+        echo "Base Images were in cache"
+        podman load -i base-images.tar.gz
+      shell: bash
+
+    - name: Check for updates on cached images
+      if: steps.cache.outputs.cache-hit == 'true'
+      run: |
+        # Enable running/building ARM64 images: https://github.com/multiarch/qemu-user-static
+        sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
+        IMAGES=()
+        for IMAGE in base pulp-ci-centos9; do
+          for ARCH in arm64 amd64; do
+            echo "Checking if rebuild needed for ${IMAGE}:${ARCH}"
+            podman run --pull=never pulp/${IMAGE}:ci-${ARCH} bash -c "dnf check-upgrade"
+            if [ $? -gt 0 ]; then
+              echo "Rebuild needed for ${IMAGE}:${ARCH}"
+              IMAGES+=('${IMAGE}:${ARCH}')
+            fi
+          done
+        done
+        if [ ${#IMAGES[@]} -eq 0 ]; then
+          echo "No rebuilds needed :)"
+        else
+          echo "BUILD_IMAGES=[$(echo ${IMAGES[@]} | sed 's/ /, /g')]" >> $GITHUB_ENV
+        fi
+      shell: bash
+
+    - name: Set images to build on cache miss
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        echo "BUILD_IMAGES=['base:arm64', 'base:amd64', 'pulp-ci-centos9:arm64', 'pulp-ci-centos9:amd64']" >> $GITHUB_ENV
+        sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
       shell: bash
 
     - name: Build images
+      if: env.BUILD_IMAGES
       run: |
+        IMAGES=(${{ join(fromJSON(env.BUILD_IMAGES), ' ') }})
+        echo "Going to build images: ${IMAGES[@]}"
         podman version
         buildah version
-        sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
-        for ARCH in arm64 amd64
-        do
-          podman build --platform linux/$ARCH --format docker --file images/Containerfile.core.base --tag pulp/base:${TEMP_BASE_TAG}-${ARCH} --build-arg PYTHON_VERSION=${PYTHON_VERSION} .
-          podman build --platform linux/$ARCH --format docker --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos9:${TEMP_BASE_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_BASE_TAG}-${ARCH} .
+        for IMAGE in "${IMAGES[@]}"; do
+          echo "Building image ${IMAGE}"
+          ARCH=${IMAGE##*:}
+          case $IMAGE in
+            base:*)
+              podman build --platform "linux/${ARCH}" --format docker --file images/Containerfile.core.base --tag "pulp/base:ci-${ARCH}" --build-arg PYTHON_VERSION=${{ inputs.python_version }} .
+              ;;
+            pulp-ci-centos9:*)
+              podman build --platform "linux/${ARCH}" --format docker --file images/pulp_ci_centos/Containerfile --tag "pulp/pulp-ci-centos9:ci-${ARCH}" --build-arg FROM_TAG="ci-${ARCH}" .
+              ;;
+          esac
         done
       shell: bash
     # we use the docker format (default), even though it may not be the fastest,
@@ -43,20 +95,16 @@ runs:
     # We should look into whether its possible to export just pulp-ci-centos,
     # and tag the base image manually.
     - name: Save podman images to tarball
-      id: pulp_ci_centos_id
+      if: env.BUILD_IMAGES
       run: |
-        podman save -m -o base-images.tar pulp/base:${TEMP_BASE_TAG}-arm64 pulp/base:${TEMP_BASE_TAG}-amd64 pulp/pulp-ci-centos9:${TEMP_BASE_TAG}-arm64 pulp/pulp-ci-centos9:${TEMP_BASE_TAG}-amd64
-        # The id is unique to the image build (not the Containerfile) and will be used in the cache key
-        # If a workflow completes successfully, every workflow will generate a new cache.
-        # And if we re-run the entire workflow ("Re-run all jobs"), it will generate a new cache too.
-        # If we re-run a failed app-images job, it will use the existing cache from base-images
-        id=$(podman image inspect --format '{{ .Id }}' pulp/pulp-ci-centos9:${TEMP_BASE_TAG}-amd64)
-        echo "pulp_ci_centos_id=${id}" >> "$GITHUB_OUTPUT"
-        echo "pulp_ci_centos_id=${id}" >> "$GITHUB_ENV"
+        rm -f base-images.tar.gz
+        podman save -m -o base-images.tar pulp/base:ci-arm64 pulp/base:ci-amd64 pulp/pulp-ci-centos9:ci-arm64 pulp/pulp-ci-centos9:ci-amd64
+        gzip base-images.tar
       shell: bash
 
     - name: Cache podman images
+      if: env.BUILD_IMAGES
       uses: actions/cache/save@v3
       with:
-        key: base-images=${{ env.pulp_ci_centos_id }}
-        path: base-images.tar
+        key: base-images=${{ steps.hash_key.outputs.base_cache_key }}
+        path: base-images.tar.gz

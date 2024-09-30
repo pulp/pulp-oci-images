@@ -5,9 +5,6 @@ inputs:
   image_names:
     description: 'Names of the images to be published'
     required: true
-  build_tag:
-    description: 'Current tag of the local built container'
-    required: true
   tags:
     description: 'List of tags the images are to be published under'
     required: true
@@ -56,7 +53,7 @@ runs:
         for registry in ghcr.io docker.io quay.io; do
           for image in ${{ inputs.image_names }}; do
             for tag in ${{ inputs.tags }}; do
-              podman manifest create ${registry}/pulp/${image}:${tag} containers-storage:localhost/pulp/${image}:${{ inputs.build_tag }}-amd64 containers-storage:localhost/pulp/${image}:${{ inputs.build_tag }}-arm64
+              podman manifest create ${registry}/pulp/${image}:${tag} containers-storage:localhost/pulp/${image}:ci-amd64 containers-storage:localhost/pulp/${image}:ci-arm64
               podman manifest push --all ${registry}/pulp/${image}:${tag} ${registry}/pulp/${image}:${tag}
             done
           done
