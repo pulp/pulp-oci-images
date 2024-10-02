@@ -45,20 +45,20 @@ runs:
         # Enable running/building ARM64 images: https://github.com/multiarch/qemu-user-static
         sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
         IMAGES=()
-        for IMAGE in base pulp-ci-centos9; do
-          for ARCH in arm64 amd64; do
-            echo "Checking if rebuild needed for ${IMAGE}:${ARCH}"
-            podman run --pull=never pulp/${IMAGE}:ci-${ARCH} bash -c "dnf check-upgrade"
-            if [ $? -gt 0 ]; then
-              echo "Rebuild needed for ${IMAGE}:${ARCH}"
-              IMAGES+=('${IMAGE}:${ARCH}')
-            fi
-          done
+        for ARCH in arm64 amd64; do
+          echo "Checking if rebuild needed for base:${ARCH} & pulp-ci-centos9:${ARCH}"
+          if ! podman run --pull=never pulp/base:ci-${ARCH} bash -c "dnf check-upgrade"; then
+            echo "Rebuild needed for base:${ARCH} & pulp-ci-centos9:${ARCH}"
+            IMAGES+=("base:${ARCH}" "pulp-ci-centos9:${ARCH}")
+          elif ! podman run --pull=never pulp/pulp-ci-centos9:ci-${ARCH} bash -c "dnf check-upgrade"; then
+            echo "Rebuild needed for just pulp-ci-centos9:${ARCH}"
+            IMAGES+=("pulp-ci-centos9:${ARCH}")
+          fi
         done
         if [ ${#IMAGES[@]} -eq 0 ]; then
           echo "No rebuilds needed :)"
         else
-          echo "BUILD_IMAGES=[$(echo ${IMAGES[@]} | sed 's/ /, /g')]" >> $GITHUB_ENV
+          echo "BUILD_IMAGES=[$(echo ${IMAGES[@]@Q} | sed 's/ /, /g')]" >> $GITHUB_ENV
         fi
       shell: bash
 
