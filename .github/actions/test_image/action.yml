@@ -53,7 +53,8 @@ runs:
           if [ "${{ inputs.image_variant }}" == "nightly" ]; then
             WEB_TAG="nightly"
           else
-            WEB_TAG="${{ inputs.app_branch }}"
+            # This will be the branch we are running on, either latest or version branch
+            WEB_TAG="${{ github.base_ref || github.ref_name }}"
           fi
         else
           FILE="compose.yml"
