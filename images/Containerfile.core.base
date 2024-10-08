@@ -65,7 +65,9 @@ RUN pip install  \
 	gunicorn \
         python-nginx \
 	"django-storages[boto3,azure]>=1.12.2" \
-	"requests[use_chardet_on_py3]"
+	"requests[use_chardet_on_py3]" \
+	pyopenssl \
+	wheel
 
 RUN groupadd -g 700 --system pulp
 RUN useradd -d /var/lib/pulp --system -u 700 -g pulp pulp
