@@ -9,10 +9,9 @@ RUN pip install pulpcore~=3.21.0 \
   pulp_python~=3.7.0 \
   pulp_rpm~=3.19.0
 
-USER pulp:pulp
+USER root:root
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
   /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link
-USER root:root
 
 RUN chmod 2775 /var/lib/pulp/{scripts,media,tmp,assets}
-RUN chown -R :root /var/lib/pulp/{scripts,media,tmp,assets} /var/lib/operator/static
+RUN chown -R pulp:root /var/lib/pulp/{scripts,media,tmp,assets} /var/lib/operator/static

@@ -56,8 +56,8 @@ jobs:
       - name: Set https build args
         if: contains(fromJSON('["4.6-https", "3.21-https"]'), matrix.tag)
         run: |
-          echo "BUILD_ARG1='--build-arg SCHEME=https'" >> $GITHUB_ENV
-          echo "BUILD_ARG2='--build-arg FROM_TAG=${{ matrix.tag }}'" >> $GITHUB_ENV
+          echo "BUILD_ARG1=--build-arg SCHEME=https" >> $GITHUB_ENV
+          echo "BUILD_ARG2=--build-arg FROM_TAG=${{ matrix.tag }}" >> $GITHUB_ENV
           echo "TEST_ARG=https" >> $GITHUB_ENV
 
       - name: Build the images

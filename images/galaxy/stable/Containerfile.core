@@ -5,10 +5,9 @@ FROM quay.io/pulp/base:3.21
 RUN pip install "cython<3.0" & \
     pip install --no-build-isolation pyyaml==5.4.1 galaxy_ng~=4.6.0
 
-USER pulp:pulp
+USER root:root
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
     /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link
-USER root:root
 
 RUN chmod 2775 /var/lib/pulp/{scripts,media,tmp,assets}
-RUN chown -R :root /var/lib/pulp/{scripts,media,tmp,assets} /var/lib/operator/static
+RUN chown -R pulp:root /var/lib/pulp/{scripts,media,tmp,assets} /var/lib/operator/static
