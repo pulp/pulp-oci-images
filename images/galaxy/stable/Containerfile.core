@@ -1,6 +1,7 @@
 FROM quay.io/pulp/base:3.21
 
-RUN pip install galaxy_ng~=4.6.0
+# install pyyaml first to avoid getting a 5.* version (from ansible-lint deps)
+RUN pip install pyyaml galaxy_ng~=4.6.0
 
 USER pulp:pulp
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \

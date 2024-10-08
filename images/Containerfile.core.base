@@ -43,6 +43,7 @@ RUN		dnf -y update && \
 		dnf -y install openssl-devel && \
 		dnf -y install ostree && \
 		dnf -y install ostree-libs && \
+		dnf -y install python3-cryptography && \
 		dnf -y install python3-devel && \
 		dnf -y install python3-setuptools && \
 		dnf -y install python-pip && \
@@ -58,16 +59,18 @@ RUN		dnf -y update && \
 		dnf -y builddep createrepo_c && \
 		dnf clean all
 
+RUN pip install --upgrade pip packaging wheel
+
 # Need to install optional dep, rhsm, for pulp-certguard
 RUN pip install  \
 	rhsm \
 	setproctitle \
 	gunicorn \
-        python-nginx \
+    python-nginx \
 	"django-storages[boto3,azure]>=1.12.2" \
 	"requests[use_chardet_on_py3]" \
-	pyopenssl \
-	wheel
+	pyopenssl && \
+    rm -rf /root/.cache/pip
 
 RUN groupadd -g 700 --system pulp
 RUN useradd -d /var/lib/pulp --system -u 700 -g pulp pulp
