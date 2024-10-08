@@ -51,12 +51,10 @@ RUN		dnf -y update && \
 		dnf -y install libmodulemd-devel && \
 		dnf -y install libcomps-devel && \
 		dnf -y install ninja-build && \
-		dnf -y install 'dnf-command(builddep)' && \
 		dnf -y install cairo-devel && \
 		dnf -y install cmake && \
 		dnf -y install gobject-introspection-devel && \
 		dnf -y install cairo-gobject-devel && \
-		dnf -y builddep createrepo_c && \
 		dnf clean all
 
 RUN pip install --upgrade pip packaging wheel
@@ -69,7 +67,8 @@ RUN pip install  \
     python-nginx \
 	"django-storages[boto3,azure]>=1.12.2" \
 	"requests[use_chardet_on_py3]" \
-	pyopenssl && \
+	pyopenssl \
+	createrepo_c && \
     rm -rf /root/.cache/pip
 
 RUN groupadd -g 700 --system pulp
