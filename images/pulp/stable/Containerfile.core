@@ -15,4 +15,4 @@ RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
 USER root:root
 
 RUN chmod 2775 /var/lib/pulp/{scripts,media,tmp,assets}
-RUN chown :root /var/lib/pulp/{scripts,media,tmp,assets}
+RUN chown -R :root /var/lib/pulp/{scripts,media,tmp,assets} /var/lib/operator/static
