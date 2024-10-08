@@ -56,20 +56,20 @@ if [[ ${image} != *"galaxy"* ]];then
   fi
   echo "Setup the signing services"
   # Setup key on the Pulp container
-  curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-KEY-pulp-qe |docker exec -i pulp bash -c "cat > /tmp/GPG-KEY-pulp-qe"
-  curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-PRIVATE-KEY-pulp-qe |docker exec -i pulp gpg --import
-  echo "6EDF301256480B9B801EBA3D05A5E6DA269D9D98:6:" |docker exec -i pulp gpg --import-ownertrust
+  curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-KEY-fixture-signing |docker exec -i pulp bash -c "cat > /tmp/GPG-KEY-fixture-signing"
+  curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-PRIVATE-KEY-fixture-signing |docker exec -i pulp gpg --import
+  echo "0C1A894EBB86AFAE218424CADDEF3019C2D4A8CF:6:" |docker exec -i pulp gpg --import-ownertrust
   # Setup key on the test machine
-  curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-KEY-pulp-qe | cat > /tmp/GPG-KEY-pulp-qe
-  curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-PRIVATE-KEY-pulp-qe | gpg --import
-  echo "6EDF301256480B9B801EBA3D05A5E6DA269D9D98:6:" | gpg --import-ownertrust
+  curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-KEY-fixture-signing | cat > /tmp/GPG-KEY-pulp-qe
+  curl -L https://github.com/pulp/pulp-fixtures/raw/master/common/GPG-PRIVATE-KEY-fixture-signing | gpg --import
+  echo "0C1A894EBB86AFAE218424CADDEF3019C2D4A8CF:6:" | gpg --import-ownertrust
   echo "Setup ansible signing service"
   docker exec -i pulp bash -c "cat > /root/sign_detached.sh" < "${PWD}/tests/assets/sign_detached.sh"
   docker exec pulp chmod a+x /root/sign_detached.sh
-  docker exec pulp bash -c "pulpcore-manager add-signing-service --class core:AsciiArmoredDetachedSigningService sign_ansible /root/sign_detached.sh 'Pulp QE'"
+  docker exec pulp bash -c "pulpcore-manager add-signing-service --class core:AsciiArmoredDetachedSigningService sign_ansible /root/sign_detached.sh 'pulp-fixture-signing-key'"
   echo "Setup deb release signing service"
   docker exec -i pulp bash -c "cat > /root/sign_deb_release.sh" < "${PWD}/tests/assets/sign_deb_release.sh"
   docker exec pulp chmod a+x /root/sign_deb_release.sh
-  docker exec pulp bash -c "pulpcore-manager add-signing-service --class deb:AptReleaseSigningService sign_deb_release /root/sign_deb_release.sh 'Pulp QE'"
+  docker exec pulp bash -c "pulpcore-manager add-signing-service --class deb:AptReleaseSigningService sign_deb_release /root/sign_deb_release.sh 'pulp-fixture-signing-key'"
   make test
 fi
