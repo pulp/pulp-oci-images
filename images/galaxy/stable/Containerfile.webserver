@@ -1,4 +1,4 @@
-FROM quay.io/pulp/galaxy:stable as builder
+FROM quay.io/pulp/galaxy:4.6 as builder
 
 RUN mkdir -p /etc/nginx/pulp \
              /www/data

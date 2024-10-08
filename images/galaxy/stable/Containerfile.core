@@ -1,6 +1,6 @@
-FROM quay.io/pulp/base:latest
+FROM quay.io/pulp/base:3.21
 
-RUN pip install galaxy_ng
+RUN pip install galaxy_ng~=4.6.0
 
 USER pulp:pulp
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \

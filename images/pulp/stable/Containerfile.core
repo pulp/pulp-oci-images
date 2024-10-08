@@ -1,6 +1,6 @@
-FROM quay.io/pulp/base:latest
+FROM quay.io/pulp/base:3.21
 
-RUN pip install pulpcore \
+RUN pip install pulpcore~=3.21.0 \
   pulp_ansible \
   pulp-certguard \
   pulp_container \
