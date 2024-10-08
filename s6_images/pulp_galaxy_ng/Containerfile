@@ -1,7 +1,7 @@
 ARG FROM_TAG="latest"
 FROM pulp/pulp-ci-centos:${FROM_TAG}
 
-ARG GALAXY_NG_VERSION=""
+ARG GALAXY_NG_VERSION="~=4.6.0"
 
 RUN pip3 install --upgrade \
   requests \
