@@ -3,8 +3,7 @@ FROM quay.io/pulp/base:3.21
 # special handling since galaxy dependencies are a mess
 # https://stackoverflow.com/questions/77490435/attributeerror-cython-sources
 RUN pip install "cython<3.0" & \
-    pip install --no-build-isolation "pyyaml==5.4.1" & \
-    pip install galaxy_ng~=4.6.0
+    pip install --no-build-isolation pyyaml==5.4.1 galaxy_ng~=4.6.0
 
 USER pulp:pulp
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
