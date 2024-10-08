@@ -3,10 +3,7 @@ name: Publish OCI Images
 on:
   push:
     branches:
-      - latest
-  schedule:
-    # * is a special character in YAML so you have to quote this string
-    - cron: '0 1 * * *'
+      - 3.21
   workflow_dispatch:
 
 env:
@@ -17,8 +14,21 @@ env:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: pulp-galaxy-ng
+            tag: "4.6"
+          - image: pulp
+            tag: "3.21"
+          - image: pulp-galaxy-ng
+            tag: "4.6-https"
+          - image: pulp
+            tag: "3.21-https"
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
       - name: Download s6-overlay
         run: |
           wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-x86_64.tar.xz
@@ -27,51 +37,30 @@ jobs:
           wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-noarch.tar.xz
           unxz s6-overlay*.tar.xz
           gzip s6-overlay*.tar
-      - name: Set version
+      - name: Set build args
+        if: contains(fromJSON('["4.6-https", "3.21-https"]'), matrix.tag)
         run: |
-          version="${GITHUB_REF#refs/heads/}"
-          echo "Building and publishing $version."
-          echo "VERSION=$version" >> $GITHUB_ENV
-
-      - uses: actions/setup-python@v4
-
-      - name: Install python dependencies
-        if: github.event_name == 'schedule'
-        run: |
-          echo ::group::PYDEPS
-          pip install gitpython requests packaging jinja2 pyyaml
-          echo ::endgroup::
-
-      - name: Dispatching
-        if: github.event_name == 'schedule'
-        run: python .ci/scripts/update_ci_branches.py
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          echo "BUILD_ARG1=--build-arg SCHEME=https" >> $GITHUB_ENV
+          echo "BUILD_ARG2=--build-arg FROM_TAG=${{ matrix.tag }}" >> $GITHUB_ENV
+          echo "TEST_ARG=https" >> $GITHUB_ENV
 
       - name: Build the images
         run: |
-          docker build --file s6_images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:latest .
-          docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:latest
-          docker tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:latest
-          if [ "$VERSION" = "latest" ]; then
-            docker build --file s6_images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:latest .
-            docker tag pulp/pulp-galaxy-ng:latest ghcr.io/pulp/pulp-galaxy-ng:latest
-            docker tag pulp/pulp-galaxy-ng:latest quay.io/pulp/all-in-one-galaxy:latest
+          docker build --file s6_images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:${{ matrix.tag }} . ${{ env.BUILD_ARG1 }}
+          docker tag pulp/pulp-ci-centos:${{ matrix.tag }} ghcr.io/pulp/pulp-ci-centos:${{ matrix.tag }}
+          docker tag pulp/pulp-ci-centos:${{ matrix.tag }} quay.io/pulp/pulp-ci-centos:${{ matrix.tag }}
 
-            # Be resilient if this fails
-            docker build --file s6_images/pulp_nightly/Containerfile --tag pulp/pulp:nightly . || true
-            docker tag pulp/pulp:nightly ghcr.io/pulp/pulp:nightly || true
-            docker tag pulp/pulp:nightly quay.io/pulp/all-in-one-pulp:nightly || true
-          else
-            docker tag pulp/pulp-ci-centos:latest pulp/pulp-ci-centos:$VERSION
-            docker tag pulp/pulp-ci-centos:latest ghcr.io/pulp/pulp-ci-centos:$VERSION
-            docker tag pulp/pulp-ci-centos:latest quay.io/pulp/pulp-ci-centos:$VERSION
-          fi
-          docker build --file s6_images/pulp/Containerfile --tag pulp/pulp:$VERSION .
-          docker tag pulp/pulp:$VERSION ghcr.io/pulp/pulp:$VERSION
-          docker tag pulp/pulp:$VERSION quay.io/pulp/all-in-one-pulp:$VERSION
+          LOCATION="${{ matrix.image }}"
+          IMAGE=${LOCATION//?(pulp-|-ng)/}
+          LOCATION=${LOCATION//-/_}
+          docker build --file "s6_images/${LOCATION}/Containerfile" --tag pulp/pulp-galaxy-ng:${{ matrix.tag }} . ${{ env.BUILD_ARG2 }}
+          docker tag pulp/${{ matrix.image }}:${{ matrix.tag }} ghcr.io/pulp/${{ matrix.image }}:${{ matrix.tag }}
+          docker tag pulp/${{ matrix.image }}:${{ matrix.tag }} "quay.io/pulp/all-in-one-${IMAGE}:${{ matrix.tag }}"
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+
       - name: Test the images
-        run: s6_images/assets/test.sh "pulp/pulp:$VERSION"
+        run: s6_images/assets/test.sh "pulp/${{ matrix.image }}:${{ matrix.tag }}" ${{ env.TEST_ARG }}
+
       - name: Github login
         env:
           PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -79,12 +68,9 @@ jobs:
         run: echo "$PULP_GITHUB_TOKEN" | docker login -u "$PULP_GITHUB_USERNAME" --password-stdin ghcr.io
       - name: Push ci image to github
         run: |
-          docker push ghcr.io/pulp/pulp:$VERSION
-          docker push ghcr.io/pulp/pulp-ci-centos:$VERSION
-          if [ "$VERSION" = "latest" ]; then
-            docker push ghcr.io/pulp/pulp-galaxy-ng:latest
-            # Be resilient if this fails
-            docker push ghcr.io/pulp/pulp:nightly || true
+          docker push ghcr.io/pulp/${{ matrix.image }}:${{ matrix.tag }}
+          if [ "$IMAGE" = "pulp" ]; then
+            docker push ghcr.io/pulp/pulp-ci-centos:${{ matrix.tag }}
           fi
       - name: Docker login
         env:
@@ -93,12 +79,9 @@ jobs:
         run: echo "$DOCKER_BOT_PASSWORD" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
       - name: Push ci image to dockerhub
         run: |
-          docker push docker.io/pulp/pulp:$VERSION
-          docker push docker.io/pulp/pulp-ci-centos:$VERSION
-          if [ "$VERSION" = "latest" ]; then
-            docker push docker.io/pulp/pulp-galaxy-ng:latest
-            # Be resilient if this fails
-            docker push docker.io/pulp/pulp:nightly || true
+          docker push docker.io/pulp/${{ matrix.image }}:${{ matrix.tag }}
+          if [ "$IMAGE" = "pulp" ]; then
+            docker push docker.io/pulp/pulp-ci-centos:${{ matrix.tag }}
           fi
       - name: Quay login
         env:
@@ -107,107 +90,9 @@ jobs:
         run: echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
       - name: Push ci image to quay
         run: |
-          docker push quay.io/pulp/all-in-one-pulp:$VERSION
-          docker push quay.io/pulp/pulp-ci-centos:$VERSION
-          if [ "$VERSION" = "latest" ]; then
-            docker push quay.io/pulp/all-in-one-galaxy:latest
-            # Let this be the last thing so it can indicate failure without breaking anything else
-            docker push quay.io/pulp/all-in-one-pulp:nightly
-          fi
-      - name: Display log on error
-        if: failure()
-        run: docker logs pulp
-
-  ssl_publish:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Download s6-overlay
-        run: |
-          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-x86_64.tar.xz
-          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-noarch.tar.xz
-          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-arch.tar.xz
-          wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-symlinks-noarch.tar.xz
-          unxz s6-overlay*.tar.xz
-          gzip s6-overlay*.tar
-      - name: Set version
-        run: |
-          version="${GITHUB_REF#refs/heads/}-https"
-          echo "Building and publishing $version."
-          echo "VERSION=$version" >> $GITHUB_ENV
-      - name: Build the images
-        run: |
-          docker build --build-arg SCHEME="https" --file s6_images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:https .
-          docker tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:https
-          docker tag pulp/pulp-ci-centos:https quay.io/pulp/pulp-ci-centos:https
-          if [ "$VERSION" = "latest-https" ]; then
-            docker build --build-arg FROM_TAG="https" --file s6_images/pulp_galaxy_ng/Containerfile --tag pulp/pulp-galaxy-ng:https .
-            docker tag pulp/pulp-galaxy-ng:https ghcr.io/pulp/pulp-galaxy-ng:https
-            docker tag pulp/pulp-galaxy-ng:https quay.io/pulp/all-in-one-galaxy:https
-
-            docker build --build-arg FROM_TAG="https" --file s6_images/pulp/Containerfile --tag pulp/pulp:https .
-            docker tag pulp/pulp:https ghcr.io/pulp/pulp:https
-            docker tag pulp/pulp:https quay.io/pulp/all-in-one-pulp:https
-          else
-            docker tag pulp/pulp-ci-centos:https pulp/pulp-ci-centos:$VERSION
-            docker tag pulp/pulp-ci-centos:https ghcr.io/pulp/pulp-ci-centos:$VERSION
-            docker tag pulp/pulp-ci-centos:https quay.io/pulp/pulp-ci-centos:$VERSION
-
-            docker build --build-arg FROM_TAG="https" --file s6_images/pulp/Containerfile --tag pulp/pulp:$VERSION .
-            docker tag pulp/pulp:$VERSION ghcr.io/pulp/pulp:$VERSION
-            docker tag pulp/pulp:$VERSION quay.io/pulp/all-in-one-pulp:$VERSION
-          fi
-      - name: Test the images
-        run: |
-          if [ "$VERSION" = "latest-https" ]; then
-            s6_images/assets/test.sh "pulp/pulp:https" https
-          else
-            s6_images/assets/test.sh "pulp/pulp:$VERSION" https
-          fi
-      - name: Github login
-        env:
-          PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
-        run: echo "$PULP_GITHUB_TOKEN" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin ghcr.io
-      - name: Push ci image to github
-        run: |
-          if [ "$VERSION" = "latest-https" ]; then
-            docker push ghcr.io/pulp/pulp-ci-centos:https
-            docker push ghcr.io/pulp/pulp-galaxy-ng:https
-            docker push ghcr.io/pulp/pulp:https
-          else
-            docker push ghcr.io/pulp/pulp-ci-centos:$VERSION
-            docker push ghcr.io/pulp/pulp:$VERSION
-          fi
-      - name: Docker login
-        env:
-          DOCKER_BOT_PASSWORD: ${{ secrets.DOCKER_BOT_PASSWORD }}
-          DOCKER_BOT_USERNAME: ${{ secrets.DOCKER_BOT_USERNAME }}
-        run: echo "$DOCKER_BOT_PASSWORD" | docker login -u "$DOCKER_BOT_USERNAME" --password-stdin docker.io
-      - name: Push ci image to dockerhub
-        run: |
-          if [ "$VERSION" = "latest-https" ]; then
-            docker push docker.io/pulp/pulp-ci-centos:https
-            docker push docker.io/pulp/pulp-galaxy-ng:https
-            docker push docker.io/pulp/pulp:https
-          else
-            docker push docker.io/pulp/pulp:$VERSION
-            docker push docker.io/pulp/pulp-ci-centos:$VERSION
-          fi
-      - name: Quay login
-        env:
-          QUAY_BOT_PASSWORD: ${{ secrets.QUAY_BOT_PASSWORD }}
-          QUAY_BOT_USERNAME: ${{ secrets.QUAY_BOT_USERNAME }}
-        run: echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
-      - name: Push ci image to quay
-        run: |
-          if [ "$VERSION" = "latest-https" ]; then
-            docker push quay.io/pulp/pulp-ci-centos:https
-            docker push quay.io/pulp/all-in-one-galaxy:https
-            docker push quay.io/pulp/all-in-one-pulp:https
-          else
-            docker push quay.io/pulp/pulp-ci-centos:$VERSION
-            docker push quay.io/pulp/all-in-one-pulp:$VERSION
+          docker push "quay.io/pulp/all-in-one-${IMAGE}:${{ matrix.tag }}"
+          if [ "$IMAGE" = "pulp" ]; then
+            docker push quay.io/pulp/pulp-ci-centos:${{ matrix.tag }}
           fi
       - name: Display log on error
         if: failure()

@@ -73,7 +73,7 @@ jobs:
           docker build --file "s6_images/${LOCATION//-/_}/Containerfile" --tag pulp/${{ matrix.test_image }}:${{ matrix.tag }} . ${{ env.BUILD_ARG2 }}
 
       - name: Test the images
-        run: s6_images/assets/test.sh "pulp/${{ matrix.test_image }}:${{ matrix.tag }}" $TEST_ARG
+        run: s6_images/assets/test.sh "pulp/${{ matrix.test_image }}:${{ matrix.tag }}" ${{ env.TEST_ARG }}
 
       - name: Display log on error
         if: failure()
