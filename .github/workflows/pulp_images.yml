@@ -22,15 +22,14 @@ jobs:
           - image_tag: latest
           - image_tag: stable
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           # by default, it uses a depth of 1
           # this fetches all history so that we can read each commit
           fetch-depth: 0
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v1
-        with:
-          python-version: '3.8'
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+
       - name: Install httpie and podman-compose
         run: |
           echo ::group::HTTPIE

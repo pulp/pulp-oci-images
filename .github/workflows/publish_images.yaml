@@ -18,7 +18,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Download s6-overlay
         run: |
           wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-x86_64.tar.xz
@@ -33,9 +33,7 @@ jobs:
           echo "Building and publishing $version."
           echo "VERSION=$version" >> $GITHUB_ENV
 
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
+      - uses: actions/setup-python@v4
 
       - name: Install python dependencies
         if: github.event_name == 'schedule'
