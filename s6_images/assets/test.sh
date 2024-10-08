@@ -40,13 +40,21 @@ do
 done
 curl --insecure --fail $scheme://localhost:8080/pulp/api/v3/status/ | jq
 
+echo "Installing Pulp-CLI"
+pip install pulp-cli
+
+# Retreive installed pulp-cli version
+PULP_CLI_VERSION=$(python3 -c \
+  'import importlib.metadata; \
+   from packaging.version import Version; \
+   print(Version(importlib.metadata.version("pulp-cli")))')
+
 if [[ ${image} != *"galaxy"* ]];then
   docker exec pulp pulpcore-manager reset-admin-password --password password
   echo 127.0.0.1   pulp | sudo tee -a /etc/hosts
-  git clone --depth=1 https://github.com/pulp/pulp-cli.git
+  git clone --depth=1 https://github.com/pulp/pulp-cli.git -b "${PULP_CLI_VERSION}"
   cd pulp-cli
   pip install -r test_requirements.txt || pip install --no-build-isolation -r test_requirements.txt
-  pip install pulp-cli
   pulp config create --base-url $scheme://pulp:8080 --username "admin" --password "password" --location tests/cli.toml
   if [[ "$scheme" == "https" ]];then
     sudo docker cp pulp:/etc/pulp/certs/pulp_webserver.crt /usr/local/share/ca-certificates/pulp_webserver.crt
