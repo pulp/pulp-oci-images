@@ -26,10 +26,7 @@ ENV PULP_CONTENT_WORKERS=${PULP_CONTENT_WORKERS:-2}
 # glibc-langpack-en is needed to provide the en_US.UTF-8 locale, which Pulp
 # seems to need.
 #
-# openssl-devel, python3-devel, and gcc are for testing pulp-certguard
-#
-# The last 5 lines (before clean) are needed until python3-createrepo_c gets an
-# RPM upgrade to 0.15.10. Until then, we install & build it from PyPI.
+# openssl-devel, python3-devel, and python3-cryptography are for testing pulp-certguard
 RUN		dnf -y update && \
 		dnf -y install wget git && \
 		dnf -y install libxcrypt-compat && \
@@ -48,13 +45,6 @@ RUN		dnf -y update && \
 		dnf -y install python3-setuptools && \
 		dnf -y install python-pip && \
 		dnf -y install gcc && \
-		dnf -y install libmodulemd-devel && \
-		dnf -y install libcomps-devel && \
-		dnf -y install ninja-build && \
-		dnf -y install cairo-devel && \
-		dnf -y install cmake && \
-		dnf -y install gobject-introspection-devel && \
-		dnf -y install cairo-gobject-devel && \
 		dnf clean all
 
 RUN pip install --upgrade pip packaging wheel
