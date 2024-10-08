@@ -23,6 +23,9 @@ mkdir settings
 echo "CONTENT_ORIGIN='$scheme://localhost:8080'" >> settings/settings.py
 echo "ALLOWED_EXPORT_PATHS = ['/tmp']" >> settings/settings.py
 echo "ORPHAN_PROTECTION_TIME = 0" >> settings/settings.py
+# pulp_rpm < 3.25 requires sha1 in allowed checksums
+echo "ALLOWED_CONTENT_CHECKSUMS = ['sha1', 'sha256', 'sha512']" >> settings/settings.py
+
 docker run --detach \
            --name pulp \
            --publish 8080:$port \
