@@ -63,19 +63,28 @@ if [ "$old_image" != "" ]; then
 fi
 start_container_and_wait $image
 
+echo "Installing Pulp-CLI"
+pip install pulp-cli
+
+# Retreive installed pulp-cli version
+PULP_CLI_VERSION=$(python3 -c \
+  'import importlib.metadata; \
+   from packaging.version import Version; \
+   print(Version(importlib.metadata.version("pulp-cli")))')
+
 if [[ ${image} != *"galaxy"* ]];then
   curl --insecure --fail $scheme://localhost:8080/assets/rest_framework/js/default.js
   grep "127.0.0.1   pulp" /etc/hosts || echo "127.0.0.1   pulp" | sudo tee -a /etc/hosts
+  # Checkout git repo for pulp-cli at correct version to fetch tests
   if [ -d pulp-cli ]; then
     cd pulp-cli
-    git fetch origin
-    git reset --hard origin/main
+    git fetch --tags origin
+    git reset --hard $PULP_CLI_VERSION
   else
-    git clone --depth=1 https://github.com/pulp/pulp-cli.git
+    git clone --depth=1 https://github.com/pulp/pulp-cli.git -b "${PULP_CLI_VERSION}"
     cd pulp-cli
   fi
   pip install -r test_requirements.txt || pip install --no-build-isolation -r test_requirements.txt
-  pip install pulp-cli
   if [ -e tests/cli.toml ]; then
     mv tests/cli.toml "tests/cli.toml.bak.$(date -R)"
   fi
