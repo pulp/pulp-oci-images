@@ -36,12 +36,6 @@ RUN dnf -y module enable nginx:1.22
 
 # glibc-langpack-en is needed to provide the en_US.UTF-8 locale, which Pulp
 # seems to need.
-#
-# The last 5 lines (before clean) are needed until python3-createrepo_c gets an
-# RPM upgrade to 0.16.2. Until then, we install & build it from PyPI.
-#
-# TODO: Investigate differences between `dnf builddep createrepo_c` vs the list
-# of dependencies below. For example, drpm-devel.
 RUN dnf -y install python${PYTHON_VERSION} python3-cryptography python${PYTHON_VERSION}-devel && \
     dnf -y install openssl openssl-devel && \
     dnf -y install openldap-devel --exclude selinux* && \
@@ -53,15 +47,7 @@ RUN dnf -y install python${PYTHON_VERSION} python3-cryptography python${PYTHON_V
     dnf -y install python3-libcomps && \
     dnf -y install libpq-devel && \
     dnf -y install python3-setuptools && \
-    dnf -y install swig && \
     dnf -y install podman fuse-overlayfs buildah --exclude container-selinux && \
-    dnf -y install xz && \
-    dnf -y install libmodulemd-devel && \
-    dnf -y install libcomps-devel && \
-    dnf -y install zchunk-devel && \
-    dnf -y install ninja-build && \
-    dnf -y install cairo-devel cmake gobject-introspection-devel cairo-gobject-devel && \
-    dnf -y install libcurl-devel libxml2-devel sqlite-devel file-devel && \
     dnf -y install ostree-libs ostree && \
     dnf -y install skopeo && \
     dnf -y install sudo && \
