@@ -40,20 +40,19 @@ jobs:
       - name: Set build args
         if: contains(fromJSON('["4.6-https", "3.21-https"]'), matrix.tag)
         run: |
-          echo "BUILD_ARG1=--build-arg SCHEME=https" >> $GITHUB_ENV
-          echo "BUILD_ARG2=--build-arg FROM_TAG=${{ matrix.tag }}" >> $GITHUB_ENV
+          echo "BUILD_ARG=--build-arg SCHEME=https" >> $GITHUB_ENV
           echo "TEST_ARG=https" >> $GITHUB_ENV
 
       - name: Build the images
         run: |
-          docker build --file s6_images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:${{ matrix.tag }} . ${{ env.BUILD_ARG1 }}
+          docker build --file s6_images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:${{ matrix.tag }} . ${{ env.BUILD_ARG }}
           docker tag pulp/pulp-ci-centos:${{ matrix.tag }} ghcr.io/pulp/pulp-ci-centos:${{ matrix.tag }}
           docker tag pulp/pulp-ci-centos:${{ matrix.tag }} quay.io/pulp/pulp-ci-centos:${{ matrix.tag }}
 
           LOCATION="${{ matrix.image }}"
           IMAGE=${LOCATION//?(pulp-|-ng)/}
           LOCATION=${LOCATION//-/_}
-          docker build --file "s6_images/${LOCATION}/Containerfile" --tag pulp/pulp-galaxy-ng:${{ matrix.tag }} . ${{ env.BUILD_ARG2 }}
+          docker build --file "s6_images/${LOCATION}/Containerfile" --tag pulp/pulp-galaxy-ng:${{ matrix.tag }} . --build-arg FROM_TAG=${{ matrix.tag }}
           docker tag pulp/${{ matrix.image }}:${{ matrix.tag }} ghcr.io/pulp/${{ matrix.image }}:${{ matrix.tag }}
           docker tag pulp/${{ matrix.image }}:${{ matrix.tag }} "quay.io/pulp/all-in-one-${IMAGE}:${{ matrix.tag }}"
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV

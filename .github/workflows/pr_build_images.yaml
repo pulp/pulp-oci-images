@@ -56,8 +56,7 @@ jobs:
       - name: Set https build args
         if: contains(fromJSON('["4.6-https", "3.21-https"]'), matrix.tag)
         run: |
-          echo "BUILD_ARG1=--build-arg SCHEME=https" >> $GITHUB_ENV
-          echo "BUILD_ARG2=--build-arg FROM_TAG=${{ matrix.tag }}" >> $GITHUB_ENV
+          echo "BUILD_ARG=--build-arg SCHEME=https" >> $GITHUB_ENV
           echo "TEST_ARG=https" >> $GITHUB_ENV
 
       - name: Build the images
@@ -69,8 +68,8 @@ jobs:
           unxz s6-overlay*.tar.xz
           gzip s6-overlay*.tar
           LOCATION="${{ matrix.test_image }}"
-          docker build --file s6_images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:${{ matrix.tag }} . ${{ env.BUILD_ARG1 }}
-          docker build --file "s6_images/${LOCATION//-/_}/Containerfile" --tag pulp/${{ matrix.test_image }}:${{ matrix.tag }} . ${{ env.BUILD_ARG2 }}
+          docker build --file s6_images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos:${{ matrix.tag }} . ${{ env.BUILD_ARG }}
+          docker build --file "s6_images/${LOCATION//-/_}/Containerfile" --tag pulp/${{ matrix.test_image }}:${{ matrix.tag }} . --build-arg FROM_TAG=${{ matrix.tag }}
 
       - name: Test the images
         run: s6_images/assets/test.sh "pulp/${{ matrix.test_image }}:${{ matrix.tag }}" ${{ env.TEST_ARG }}
