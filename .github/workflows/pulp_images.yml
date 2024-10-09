@@ -130,14 +130,6 @@ jobs:
             web_image: pulp-web
             pip_name: pulpcore
             s6: true
-          - image_name: galaxy-minimal
-            web_image: galaxy-web
-            pip_name: galaxy-ng
-            s6: false
-          - image_name: galaxy
-            web_image: galaxy-web
-            pip_name: galaxy-ng
-            s6: true
     steps:
       - name: Set the temporary image tags
         run: |
