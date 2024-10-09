@@ -1,4 +1,4 @@
-FROM quay.io/pulp/pulp:stable as builder
+FROM quay.io/pulp/pulp:3.21 as builder
 
 RUN mkdir -p /etc/nginx/pulp \
              /www/data

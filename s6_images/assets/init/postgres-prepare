@@ -28,6 +28,8 @@ if [ "${DATABASE_EXISTS}" != "1" ]; then
   su postgres -c "createuser pulp" || { echo -e "${PREFIX} ${RED} Creating database user failed${ENDCOLOR}" ; exit 1; }
   echo -e "${PREFIX} ${GREEN}createdb --encoding=utf-8 -O pulp pulp${ENDCOLOR}"
   su postgres -c "createdb --encoding=utf-8 pulp" || { echo -e "${PREFIX} ${RED} Creating database failed${ENDCOLOR}" ; exit 1; }
+else
+  psql --user postgres -c "ALTER DATABASE pulp OWNER TO pulp;"
 fi
 
 export DJANGO_SETTINGS_MODULE=pulpcore.app.settings

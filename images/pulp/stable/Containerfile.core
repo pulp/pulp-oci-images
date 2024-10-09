@@ -1,18 +1,17 @@
-FROM quay.io/pulp/base:latest
+FROM quay.io/pulp/base:3.21
 
-RUN pip install pulpcore \
-  pulp_ansible \
-  pulp-certguard \
-  pulp_container \
-  pulp_deb \
-  pulp_file \
-  pulp_python \
-  pulp_rpm
+RUN pip install pulpcore~=3.21.0 \
+  pulp_ansible~=0.16.0 \
+  pulp-certguard~=1.6.0 \
+  pulp_container~=2.14.0 \
+  pulp_deb~=2.20.0 \
+  pulp_file~=1.11.0 \
+  pulp_python~=3.7.0 \
+  pulp_rpm~=3.19.0
 
-USER pulp:pulp
+USER root:root
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
   /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link
-USER root:root
 
 RUN chmod 2775 /var/lib/pulp/{scripts,media,tmp,assets}
-RUN chown :root /var/lib/pulp/{scripts,media,tmp,assets}
+RUN chown -R pulp:root /var/lib/pulp/{scripts,media,tmp,assets} /var/lib/operator/static
