@@ -130,6 +130,7 @@ jobs:
               tags="${tags} ${NIGHTLY_VERSION} ${NIGHTLY_BRANCH} latest"
             fi
           fi
+          tags=$(echo "${tags}" | xargs -n1 | sort -u | xargs)
           echo "Set tags to: $tags"
           echo "TAGS=${tags}" >> $GITHUB_ENV
 
@@ -200,6 +201,7 @@ jobs:
           else
             tags="nightly"
           fi
+          tags=$(echo "${tags}" | xargs -n1 | sort -u | xargs)
           echo "Going to publish with tags: $tags"
           echo "TAGS=${tags}" >> $GITHUB_ENV
 
