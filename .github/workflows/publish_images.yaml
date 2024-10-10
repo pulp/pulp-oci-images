@@ -50,11 +50,10 @@ jobs:
           docker tag pulp/pulp-ci-centos:${{ matrix.tag }} quay.io/pulp/pulp-ci-centos:${{ matrix.tag }}
 
           LOCATION="${{ matrix.image }}"
-          IMAGE=${LOCATION//?(pulp-|-ng)/}
           LOCATION=${LOCATION//-/_}
-          docker build --file "s6_images/${LOCATION}/Containerfile" --tag pulp/pulp-galaxy-ng:${{ matrix.tag }} . --build-arg FROM_TAG=${{ matrix.tag }}
+          docker build --file "s6_images/${LOCATION}/Containerfile" --tag pulp/${{ matrix.image }}:${{ matrix.tag }} . --build-arg FROM_TAG=${{ matrix.tag }}
           docker tag pulp/${{ matrix.image }}:${{ matrix.tag }} ghcr.io/pulp/${{ matrix.image }}:${{ matrix.tag }}
-          docker tag pulp/${{ matrix.image }}:${{ matrix.tag }} "quay.io/pulp/all-in-one-${IMAGE}:${{ matrix.tag }}"
+          docker tag pulp/${{ matrix.image }}:${{ matrix.tag }} quay.io/pulp/${{ matrix.image }}:${{ matrix.tag }}
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
 
       - name: Test the images
@@ -89,7 +88,7 @@ jobs:
         run: echo "$QUAY_BOT_PASSWORD" | docker login -u "$QUAY_BOT_USERNAME" --password-stdin quay.io
       - name: Push ci image to quay
         run: |
-          docker push "quay.io/pulp/all-in-one-${IMAGE}:${{ matrix.tag }}"
+          docker push quay.io/pulp/${{ matrix.image }}:${{ matrix.tag }}
           if [ "$IMAGE" = "pulp" ]; then
             docker push quay.io/pulp/pulp-ci-centos:${{ matrix.tag }}
           fi
