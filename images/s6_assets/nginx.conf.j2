@@ -105,6 +105,20 @@ http {
 
         include pulp/*.conf;
 
+        {% if ui | default(false) -%}
+        location /static/pulp_ui/ {
+            root {{ pulp_ui_static|replace("static/pulp_ui/", "") }};
+            try_files $uri /static/pulp_ui/index.html;
+        }
+        location /ui/ {
+            alias {{ pulp_ui_static }};
+            try_files $uri /static/pulp_ui/index.html;
+        }
+        location /pulp-ui-config.json {
+            root {{ pulp_ui_static }};
+        }
+        {%- endif %}
+
         location / {
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
