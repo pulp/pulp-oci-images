@@ -12,7 +12,9 @@ ARG PULP_MAVEN_VERSION=""
 ARG PULP_PYTHON_VERSION=""
 ARG PULP_RPM_VERSION=""
 ARG PULP_OSTREE_VERSION=""
+ARG PULP_UI_URL=""
 
+ENV PULP_UI=true
 COPY images/assets/requirements.extra.txt /requirements.extra.txt
 
 RUN pip3 install --upgrade \
@@ -39,3 +41,10 @@ USER root:root
 RUN ln $(pip3 show pulp_ansible | sed -n -e 's/Location: //p')/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
 RUN ln $(pip3 show pulp_container | sed -n -e 's/Location: //p')/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
 RUN ln $(pip3 show pulp_python | sed -n -e 's/Location: //p')/pulp_python/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_python.conf
+
+RUN <<EOF
+if [[ "$PULP_UI_URL" ]]; then
+    mkdir -p /usr/share/nginx/static/pulp_ui
+    curl -Ls $PULP_UI_URL | tar -xzv -C /usr/share/nginx/static/pulp_ui
+fi
+EOF
