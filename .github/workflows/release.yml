@@ -175,15 +175,18 @@ jobs:
           image_variant: ${{ matrix.image_variant }}
           image_cache_key: ${{ needs.base-images.outputs.base_cache_key }}
           latest_ui: ${{ github.ref_name == 'latest' }}
+          built_base_images: ${{ needs.base-images.outputs.rebuilt_images }}
+
 
       - name: Test App Image
-        if: matrix.image_variant != 'nightly'
+        if: ${{ matrix.image_variant != 'nightly' && steps.build_image.outputs.rebuilt_images == 'true' }}
         uses: "./.github/actions/test_image"
         with:
           image_name: ${{ matrix.image_name }}
           app_branch: ${{ steps.build_image.outputs.app_branch }}
 
       - name: Set tags
+        if: ${{ steps.build_image.outputs.rebuilt_images == 'true' }}
         run: |
           base_image=$(echo ${{ matrix.image_name }} | cut -d '-' -f1)
           if [[ "${{ matrix.image_name }}" == "pulp" ]]; then
@@ -211,6 +214,7 @@ jobs:
           echo "TAGS=${tags}" >> $GITHUB_ENV
 
       - name: Publish App Image
+        if: ${{ steps.build_image.outputs.rebuilt_images == 'true' }}
         uses: "./.github/actions/publish_images"
         with:
           image_names: ${{ env.IMAGES }}

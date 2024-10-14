@@ -11,6 +11,9 @@ outputs:
   base_cache_key:
     value: ${{ steps.hash_key.outputs.base_cache_key }}
     description: "The cache key the built images were uploaded to."
+  rebuilt_images:
+    value: ${{ env.BUILD_IMAGES }}
+    description: "The images that were rebuilt or empty"
 
 runs:
   using: "composite"
