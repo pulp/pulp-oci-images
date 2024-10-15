@@ -17,7 +17,9 @@ jobs:
           # by default, it uses a depth of 1
           # this fetches all history so that we can read each commit
           fetch-depth: 0
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
 
       - name: Check commit message
         if: github.event_name == 'pull_request'
@@ -53,6 +55,9 @@ jobs:
             tag: "3.21-https"
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
       - name: Set https build args
         if: contains(fromJSON('["4.6-https", "3.21-https"]'), matrix.tag)
         run: |
