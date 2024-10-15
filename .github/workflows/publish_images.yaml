@@ -28,7 +28,9 @@ jobs:
             tag: "3.21-https"
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
       - name: Download s6-overlay
         run: |
           wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.2.1/s6-overlay-x86_64.tar.xz
