@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - latest
-  schedule:
-    - cron: '0 1 * * *'
   workflow_dispatch:
   pull_request:
 env:
@@ -24,7 +22,9 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
 
       - name: Check commit message
         if: github.event_name == 'pull_request'
@@ -80,7 +80,9 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
 
       - name: Update to the latest pip
         run: python -m pip install --upgrade pip
@@ -123,7 +125,7 @@ jobs:
            echo "pulp_ci_centos_id=${id}" >> "$GITHUB_ENV"
 
       - name: Cache podman images
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         with:
           key: base-images=${{ env.pulp_ci_centos_id }}
           path: base-images.tar
@@ -169,7 +171,9 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
 
       - name: Install python dependencies
         if: github.event_name == 'schedule'
@@ -185,7 +189,7 @@ jobs:
           fi
 
       - name: Restore podman images from cache
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           key: base-images=${{ needs.base-images.outputs.pulp_ci_centos_id }}
           path: base-images.tar
