@@ -44,10 +44,12 @@ runs:
       shell: bash
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
 
     - name: Restore podman images from cache
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         key: base-images=${{ inputs.image_cache_key }}
         path: base-images.tar
