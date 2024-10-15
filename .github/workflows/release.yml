@@ -176,10 +176,10 @@ jobs:
           image_cache_key: ${{ needs.base-images.outputs.base_cache_key }}
 
       - name: Test App Image
+        if: matrix.image_variant != 'nightly'
         uses: "./.github/actions/test_image"
         with:
           image_name: ${{ matrix.image_name }}
-          image_variant: ${{ matrix.image_variant }}
           app_branch: ${{ steps.build_image.outputs.app_branch }}
 
       - name: Set tags

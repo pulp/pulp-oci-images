@@ -5,10 +5,6 @@ inputs:
   image_name:
     description: 'Name of the image to be tested'
     required: true
-  image_variant:
-    description: 'Stable or nightly build'
-    required: true
-    default: 'stable'
   app_branch:
     description: 'The branch the app was built on'
     required: true
