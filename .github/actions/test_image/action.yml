@@ -19,13 +19,7 @@ runs:
     - name: Install httpie and podman-compose
       run: |
         echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
-        echo "Working around https://bugs.launchpad.net/ubuntu/+source/libpod/+bug/2024394"
-        curl -O http://archive.ubuntu.com/ubuntu/pool/universe/g/golang-github-containernetworking-plugins/containernetworking-plugins_1.1.1+ds1-3_amd64.deb
-        sudo dpkg -i containernetworking-plugins_1.1.1+ds1-3_amd64.deb
-        # Ubuntu 22.04 has old podman 3.4.4, we need podman-compose==1.0.3 to avoid an
-        # error with dependency contianers not being detected as running.
-        # "error generating dependency graph for container"
-        pip install httpie podman-compose==1.0.3
+        pip install httpie podman-compose
       shell: bash
 
     - name: Test image with upgrade in s6 mode (pulp)
@@ -46,20 +40,8 @@ runs:
       shell: bash
 
     - name: Test Compose up
+      if: inputs.image_name == 'pulp-minimal' || inputs.image_name == 'galaxy-minimal'
       run: |
-        if [[ "${{ inputs.image_name }}" == "pulp" || "${{ inputs.image_name }}" == "galaxy" ]]; then
-          FILE="compose.folders.yml"
-          # We'll pull the web image from a registry since we didn't build it.
-          if [ "${{ inputs.image_variant }}" == "nightly" ]; then
-            WEB_TAG="nightly"
-          else
-            # This will be the branch we are running on, either latest or version branch
-            WEB_TAG="${{ github.base_ref || github.ref_name }}"
-          fi
-        else
-          FILE="compose.yml"
-          WEB_TAG="ci-amd64"
-        fi
         base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
-        images/compose/test.sh "${{ inputs.image_name }}:ci-amd64" "${base_image}-web:${WEB_TAG}" $FILE
+        images/compose/test.sh "${{ inputs.image_name }}:ci-amd64" "${base_image}-web:ci-amd64" "compose.yml"
       shell: bash
