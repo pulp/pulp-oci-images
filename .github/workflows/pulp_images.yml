@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - latest
-  schedule:
-    - cron: '0 1 * * *'
   workflow_dispatch:
   pull_request:
 env:
@@ -18,15 +16,15 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           # by default, it uses a depth of 1
           # this fetches all history so that we can read each commit
           fetch-depth: 0
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v1
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.8'
+          python-version: 3.11
       - name: Check commit message
         if: github.event_name == 'pull_request'
         env:
@@ -68,15 +66,15 @@ jobs:
           temp_base_tag="${GITHUB_REF_NAME%/*}"
           echo "Building $temp_base_tag"
           echo "TEMP_BASE_TAG=${temp_base_tag}" >> $GITHUB_ENV
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           # by default, it uses a depth of 1
           # this fetches all history so that we can read each commit
           fetch-depth: 0
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v1
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.8'
+          python-version: 3.11
       - name: Dispatch workflows on stable branches
         if: github.event_name == 'schedule'
         run: |
@@ -109,7 +107,7 @@ jobs:
            echo "pulp_ci_centos_id=${id}" >> "$GITHUB_OUTPUT"
            echo "pulp_ci_centos_id=${id}" >> "$GITHUB_ENV"
       - name: Cache podman images
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         with:
           key: base-images=${{ env.pulp_ci_centos_id }}
           path: base-images.tar
@@ -142,15 +140,15 @@ jobs:
           echo "Building $temp_app_tag from base $temp_base_tag"
           echo "TEMP_APP_TAG=${temp_app_tag}" >> $GITHUB_ENV
           echo "TEMP_BASE_TAG=${temp_base_tag}" >> $GITHUB_ENV
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           # by default, it uses a depth of 1
           # this fetches all history so that we can read each commit
           fetch-depth: 0
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v1
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.8'
+          python-version: 3.11
       - name: Install python dependencies
         if: github.event_name == 'schedule'
         run: |
@@ -163,7 +161,7 @@ jobs:
             exit 1
           fi
       - name: Restore podman images from cache
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           key: base-images=${{ needs.base-images.outputs.pulp_ci_centos_id }}
           path: base-images.tar
