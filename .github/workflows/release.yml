@@ -11,11 +11,6 @@ on:
         required: false
         default: '3.9'
         type: string
-  schedule:
-    - cron: '0 1 * * *'
-  push:
-    branches:
-      - latest
 
 concurrency:
   group: ${{ github.ref_name }}-${{ github.workflow }}
@@ -33,7 +28,9 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
 
       - name: Update to the latest pip
         run: python -m pip install --upgrade pip
@@ -69,7 +66,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
 
       - name: Install python deps
         run: |
@@ -159,8 +158,6 @@ jobs:
         image_name:
           - pulp-minimal
           - pulp
-          - galaxy-minimal
-          - galaxy
     steps:
       - uses: actions/checkout@v4
 
