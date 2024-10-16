@@ -11,9 +11,6 @@ on:
         required: false
         default: '3.9'
         type: string
-  push:
-    branches:
-      - latest
 
 concurrency:
   group: ${{ github.ref_name }}-${{ github.workflow }}
@@ -161,8 +158,6 @@ jobs:
         image_name:
           - pulp-minimal
           - pulp
-          - galaxy-minimal
-          - galaxy
     steps:
       - uses: actions/checkout@v4
 

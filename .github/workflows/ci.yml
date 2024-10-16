@@ -87,8 +87,6 @@ jobs:
         image_name:
           - pulp-minimal
           - pulp
-          - galaxy-minimal
-          - galaxy
     steps:
       - uses: actions/checkout@v4
 
