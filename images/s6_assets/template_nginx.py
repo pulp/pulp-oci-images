@@ -15,11 +15,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     https = os.getenv("PULP_HTTPS", "false")
+    ui = os.getenv("PULP_UI", "false")
     values = {
         "https": https.lower() == "true",
         "api_root": "/pulp/",
         "content_path": "/pulp/content/",
         "domain_enabled": False,
+        "ui": ui != "false",
     }
 
     try:
