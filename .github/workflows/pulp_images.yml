@@ -1,9 +1,6 @@
 name: pulp-oci-images CI
 
 on:
-  push:
-    branches:
-      - latest
   workflow_dispatch:
   pull_request:
 env:
@@ -56,16 +53,9 @@ jobs:
       image_variants: "${{ steps.image_variants.outputs.image_variants }}"
       pulp_ci_centos_id: "${{ steps.pulp_ci_centos_id.outputs.pulp_ci_centos_id }}"
     steps:
-      # We do not want to build nightly images unless it's a PR to the latest branch,
-      # or a branch/dispatch build on the latest branch.
       - name: Set the list of image_variants for later jobs
         id: image_variants
-        run: |
-          if [ "${{ github.base_ref }}" == "latest" ] || [ "${{ github.ref_name }}" == "latest" ]; then
-            echo "image_variants=[\"nightly\",\"stable\"]" >> "$GITHUB_OUTPUT"
-          else
-            echo "image_variants=[\"stable\"]" >> "$GITHUB_OUTPUT"
-          fi
+        run: echo "image_variants=[\"stable\"]" >> "$GITHUB_OUTPUT"
 
       - name: Set the temporary image tag
         run: |
@@ -86,16 +76,6 @@ jobs:
 
       - name: Update to the latest pip
         run: python -m pip install --upgrade pip
-
-      - name: Dispatch workflows on stable branches
-        if: github.event_name == 'schedule'
-        run: |
-          echo ::group::PYDEPS
-          pip install gitpython requests packaging jinja2 pyyaml
-          echo ::endgroup::
-          python .ci/scripts/update_ci_branches.py
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Build images
         run: |
@@ -145,12 +125,6 @@ jobs:
           - image_name: pulp
             web_image: pulp-web
             pip_name: pulpcore
-          - image_name: galaxy-minimal
-            web_image: galaxy-web
-            pip_name: galaxy-ng
-          - image_name: galaxy
-            web_image: galaxy-web
-            pip_name: galaxy-ng
     steps:
       - name: Set the temporary image tags
         run: |
@@ -218,7 +192,7 @@ jobs:
           sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
           for ARCH in arm64 amd64
           do
-            if [[ "${{ matrix.app.image_name }}" == "pulp-minimal" || "${{ matrix.app.image_name }}" == "galaxy-minimal" ]]; then
+            if [[ "${{ matrix.app.image_name }}" == "pulp-minimal" ]]; then
               podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.core --tag pulp/${{ matrix.app.image_name }}:${TEMP_APP_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_BASE_TAG}-${ARCH} .
               podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ matrix.app.image_name }}/${{ matrix.image_variant }}/Containerfile.webserver --tag pulp/${{ matrix.app.web_image }}:${TEMP_APP_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_APP_TAG}-${ARCH} .
             else
@@ -253,32 +227,11 @@ jobs:
           podman stop pulp
           podman rm pulp
 
-      - name: Test the image in s6 mode (galaxy)
-        if: matrix.app.image_name == 'galaxy'
-        run: |
-          images/s6_assets/test.sh "pulp/${{  matrix.app.image_name }}:${TEMP_APP_TAG}-amd64" https
-          podman stop pulp
-          podman rm pulp
-
       - name: Compose up
+        if: matrix.app.image_name == 'pulp-minimal'
         run: |
-          if [[ "${{ matrix.app.image_name }}" == "pulp" || "${{ matrix.app.image_name }}" == "galaxy" ]]; then
-
-            # Reuse the folders from the s6 mode tests
-            FILE="compose.folders.yml"
-            echo "host all all 10.0.0.0/8 trust" | sudo tee -a pgsql/data/pg_hba.conf > /dev/null
-            echo "listen_addresses = '*'" | sudo tee -a pgsql/data/postgresql.conf > /dev/null
-
-            # We'll pull the web image from a registry since we didn't build it.
-            if [ "${{ matrix.image_variant }}" == "nightly" ]; then
-              WEB_TAG="nightly"
-            else
-              WEB_TAG="${APP_BRANCH}"
-            fi
-          else
-            FILE="compose.yml"
-            WEB_TAG="${TEMP_APP_TAG}-amd64"
-          fi
+          FILE="compose.yml"
+          WEB_TAG="${TEMP_APP_TAG}-amd64"
           cd images/compose
           sed -i "s/pulp-minimal:latest/${{ matrix.app.image_name }}:${TEMP_APP_TAG}-amd64/g" $FILE
           sed -i "s/pulp-web:latest/${{ matrix.app.web_image }}:${WEB_TAG}/g" $FILE
