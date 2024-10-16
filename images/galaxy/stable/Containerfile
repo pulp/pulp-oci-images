@@ -1,8 +1,8 @@
 ARG FROM_TAG="latest"
 FROM pulp/pulp-ci-centos:${FROM_TAG}
 
-ARG PULPCORE_VERSION=""
-ARG GALAXY_NG_VERSION=""
+ARG PULPCORE_VERSION="~=3.28.21"
+ARG GALAXY_NG_VERSION="~=4.9.0"
 
 RUN pip3 install --upgrade \
   galaxy-ng${GALAXY_NG_VERSION} \
