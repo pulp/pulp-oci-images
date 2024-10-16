@@ -5,10 +5,6 @@ inputs:
   image_name:
     description: 'Name of the image to be tested'
     required: true
-  image_variant:
-    description: 'Stable or nightly build'
-    required: true
-    default: 'stable'
   app_branch:
     description: 'The branch the app was built on'
     required: true
@@ -31,16 +27,8 @@ runs:
         podman rm pulp
       shell: bash
 
-    - name: Test the image in s6 mode (galaxy)
-      if: inputs.image_name == 'galaxy'
-      run: |
-        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:ci-amd64" https
-        podman stop pulp
-        podman rm pulp
-      shell: bash
-
     - name: Test Compose up
-      if: inputs.image_name == 'pulp-minimal' || inputs.image_name == 'galaxy-minimal'
+      if: inputs.image_name == 'pulp-minimal'
       run: |
         base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
         images/compose/test.sh "${{ inputs.image_name }}:ci-amd64" "${base_image}-web:ci-amd64" "compose.yml"

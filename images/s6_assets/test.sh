@@ -74,8 +74,4 @@ if [ "$old_image" != "" ]; then
 fi
 start_container_and_wait $image
 
-if [[ ${image} != *"galaxy"* ]];then
-  source "$BASEDIR/pulp_tests.sh" $scheme
-else
-  source "$BASEDIR/galaxy_ng_tests.sh" $scheme
-fi
+source "$BASEDIR/pulp_tests.sh" $scheme

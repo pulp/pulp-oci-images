@@ -50,20 +50,8 @@ jobs:
   base-images:
     runs-on: ubuntu-latest
     outputs:
-      image_variants: "${{ steps.image_variants.outputs.image_variants }}"
       base_cache_key: "${{ steps.build_base_images.outputs.base_cache_key }}"
     steps:
-      # We do not want to build nightly images unless it's a PR to the latest branch,
-      # or a branch/dispatch build on the latest branch.
-      - name: Set the list of image_variants for later jobs
-        id: image_variants
-        run: |
-          if [ "${{ github.base_ref }}" == "latest" ] || [ "${{ github.ref_name }}" == "latest" ]; then
-            echo "image_variants=[\"nightly\",\"stable\"]" >> "$GITHUB_OUTPUT"
-          else
-            echo "image_variants=[\"stable\"]" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: actions/checkout@v4
 
       - name: Build base images
@@ -81,12 +69,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image_variant: ${{ fromJSON(needs.base-images.outputs.image_variants) }}
         image_name:
           - pulp-minimal
           - pulp
-          - galaxy-minimal
-          - galaxy
     steps:
       - uses: actions/checkout@v4
 
@@ -95,14 +80,13 @@ jobs:
         uses: "./.github/actions/build_image"
         with:
           image_name: ${{ matrix.image_name }}
-          image_variant: ${{ matrix.image_variant }}
+          image_variant: "stable"
           image_cache_key: ${{ needs.base-images.outputs.base_cache_key }}
 
       - name: Test App Image
         uses: "./.github/actions/test_image"
         with:
           image_name: ${{ matrix.image_name }}
-          image_variant: ${{ matrix.image_variant }}
           app_branch: ${{ steps.build_image.outputs.app_branch }}
 
       - name: Logs
