@@ -1,9 +1,6 @@
 name: pulp-oci-images CI
 
 on:
-  push:
-    branches:
-      - latest
   workflow_dispatch:
   pull_request:
 env:
@@ -56,16 +53,9 @@ jobs:
       image_variants: "${{ steps.image_variants.outputs.image_variants }}"
       pulp_ci_centos_id: "${{ steps.pulp_ci_centos_id.outputs.pulp_ci_centos_id }}"
     steps:
-      # We do not want to build nightly images unless it's a PR to the latest branch,
-      # or a branch/dispatch build on the latest branch.
       - name: Set the list of image_variants for later jobs
         id: image_variants
-        run: |
-          if [ "${{ github.base_ref }}" == "latest" ] || [ "${{ github.ref_name }}" == "latest" ]; then
-            echo "image_variants=[\"nightly\",\"stable\"]" >> "$GITHUB_OUTPUT"
-          else
-            echo "image_variants=[\"stable\"]" >> "$GITHUB_OUTPUT"
-          fi
+        run: echo "image_variants=[\"stable\"]" >> "$GITHUB_OUTPUT"
 
       - name: Set the temporary image tag
         run: |
@@ -86,16 +76,6 @@ jobs:
 
       - name: Update to the latest pip
         run: python -m pip install --upgrade pip
-
-      - name: Dispatch workflows on stable branches
-        if: github.event_name == 'schedule'
-        run: |
-          echo ::group::PYDEPS
-          pip install gitpython requests packaging jinja2 pyyaml
-          echo ::endgroup::
-          python .ci/scripts/update_ci_branches.py
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Build images
         run: |
@@ -257,20 +237,10 @@ jobs:
           podman rm pulp
 
       - name: Compose up
+        if: matrix.app.image_name == 'galaxy-minimal' || matrix.app.image_name == 'pulp-minimal'
         run: |
-          if [[ "${{ matrix.app.image_name }}" == "pulp" || "${{ matrix.app.image_name }}" == "galaxy" ]]; then
-            # Reuse the folders from the s6 mode tests
-            FILE="docker-compose.folders.yml"
-            # We'll pull the web image from a registry since we didn't build it.
-            if [ "${{ matrix.image_variant }}" == "nightly" ]; then
-              WEB_TAG="nightly"
-            else
-              WEB_TAG="${APP_BRANCH}"
-            fi
-          else
-            FILE="docker-compose.yml"
-            WEB_TAG="${TEMP_APP_TAG}"
-          fi
+          FILE="docker-compose.yml"
+          WEB_TAG="${TEMP_APP_TAG}"
           cd images/compose
           sed -i "s/pulp-minimal:latest/${{ matrix.app.image_name }}:${TEMP_APP_TAG}/g" $FILE
           sed -i "s/pulp-web:latest/${{ matrix.app.web_image }}:${WEB_TAG}/g" $FILE
