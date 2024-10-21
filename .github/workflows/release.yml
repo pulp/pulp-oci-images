@@ -95,6 +95,8 @@ jobs:
       - name: Build base images
         id: build_base_images
         uses: "./.github/actions/base_images"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           python_version: ${{ env.PYTHON_VERSION }}
 

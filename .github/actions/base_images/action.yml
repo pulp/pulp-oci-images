@@ -102,6 +102,14 @@ runs:
         gzip base-images.tar
       shell: bash
 
+    - name: Clear cache for next upload
+      if: env.BUILD_IMAGES && steps.cache.outputs.cache-hit == 'true'
+      run: |
+        echo "Deleting existing cache for ${{ steps.hash_key.outputs.base_cache_key }}"
+        gh extension install actions/gh-actions-cache
+        gh actions-cache delete "base-images=${{ steps.hash_key.outputs.base_cache_key }}" --R ${{ github.repository }} -B ${{ github.ref }} --confirm
+      shell: bash
+
     - name: Cache podman images
       if: env.BUILD_IMAGES
       uses: actions/cache/save@v3
