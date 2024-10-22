@@ -103,7 +103,7 @@ runs:
       shell: bash
 
     - name: Clear cache for next upload
-      if: env.BUILD_IMAGES && steps.cache.outputs.cache-hit == 'true'
+      if: env.BUILD_IMAGES && steps.cache.outputs.cache-hit == 'true' && github.event_name != 'pull_request'
       run: |
         echo "Deleting existing cache for ${{ steps.hash_key.outputs.base_cache_key }}"
         gh cache delete "base-images=${{ steps.hash_key.outputs.base_cache_key }}" -R ${{ github.repository }}
