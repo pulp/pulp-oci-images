@@ -78,6 +78,8 @@ jobs:
       - name: Build App Image
         id: build_image
         uses: "./.github/actions/build_image"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           image_name: ${{ matrix.image_name }}
           image_variant: "stable"
