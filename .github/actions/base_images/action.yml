@@ -106,8 +106,7 @@ runs:
       if: env.BUILD_IMAGES && steps.cache.outputs.cache-hit == 'true'
       run: |
         echo "Deleting existing cache for ${{ steps.hash_key.outputs.base_cache_key }}"
-        gh extension install actions/gh-actions-cache
-        gh actions-cache delete "base-images=${{ steps.hash_key.outputs.base_cache_key }}" --R ${{ github.repository }} -B ${{ github.ref }} --confirm
+        gh cache delete "base-images=${{ steps.hash_key.outputs.base_cache_key }}" -R ${{ github.repository }}
       shell: bash
 
     - name: Cache podman images
