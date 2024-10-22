@@ -57,6 +57,8 @@ jobs:
       - name: Build base images
         id: build_base_images
         uses: "./.github/actions/base_images"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           python_version: "3.9"
 
@@ -78,8 +80,6 @@ jobs:
       - name: Build App Image
         id: build_image
         uses: "./.github/actions/build_image"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           image_name: ${{ matrix.image_name }}
           image_variant: "stable"
