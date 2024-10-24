@@ -82,6 +82,7 @@ jobs:
           image_name: ${{ matrix.image_name }}
           image_variant: "stable"
           image_cache_key: ${{ needs.base-images.outputs.base_cache_key }}
+          latest_ui: ${{ github.base_ref == 'latest' }}
 
       - name: Test App Image
         uses: "./.github/actions/test_image"

@@ -12,6 +12,10 @@ inputs:
   image_cache_key:
     description: 'The key value used to store the base images in the cache'
     required: true
+  latest_ui:
+    description: 'Use the latest pulp-ui when building the image'
+    default: 'false'
+    required: false
 outputs:
   app_version:
     value: ${{ steps.image_version_branch.outputs.app_version }}
@@ -30,6 +34,10 @@ runs:
       with:
         python-version: 3.11
 
+    - name: Install python deps
+      run: pip install httpie jq
+      shell: bash
+
     - name: Restore podman images from cache
       uses: actions/cache/restore@v3
       with:
@@ -39,6 +47,14 @@ runs:
     - name: Load podman images from tarball
       run: |
         podman load -i base-images.tar.gz
+      shell: bash
+
+    - name: Find latest ui version
+      if: inputs.latest_ui != 'false'
+      run: |
+        URL=$(http "https://api.github.com/repos/pulp/pulp-ui/releases" | jq -r '.assets[0].browser_download_url')
+        echo "Found UI url ${URL}"
+        echo "BUILD_UI_ARG=--build-arg PULP_UI_URL=${URL}" >> $GITHUB_ENV
       shell: bash
 
     - name: Build images
@@ -53,7 +69,7 @@ runs:
             podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile.core --tag pulp/${{ inputs.image_name }}:ci-${ARCH} --build-arg FROM_TAG=ci-${ARCH} .
             podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile.webserver --tag pulp/${base_image}-web:ci-${ARCH} --build-arg FROM_TAG=ci-${ARCH} .
           else
-            podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile --tag pulp/${{ inputs.image_name }}:ci-${ARCH} --build-arg FROM_TAG=ci-${ARCH} .
+            podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile --tag pulp/${{ inputs.image_name }}:ci-${ARCH} --build-arg FROM_TAG=ci-${ARCH} ${{ env.BUILD_UI_ARG }} .
           fi
         done
         podman images -a
