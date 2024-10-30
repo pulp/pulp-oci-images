@@ -9,8 +9,6 @@ RUN curl -Ls https://github.com/just-containers/s6-overlay/releases/download/v3.
 
 ENV PULP_GUNICORN_RELOAD=${PULP_GUNICORN_RELOAD:-false}
 
-ENV PULP_OTEL_ENABLED=${PULP_OTEL_ENABLED:-false}
-
 ENV PULP_WORKERS=2
 
 ENV PULP_HTTPS=false
