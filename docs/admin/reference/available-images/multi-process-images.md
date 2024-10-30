@@ -236,8 +236,6 @@ The following environment variables configure the container's behavior.
 
 * `PULP_GUNICORN_TIMEOUT` A positive integer that specifies the [timeout for gunicorn process](https://docs.gunicorn.org/en/stable/settings.html#timeout). Default to 90.
 
-* `PULP_OTEL_ENABLED` Set to "true" (all lowercase) if you wish to enable pulp telemetry.
-
 * `PULP_API_WORKERS_MAX_REQUESTS` The maximum number of requests a worker will process before restarting API workers. If this is set to zero (the default) then the automatic worker restarts are disabled. NOTE: Only supported for pulpcore >= 3.41.0
 
 * `PULP_API_WORKERS_MAX_REQUESTS_JITTER` The maximum jitter to add to the max_requests setting for API workers. NOTE: Only supported for pulpcore >= 3.41.0

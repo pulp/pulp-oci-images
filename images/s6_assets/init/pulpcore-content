@@ -2,9 +2,6 @@
 if [ "${PULP_GUNICORN_RELOAD}" = "true" ]; then
   PULP_GUNICORN_RELOAD_STRING="--reload"
 fi
-if [ "${PULP_OTEL_ENABLED}" = "true" ]; then
-  OTEL_PREFIX="/usr/local/bin/opentelemetry-instrument --service_name pulp-content"
-fi
 
 if which pulpcore-content
 then
@@ -32,7 +29,7 @@ then
   PULP_GUNICORN_PROCESS_RECYCLING_STRING="--max-requests ${PULP_CONTENT_WORKERS_MAX_REQUESTS} --max-requests-jitter ${PULP_CONTENT_WORKERS_MAX_REQUESTS_JITTER}"
 fi
 
-exec ${OTEL_PREFIX} "${PULP_CONTENT_ENTRYPOINT[@]}" \
+exec "${PULP_CONTENT_ENTRYPOINT[@]}" \
   --timeout "${PULP_GUNICORN_TIMEOUT}" \
   --workers "${PULP_CONTENT_WORKERS}" \
   ${PULP_GUNICORN_PROCESS_RECYCLING_STRING} \
