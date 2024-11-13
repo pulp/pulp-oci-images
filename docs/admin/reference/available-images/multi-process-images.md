@@ -58,15 +58,15 @@ See the [Single-Process Images](../single-process-images/) page for usage.
 Note that this name `galaxy` used to be for single-process images. Version tags `4.6.3` and earlier
 are single-process rather than multi-process.
 
-#### Tags
-
-- `stable`: Built nightly, with latest released version of each plugin. Also called `latest`.
+Note that we are no longer building galaxy images for any new galaxy-ng versions >=4.10. We will still
+publish galaxy images for Z updates on existing tags until Galaxy drops support for those versions.
 
 [Browse available tags](https://hub.docker.com/r/pulp/galaxy/tags)
 
 #### Discontinued tags
 
 - `https`: These were built nightly, with latest released version of each plugin. Nginx webserver ran with SSL/TLS. Now, use `stable` instead with `-e PULP_HTTPS=true`.
+- `stable`: We are no longer building galaxy images for any new galaxy-ng version >=4.10.
 
 ## Quickstart
 
@@ -84,25 +84,25 @@ The galaxy image can also be run just like any of the other multi process pulp i
 Run galaxy on localhost:
 
 ```
-$ podman run -p 8080:80 ghcr.io/pulp/galaxy:latest
+$ podman run -p 8080:80 ghcr.io/pulp/galaxy:4.9
 ```
 
 Run galaxy on localhost with https:
 
 ```
-$ podman run -p 443:443 -e "PULP_HTTPS=true" -e "GALAXY_PORT=443" ghcr.io/pulp/galaxy:latest
+$ podman run -p 443:443 -e "PULP_HTTPS=true" -e "GALAXY_PORT=443" ghcr.io/pulp/galaxy:4.9
 ```
 
 Run galaxy from a server with https:
 
 ```
-$ podman run -p 443:443 -e "PULP_HTTPS=true" -e "GALAXY_PORT=443" -e "GALAXY_HOSTNAME=192.168.0.100" ghcr.io/pulp/galaxy:latest
+$ podman run -p 443:443 -e "PULP_HTTPS=true" -e "GALAXY_PORT=443" -e "GALAXY_HOSTNAME=192.168.0.100" ghcr.io/pulp/galaxy:4.9
 ```
 
 Modify the system settings to allow for uploads without approval:
 
 ```
-$ podman run -p 8080:80 -e "PULP_GALAXY_REQUIRE_CONTENT_APPROVAL=false" ghcr.io/pulp/galaxy:latest
+$ podman run -p 8080:80 -e "PULP_GALAXY_REQUIRE_CONTENT_APPROVAL=false" ghcr.io/pulp/galaxy:4.9
 ```
 
 Mount the storage directories for persistent data and https:
@@ -122,7 +122,7 @@ $ podman run --detach \
              --volume "$(pwd)/pgsql":/var/lib/pgsql:Z \
              --volume "$(pwd)/containers":/var/lib/containers:Z \
              --device /dev/fuse \
-             ghcr.io/pulp/galaxy:latest
+             ghcr.io/pulp/galaxy:4.9
 ```
 
 Once your containers are running see "Reset the Admin Password" section to set up your admin user.
