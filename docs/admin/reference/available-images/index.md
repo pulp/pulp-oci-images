@@ -17,6 +17,12 @@ in a single Docker/Podman container.
 | galaxy-minimal | Single-Process Ansible Galaxy |
 | galaxy-web | Webserver for galaxy-minimal |
 
+!!! note "Note on Galaxy images"
+    
+    We are no longer building any newer image versions of galaxy-ng>=4.10. We will still continue
+    to build new Z-updates for existing tags, but going forward the `stable` and `latest` tags are
+    now discontinued. 
+
 ## First-Party Services
 
 The first-party services are services written by the Pulp project itself.

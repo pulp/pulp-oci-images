@@ -75,8 +75,6 @@ and "galaxy-web" respectively.)
 
 ### Tags
 
-- `stable`: Built nightly, with latest released version of galaxy.
-- `nightly`: Built nightly, With master/main branch galaxy.
 - `4.y.z`:  Galaxy 4.y.z version.
 
 [https://quay.io/repository/pulp/galaxy-minimal?tab=tags](https://quay.io/repository/pulp/galaxy-minimal?tab=tags)
@@ -94,8 +92,12 @@ and "galaxy-web" respectively.)
 
 ### Tags
 
-- `stable`: Built nightly, with latest released version of galaxy.
-- `nightly`: Built nightly, With master/main branch galaxy.
 - `4.y.z`:  Galaxy 4.y.z version.
 
 [https://quay.io/repository/pulp/galaxy-web?tab=tags](https://quay.io/repository/pulp/galaxy-web?tab=tags)
+
+
+!!! note "Note on galaxy-minimal & galaxy-web images"
+
+    We are no longer publishing any new versions of these images for galaxy-ng versions >=4.10. We
+    will still publish updates for new Z releases on existing tags.
