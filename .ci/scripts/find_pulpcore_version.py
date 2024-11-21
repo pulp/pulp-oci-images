@@ -1,7 +1,7 @@
 import argparse
 import requests
 from packaging.version import parse
-import configparser
+import tomllib
 
 
 if __name__ == "__main__":
@@ -15,12 +15,11 @@ if __name__ == "__main__":
     version = ""
     if opts.branch == "main":
         # Used for nightly image, find the pulpcore version from @main
-        r = requests.get("https://raw.githubusercontent.com/pulp/pulpcore/main/.bumpversion.cfg")
+        r = requests.get("https://raw.githubusercontent.com/pulp/pulpcore/refs/heads/main/pyproject.toml")
         if r.status_code == 200:
-            config = configparser.ConfigParser()
-            config.read_string(r.text)
-            if "bumpversion" in config:
-                version = config["bumpversion"]["current_version"]
+            config = tomllib.loads(r.text)
+            if "project" in config:
+                version = config["project"]["version"]
             else:
                 print("Failed to find current version on main")
                 exit(1)
