@@ -16,6 +16,9 @@ inputs:
     description: 'Use the latest pulp-ui when building the image'
     default: 'false'
     required: false
+  built_base_images:
+    description: 'A JSON list of the base-images that were freshly rebuilt prior'
+    required: true
 outputs:
   app_version:
     value: ${{ steps.image_version_branch.outputs.app_version }}
@@ -23,6 +26,9 @@ outputs:
   app_branch:
     value: ${{ steps.image_version_branch.outputs.app_branch }}
     description: 'The pulpcore version branch that the built image matches'
+  rebuilt_images:
+    value: ${{ env.BUILD }}
+    description: 'true/false if the app image was rebuilt'
 
 runs:
   using: "composite"
@@ -39,7 +45,7 @@ runs:
       shell: bash
 
     - name: Restore podman images from cache
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         key: base-images=${{ inputs.image_cache_key }}
         path: base-images.tar.gz
@@ -62,7 +68,42 @@ runs:
         fi
       shell: bash
 
+    - name: Set hash key
+      run: echo "VERSIONKEY=versions-${{ github.ref_name }}=${{ hashFiles(format('images/{0}/stable/**', inputs.image_name)) }}" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Restore last builds versions from cache
+      id: cache
+      uses: actions/cache/restore@v4
+      with:
+        key: ${{ env.VERSIONKEY }}
+        path: versions.freeze
+
+    - name: Check if rebuild is needed
+      run: |
+        # Rebuilds are needed for 
+        # 1. CI is being ran in a PR or is a nightly run
+        # 2. Base images were rebuilt
+        # 3. New pulp versions was released
+        if [[ "${{ github.event_name }}" == "pull_request" || "${{ inputs.image_variant }}" == "nightly" || -n "${{ inputs.built_base_images }}" ]]; then
+          echo "BUILD=true" >> $GITHUB_ENV
+        else
+          if [[ "${{ steps.cache.outputs.cache-hit  }}" == "false" ]]; then
+            echo "BUILD=true" >> $GITHUB_ENV
+          else
+            # Script returns non-zero (100) when new versions are available
+            if python .ci/scripts/check_up_to_date.py ${{ github.ref_name }} versions.freeze; then
+              echo "BUILD=false" >> $GITHUB_ENV
+            else
+              echo "BUILD=true" >> $GITHUB_ENV
+            fi
+          fi
+        fi
+        echo "Going to rebuild: ${BUILD}"
+      shell: bash
+
     - name: Build images
+      if: env.BUILD == 'true'
       run: |
         podman version
         buildah version
@@ -84,7 +125,8 @@ runs:
       id: image_version_branch
       run: |
         base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
-        app_version=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci-amd64 bash -c "pip3 show pulpcore | sed -n -e 's/Version: //p'")
+        podman run --pull=never pulp/${{ inputs.image_name }}:ci-amd64 bash -c "pip3 freeze | grep pulp" >> versions.freeze
+        app_version=$(grep pulpcore versions.freeze | sed -n -e 's/pulpcore==//p')
         app_branch=$(echo ${app_version} | grep -oP '\d+\.\d+')
 
         echo "APP_VERSION: ${app_version}"
@@ -92,3 +134,17 @@ runs:
         echo "app_version=${app_version}" >> "$GITHUB_OUTPUT"
         echo "app_branch=${app_branch}" >> "$GITHUB_OUTPUT"
       shell: bash
+
+    - name: Clear cache for next upload
+      if: env.BUILD == 'true' && steps.cache.outputs.cache-hit == 'true' && github.event_name != 'pull_request'
+      run: |
+        echo "Deleting existing cache for ${{ env.VERSIONKEY }}"
+        gh cache delete ${{ env.VERSIONKEY }} -R ${{ github.repository }}
+      shell: bash
+
+    - name: Cache versions
+      if: env.BUILD == 'true' && github.event_name != 'pull_request'
+      uses: actions/cache/save@v4
+      with:
+        key: ${{ env.VERSIONKEY }}
+        path: versions.freeze
