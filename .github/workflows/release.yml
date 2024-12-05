@@ -176,6 +176,8 @@ jobs:
           image_cache_key: ${{ needs.base-images.outputs.base_cache_key }}
           latest_ui: ${{ github.ref_name == 'latest' }}
           built_base_images: ${{ needs.base-images.outputs.rebuilt_images }}
+        env:
+          GH_TOKEN: ${{ github.token }}
 
 
       - name: Test App Image

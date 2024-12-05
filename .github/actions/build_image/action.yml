@@ -41,7 +41,7 @@ runs:
         python-version: 3.11
 
     - name: Install python deps
-      run: pip install httpie jq
+      run: pip install httpie jq packaging
       shell: bash
 
     - name: Restore podman images from cache
@@ -85,21 +85,17 @@ runs:
         # 1. CI is being ran in a PR or is a nightly run
         # 2. Base images were rebuilt
         # 3. New pulp versions was released
-        if [[ "${{ github.event_name }}" == "pull_request" || "${{ inputs.image_variant }}" == "nightly" || -n "${{ inputs.built_base_images }}" ]]; then
-          echo "BUILD=true" >> $GITHUB_ENV
-        else
-          if [[ "${{ steps.cache.outputs.cache-hit  }}" == "false" ]]; then
-            echo "BUILD=true" >> $GITHUB_ENV
-          else
+        build=true
+        if [[ "${{ github.event_name }}" != "pull_request" && "${{ inputs.image_variant }}" != "nightly" && -z "${{ inputs.built_base_images }}" ]]; then
+          if [[ "${{ steps.cache.outputs.cache-hit  }}" == "true" ]]; then
             # Script returns non-zero (100) when new versions are available
             if python .ci/scripts/check_up_to_date.py ${{ github.ref_name }} versions.freeze; then
-              echo "BUILD=false" >> $GITHUB_ENV
-            else
-              echo "BUILD=true" >> $GITHUB_ENV
+              build=false
             fi
           fi
         fi
-        echo "Going to rebuild: ${BUILD}"
+        echo "BUILD=${build}" >> $GITHUB_ENV
+        echo "Going to rebuild: ${build}"
       shell: bash
 
     - name: Build images
@@ -125,14 +121,15 @@ runs:
       id: image_version_branch
       run: |
         base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
-        podman run --pull=never pulp/${{ inputs.image_name }}:ci-amd64 bash -c "pip3 freeze | grep pulp" >> versions.freeze
-        app_version=$(grep pulpcore versions.freeze | sed -n -e 's/pulpcore==//p')
+        app_version=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci-amd64 bash -c "pip3 show pulpcore | sed -n -e 's/Version: //p'")
         app_branch=$(echo ${app_version} | grep -oP '\d+\.\d+')
+        podman run --pull=never pulp/${{ inputs.image_name }}:ci-amd64 bash -c "pip3 freeze | grep pulp" > versions.freeze
 
         echo "APP_VERSION: ${app_version}"
         echo "APP_BRANCH: ${app_branch}"
         echo "app_version=${app_version}" >> "$GITHUB_OUTPUT"
         echo "app_branch=${app_branch}" >> "$GITHUB_OUTPUT"
+        cat versions.freeze
       shell: bash
 
     - name: Clear cache for next upload
