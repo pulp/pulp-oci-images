@@ -19,6 +19,12 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Install httpie and podman-compose
+      run: |
+        echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
+        pip install httpie podman-compose
+      shell: bash
+
     - name: Test image with upgrade in s6 mode (pulp)
       if: inputs.image_name == 'pulp'
       run: |
