@@ -27,7 +27,7 @@ outputs:
     value: ${{ steps.image_version_branch.outputs.app_branch }}
     description: 'The pulpcore version branch that the built image matches'
   rebuilt_images:
-    value: ${{ env.BUILD }}
+    value: ${{ steps.rebuild_needed.outputs.build }}
     description: 'true/false if the app image was rebuilt'
 
 runs:
@@ -80,6 +80,7 @@ runs:
         path: versions.freeze
 
     - name: Check if rebuild is needed
+      id: rebuild_needed
       run: |
         # Rebuilds are needed for 
         # 1. CI is being ran in a PR or is a nightly run
@@ -89,17 +90,18 @@ runs:
         if [[ "${{ github.event_name }}" != "pull_request" && "${{ inputs.image_variant }}" != "nightly" && -z "${{ inputs.built_base_images }}" ]]; then
           if [[ "${{ steps.cache.outputs.cache-hit  }}" == "true" ]]; then
             # Script returns non-zero (100) when new versions are available
+            cat versions.freeze
             if python .ci/scripts/check_up_to_date.py ${{ github.ref_name }} versions.freeze; then
               build=false
             fi
           fi
         fi
-        echo "BUILD=${build}" >> $GITHUB_ENV
+        echo "build=${build}" >> "$GITHUB_OUTPUT"
         echo "Going to rebuild: ${build}"
       shell: bash
 
     - name: Build images
-      if: env.BUILD == 'true'
+      if: steps.rebuild_needed.outputs.build == 'true'
       run: |
         podman version
         buildah version
@@ -121,9 +123,13 @@ runs:
       id: image_version_branch
       run: |
         base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
-        app_version=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci-amd64 bash -c "pip3 show pulpcore | sed -n -e 's/Version: //p'")
+        if [[ "${{ steps.rebuild_needed.outputs.build }}" == "true" ]]; then
+          app_version=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci-amd64 bash -c "pip3 show pulpcore | sed -n -e 's/Version: //p'")
+          podman run --pull=never pulp/${{ inputs.image_name }}:ci-amd64 bash -c "pip3 freeze | grep pulp" > versions.freeze
+        else
+          app_version=$(grep pulpcore versions.freeze | sed -n -e 's/pulpcore==//p')
+        fi
         app_branch=$(echo ${app_version} | grep -oP '\d+\.\d+')
-        podman run --pull=never pulp/${{ inputs.image_name }}:ci-amd64 bash -c "pip3 freeze | grep pulp" > versions.freeze
 
         echo "APP_VERSION: ${app_version}"
         echo "APP_BRANCH: ${app_branch}"
@@ -133,14 +139,14 @@ runs:
       shell: bash
 
     - name: Clear cache for next upload
-      if: env.BUILD == 'true' && steps.cache.outputs.cache-hit == 'true' && github.event_name != 'pull_request'
+      if: steps.rebuild_needed.outputs.build == 'true' && steps.cache.outputs.cache-hit == 'true' && github.event_name != 'pull_request'
       run: |
         echo "Deleting existing cache for ${{ env.VERSIONKEY }}"
         gh cache delete ${{ env.VERSIONKEY }} -R ${{ github.repository }}
       shell: bash
 
     - name: Cache versions
-      if: env.BUILD == 'true' && github.event_name != 'pull_request'
+      if: steps.rebuild_needed.outputs.build == 'true' && github.event_name != 'pull_request'
       uses: actions/cache/save@v4
       with:
         key: ${{ env.VERSIONKEY }}
