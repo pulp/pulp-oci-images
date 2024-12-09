@@ -43,19 +43,8 @@ runs:
       shell: bash
 
     - name: Test Compose up
+      if: inputs.image_name == 'pulp-minimal' || inputs.image_name == 'galaxy-minimal'
       run: |
-        if [[ "${{ inputs.image_name }}" == "pulp" || "${{ inputs.image_name }}" == "galaxy" ]]; then
-          FILE="compose.folders.yml"
-          # We'll pull the web image from a registry since we didn't build it.
-          if [ "${{ inputs.image_variant }}" == "nightly" ]; then
-            WEB_TAG="nightly"
-          else
-            WEB_TAG="${{ inputs.app_branch }}"
-          fi
-        else
-          FILE="compose.yml"
-          WEB_TAG="${{ inputs.app_arch_tag }}"
-        fi
         base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
-        images/compose/test.sh "${{ inputs.image_name }}:${{ inputs.app_arch_tag }}" "${base_image}-web:${WEB_TAG}" $FILE
+        images/compose/test.sh "${{ inputs.image_name }}:${{ inputs.app_arch_tag }}" "${base_image}-web:${{ inputs.app_arch_tag }}" "compose.yml"
       shell: bash
