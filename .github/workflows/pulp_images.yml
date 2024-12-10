@@ -176,13 +176,7 @@ jobs:
       - name: Install httpie and podman-compose
         run: |
           echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
-          echo "Working around https://bugs.launchpad.net/ubuntu/+source/libpod/+bug/2024394"
-          curl -O http://archive.ubuntu.com/ubuntu/pool/universe/g/golang-github-containernetworking-plugins/containernetworking-plugins_1.1.1+ds1-3_amd64.deb
-          sudo dpkg -i containernetworking-plugins_1.1.1+ds1-3_amd64.deb
-          # Ubuntu 22.04 has old podman 3.4.4, we need podman-compose==1.0.3 to avoid an
-          # error with dependency contianers not being detected as running.
-          # "error generating dependency graph for container"
-          pip install httpie podman-compose==1.0.3
+          pip install httpie podman-compose
         shell: bash
 
       - name: Build images
