@@ -1,18 +1,20 @@
 ARG FROM_TAG="stable"
 FROM pulp/pulp-minimal:${FROM_TAG} as builder
 
-RUN mkdir -p /etc/nginx/pulp \
-             /www/data
-RUN ln $(pip3 show pulp_ansible | sed -n -e 's/Location: //p')/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf
-RUN ln $(pip3 show pulp_container | sed -n -e 's/Location: //p')/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf
-RUN ln $(pip3 show pulp_python | sed -n -e 's/Location: //p')/pulp_python/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_python.conf
-
+RUN mkdir -p /etc/nginx/pulp
+RUN ln $(pip3 show pulp_ansible | sed -n -e 's/Location: //p')/pulp_ansible/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_ansible.conf \
+    && ln $(pip3 show pulp_container | sed -n -e 's/Location: //p')/pulp_container/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_container.conf \
+    && ln $(pip3 show pulp_python | sed -n -e 's/Location: //p')/pulp_python/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_python.conf
 
 
 FROM docker.io/nginx:latest
 
-RUN mkdir -p /etc/nginx/pulp
-COPY --from=builder /etc/nginx/pulp/*.conf /etc/nginx/pulp
+RUN mkdir -p /var/cache/nginx \
+    && touch /var/run/nginx.pid \
+    && chown -R nginx:nginx /var/cache/nginx /var/run/nginx.pid
+
+COPY --from=builder /etc/nginx/pulp/*.conf /etc/nginx/conf.d/
 
 # Run script uses standard ways to run the application
+USER nginx:nginx
 CMD nginx -g "daemon off;"
