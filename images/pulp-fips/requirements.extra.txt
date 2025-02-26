@@ -1,0 +1,6 @@
+django
+packaging
+gunicorn
+jinja2
+pulpcore
+aiohttp
