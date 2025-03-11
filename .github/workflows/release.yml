@@ -54,6 +54,7 @@ jobs:
     outputs:
       base_cache_key: ${{ steps.build_base_images.outputs.base_cache_key }}
       image_variants: ${{ steps.image_variants.outputs.image_variants }}
+      rebuilt_images: ${{ steps.build_base_images.outputs.rebuilt_images }}
 
     steps:
       - name: Set Python Version variable
@@ -87,7 +88,11 @@ jobs:
         id: image_variants
         run: |
           if [ "${{ github.base_ref }}" == "latest" ] || [ "${{ github.ref_name }}" == "latest" ]; then
-            echo "image_variants=[\"nightly\",\"stable\"]" >> "$GITHUB_OUTPUT"
+            if [ "${{ github.event_name }}" == "schedule" ]; then
+              echo "image_variants=[\"nightly\",\"stable\"]" >> "$GITHUB_OUTPUT"
+            else
+              echo "image_variants=[\"stable\"]" >> "$GITHUB_OUTPUT"
+            fi
           else
             echo "image_variants=[\"stable\"]" >> "$GITHUB_OUTPUT"
           fi

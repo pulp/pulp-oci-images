@@ -51,6 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       base_cache_key: "${{ steps.build_base_images.outputs.base_cache_key }}"
+      rebuilt_images: "${{ steps.build_base_images.outputs.rebuilt_images }}"
     steps:
       - uses: actions/checkout@v4
 

@@ -50,11 +50,13 @@ runs:
 
     - name: Push image to registries
       run: |
-        for registry in ghcr.io docker.io quay.io; do
-          for image in ${{ inputs.image_names }}; do
+        for image in ${{ inputs.image_names }}; do
+          echo "Create manifest for ${image}"
+          podman manifest create pulp/${image}:ci containers-storage:localhost/pulp/${image}:ci-arm64 containers-storage:localhost/pulp/${image}:ci-amd64
+          for registry in ghcr.io docker.io quay.io; do
+            echo "Pushing image to ${registry}"
             for tag in ${{ inputs.tags }}; do
-              podman manifest create ${registry}/pulp/${image}:${tag} containers-storage:localhost/pulp/${image}:ci-arm64 containers-storage:localhost/pulp/${image}:ci-amd64
-              podman manifest push --all ${registry}/pulp/${image}:${tag} ${registry}/pulp/${image}:${tag}
+              podman manifest push --all pulp/${image}:ci ${registry}/pulp/${image}:${tag}
             done
           done
         done
