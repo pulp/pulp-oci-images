@@ -5,12 +5,6 @@
 name: Release Image
 on:
   workflow_dispatch:
-    inputs:
-      python_version:
-        description: 'The Python version the images will be built on'
-        required: false
-        default: '3.9'
-        type: string
   schedule:
     - cron: '0 1 * * *'
   push:
@@ -57,18 +51,6 @@ jobs:
       rebuilt_images: ${{ steps.build_base_images.outputs.rebuilt_images }}
 
     steps:
-      - name: Set Python Version variable
-        run: |
-          python_version=${{ inputs.python_version && inputs.python_version || '3.9' }}
-          echo "Using Python Version $python_version"
-          echo "PYTHON_VERSION=${python_version}" >> $GITHUB_ENV
-
-      - name: Check valid Python version
-        if: ${{ ! contains(fromJSON('["3.9", "3.10", "3.11", "3.12"]'), env.PYTHON_VERSION) }}
-        run: |
-          echo "Invalid Python Version (${{ env.PYTHON_VERSION }}), must be 3.9-3.12"
-          exit 1
-
       - uses: actions/checkout@v4
 
       - name: Set up Python
@@ -102,8 +84,6 @@ jobs:
         uses: "./.github/actions/base_images"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          python_version: ${{ env.PYTHON_VERSION }}
 
       # The published base images are tagged with the pulpcore version + python version, however
       # the base images don't have Pulp installed. Will need to use our context clues of this run
@@ -129,17 +109,9 @@ jobs:
       # to maintain our prior tagging scheme before customizable python versions
       - name: Set image tags
         run: |
-          python_version=${{ env.PYTHON_VERSION }}
-          python_version="python${python_version//.}"
-          tags="${PULPCORE_VERSION}-${python_version} ${PULPCORE_BRANCH}-${python_version}"
+          tags="${tags} ${PULPCORE_VERSION} ${PULPCORE_BRANCH}"
           if [ "${{ github.ref_name }}" == "latest" ]; then
-            tags="${tags} ${NIGHTLY_VERSION}-${python_version} ${NIGHTLY_BRANCH}-${python_version}"
-          fi
-          if [ "${{ env.PYTHON_VERSION }}" == "3.9" ]; then
-            tags="${tags} ${PULPCORE_VERSION} ${PULPCORE_BRANCH}"
-            if [ "${{ github.ref_name }}" == "latest" ]; then
-              tags="${tags} ${NIGHTLY_VERSION} ${NIGHTLY_BRANCH} latest"
-            fi
+            tags="${tags} ${NIGHTLY_VERSION} ${NIGHTLY_BRANCH} latest"
           fi
           tags=$(echo "${tags}" | xargs -n1 | sort -u | xargs)
           echo "Set tags to: $tags"

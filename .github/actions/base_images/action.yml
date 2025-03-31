@@ -2,11 +2,7 @@
 name: Build Base Images
 description: Build the base images (pulp/base & pulp/pulp-ci-centos9) if needed
 # Both ARM64 & x86-64 versions of each are built
-# Use hashFiles(base_image_files, pulp-ci_image_files) + python_version as the key to the cache
-inputs:
-  python_version:
-    required: true
-    description: "Python Version to use to build, e.g '3.9'"
+# Use hashFiles(base_image_files, pulp-ci_image_files) as the key to the cache
 outputs:
   base_cache_key:
     value: ${{ steps.hash_key.outputs.base_cache_key }}
@@ -24,8 +20,8 @@ runs:
       id: hash_key
       run: |
         hash=${{ hashFiles('images/Containerfile.core.base', 'images/pulp_ci_centos/Containerfile', 'images/assets/**', 'images/s6_assets/**') }}
-        echo "base image hash is ${hash}, python version is ${{ inputs.python_version }}"
-        echo "base_cache_key=${hash}-${{ inputs.python_version }}" >> $GITHUB_OUTPUT
+        echo "base image hash is ${hash}"
+        echo "base_cache_key=${hash}" >> $GITHUB_OUTPUT
       shell: bash
 
     - name: Restore previously cached images
@@ -84,7 +80,7 @@ runs:
           ARCH=${IMAGE##*:}
           case $IMAGE in
             base:*)
-              podman build --platform "linux/${ARCH}" --format docker --file images/Containerfile.core.base --tag "pulp/base:ci-${ARCH}" --build-arg PYTHON_VERSION=${{ inputs.python_version }} .
+              podman build --platform "linux/${ARCH}" --format docker --file images/Containerfile.core.base --tag "pulp/base:ci-${ARCH}" .
               ;;
             pulp-ci-centos9:*)
               podman build --platform "linux/${ARCH}" --format docker --file images/pulp_ci_centos/Containerfile --tag "pulp/pulp-ci-centos9:ci-${ARCH}" --build-arg FROM_TAG="ci-${ARCH}" .

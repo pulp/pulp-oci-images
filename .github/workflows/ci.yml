@@ -58,8 +58,6 @@ jobs:
       - name: Build base images
         id: build_base_images
         uses: "./.github/actions/base_images"
-        with:
-          python_version: "3.9"
 
   app-images:
     needs: base-images
