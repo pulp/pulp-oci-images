@@ -44,7 +44,6 @@ RUN dnf -y install python${PYTHON_VERSION} python3-cryptography python${PYTHON_V
     dnf -y install python3-psycopg2 && \
     dnf -y install redhat-rpm-config gcc cargo libffi-devel && \
     dnf -y install glibc-langpack-en && \
-    dnf -y install python3-libmodulemd && \
     dnf -y install python3-libcomps && \
     dnf -y install libpq-devel && \
     dnf -y install python3-setuptools && \
