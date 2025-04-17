@@ -80,7 +80,7 @@ services:
     user: root
     volumes:
       - "./assets/bin/nginx.sh:/usr/bin/nginx.sh:Z"
-      - "./assets/nginx/nginx.conf.template:/etc/opt/rh/rh-nginx116/nginx/nginx.conf.template:Z"
+      - "./assets/nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:Z"
     restart: always
 
   pulp_api:
