@@ -73,7 +73,9 @@ services:
     command: ['/usr/bin/nginx.sh']
     depends_on:
       pulp_api:
+        condition: service_healthy
       pulp_content:
+        condition: service_healthy
     ports:
       - "8080:8080"
     hostname: pulp
