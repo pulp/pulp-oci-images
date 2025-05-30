@@ -1,6 +1,6 @@
 ---
 name: Build Base Images
-description: Build the base images (pulp/base & pulp/pulp-ci-centos9) if needed
+description: Build the base images (pulp/base & pulp/pulp-ci-centos10) if needed
 # Both ARM64 & x86-64 versions of each are built
 # Use hashFiles(base_image_files, pulp-ci_image_files) as the key to the cache
 outputs:
@@ -45,13 +45,13 @@ runs:
         sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
         IMAGES=()
         for ARCH in arm64 amd64; do
-          echo "Checking if rebuild needed for base:${ARCH} & pulp-ci-centos9:${ARCH}"
+          echo "Checking if rebuild needed for base:${ARCH} & pulp-ci-centos10:${ARCH}"
           if ! podman run --pull=never pulp/base:ci-${ARCH} bash -c "dnf check-upgrade"; then
-            echo "Rebuild needed for base:${ARCH} & pulp-ci-centos9:${ARCH}"
-            IMAGES+=("base:${ARCH}" "pulp-ci-centos9:${ARCH}")
-          elif ! podman run --pull=never pulp/pulp-ci-centos9:ci-${ARCH} bash -c "dnf check-upgrade"; then
-            echo "Rebuild needed for just pulp-ci-centos9:${ARCH}"
-            IMAGES+=("pulp-ci-centos9:${ARCH}")
+            echo "Rebuild needed for base:${ARCH} & pulp-ci-centos10:${ARCH}"
+            IMAGES+=("base:${ARCH}" "pulp-ci-centos10:${ARCH}")
+          elif ! podman run --pull=never pulp/pulp-ci-centos10:ci-${ARCH} bash -c "dnf check-upgrade"; then
+            echo "Rebuild needed for just pulp-ci-centos10:${ARCH}"
+            IMAGES+=("pulp-ci-centos10:${ARCH}")
           fi
         done
         if [ ${#IMAGES[@]} -eq 0 ]; then
@@ -64,7 +64,7 @@ runs:
     - name: Set images to build on cache miss
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
-        echo "BUILD_IMAGES=['base:arm64', 'base:amd64', 'pulp-ci-centos9:arm64', 'pulp-ci-centos9:amd64']" >> $GITHUB_ENV
+        echo "BUILD_IMAGES=['base:arm64', 'base:amd64', 'pulp-ci-centos10:arm64', 'pulp-ci-centos10:amd64']" >> $GITHUB_ENV
         sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
       shell: bash
 
@@ -82,8 +82,8 @@ runs:
             base:*)
               podman build --platform "linux/${ARCH}" --format docker --file images/Containerfile.core.base --tag "pulp/base:ci-${ARCH}" .
               ;;
-            pulp-ci-centos9:*)
-              podman build --platform "linux/${ARCH}" --format docker --file images/pulp_ci_centos/Containerfile --tag "pulp/pulp-ci-centos9:ci-${ARCH}" --build-arg FROM_TAG="ci-${ARCH}" .
+            pulp-ci-centos10:*)
+              podman build --platform "linux/${ARCH}" --format docker --file images/pulp_ci_centos/Containerfile --tag "pulp/pulp-ci-centos10:ci-${ARCH}" --build-arg FROM_TAG="ci-${ARCH}" .
               ;;
           esac
         done
@@ -97,7 +97,7 @@ runs:
       if: env.BUILD_IMAGES
       run: |
         rm -f base-images.tar.gz
-        podman save -m -o base-images.tar pulp/base:ci-arm64 pulp/base:ci-amd64 pulp/pulp-ci-centos9:ci-arm64 pulp/pulp-ci-centos9:ci-amd64
+        podman save -m -o base-images.tar pulp/base:ci-arm64 pulp/base:ci-amd64 pulp/pulp-ci-centos10:ci-arm64 pulp/pulp-ci-centos10:ci-amd64
         gzip base-images.tar
       shell: bash
 

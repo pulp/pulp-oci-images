@@ -1,4 +1,4 @@
-FROM quay.io/centos/centos:stream9
+FROM quay.io/centos/centos:stream10
 
 # https://superuser.com/questions/959380/how-do-i-install-generate-all-locales-on-fedora
 # This may not be necessary anymore because Fedora 30, unlike CentOS 7, has
@@ -30,12 +30,14 @@ RUN dnf -y install dnf-plugins-core && \
     dnf config-manager --set-enabled crb && \
     dnf -y update
 
-RUN dnf -y module enable nginx:1.22
+#RUN dnf -y module enable nginx:1.26
+
 
 # glibc-langpack-en is needed to provide the en_US.UTF-8 locale, which Pulp
 # seems to need.
 # cairo/gobject are needed for PyGObject, which pulp_ostree requires
-RUN dnf -y install python3.9 python3-cryptography python3.9-devel && \
+RUN dnf -y install nginx && \
+    dnf -y install python3.12 python3-cryptography python3.12-devel && \
     dnf -y install openssl openssl-devel && \
     dnf -y install openldap-devel --exclude selinux* && \
     dnf -y install wget git && \
@@ -63,7 +65,7 @@ RUN useradd -d /var/lib/pulp --system -u 700 -g pulp pulp
 
 # Rootless podman inside rootless podman/docker
 # https://www.redhat.com/sysadmin/podman-inside-container
-RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
+#RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
 # We modified the example so that we have a UID range of upto 65535.
 # Because, for example, the image docker.io/library/busybox actually uses the user nobody(65534) for
 # /home rather than the traditional nobody/nfsnbody usage (not an owner on a permanent filesystem.)

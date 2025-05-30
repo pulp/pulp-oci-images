@@ -25,7 +25,7 @@ RUN dnf -y install postgresql \
       postgresql-server \
       postgresql-upgrade \
       nginx \
-      redis && \
+      valkey && \
     dnf clean all
 
 COPY images/s6_assets/openssl.cnf /etc/ssl/pulp/openssl.cnf

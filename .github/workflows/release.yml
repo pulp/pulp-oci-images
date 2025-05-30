@@ -120,7 +120,7 @@ jobs:
       - name: Publish base images
         uses: "./.github/actions/publish_images"
         with:
-          image_names: "base pulp-ci-centos9"
+          image_names: "base pulp-ci-centos10"
           tags: ${{ env.TAGS }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           docker_bot_username: ${{ secrets.DOCKER_BOT_USERNAME }}
@@ -175,7 +175,7 @@ jobs:
           fi
           echo "Going to publish app images: $images"
           echo "IMAGES=${images}" >> $GITHUB_ENV
-          
+
           if [ "${{ matrix.image_variant }}" == "stable" ]; then
             app_branch=${{ steps.build_image.outputs.app_branch }}
             app_version=${{ steps.build_image.outputs.app_version }}
