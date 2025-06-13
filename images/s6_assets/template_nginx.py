@@ -3,6 +3,7 @@ import json
 import os
 import django
 from django.core.exceptions import AppRegistryNotReady, ImproperlyConfigured
+from pulpcore.app.netutil import has_ipv6
 
 from jinja2 import Template
 
@@ -19,6 +20,7 @@ if __name__ == "__main__":
     ui = os.getenv("PULP_UI", "false")
     values = {
         "https": https.lower() == "true",
+        "has_ipv6": has_ipv6(),
         "api_root": "/pulp/",
         "content_path": "/pulp/content/",
         "domain_enabled": False,
