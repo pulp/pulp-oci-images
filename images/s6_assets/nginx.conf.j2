@@ -1,3 +1,4 @@
+# TODO: Support IPv6.
 # TODO: Maybe serve multiple `location`s, not just one.
 
 # The "nginx" package on fedora creates this user and group.
@@ -21,17 +22,17 @@ http {
     types_hash_max_size 4096;
 
     upstream pulp-content {
-         server {{ '[::1]' if has_ipv6 else '127.0.0.1' }}:24816;
+         server 127.0.0.1:24816;
     }
 
     upstream pulp-api {
-         server {{ '[::1]' if has_ipv6 else '127.0.0.1' }}:24817;
+         server 127.0.0.1:24817;
     }
 
     server {
         # Gunicorn docs suggest the use of the "deferred" directive on Linux.
         {% if https | default(false) -%}
-        listen {{ '[::]:' if has_ipv6 }}443 default_server{{ ' ipv6only=off' if has_ipv6 }} deferred ssl;
+        listen 443 default_server deferred ssl;
 
         ssl_certificate /etc/pulp/certs/pulp_webserver.crt;
         ssl_certificate_key /etc/pulp/certs/pulp_webserver.key;
@@ -47,7 +48,7 @@ http {
         # HSTS (ngx_http_headers_module is required) (15768000 seconds = 6 months)
         add_header Strict-Transport-Security max-age=15768000;
         {%- else -%}
-        listen {{ '[::]:' if has_ipv6 }}80 default_server{{ ' ipv6only=off' if has_ipv6 }} deferred;
+        listen 80 default_server deferred;
         {%- endif %}
         server_name $hostname;
 
@@ -139,7 +140,7 @@ http {
     }
     {%- if https | default(false) %}
     server {
-        listen {{ '[::]:' if has_ipv6 }}80 default_server{{ ' ipv6only=off' if has_ipv6 }};
+        listen 80 default_server;
         server_name _;
         return 301 https://$host$request_uri;
     }
