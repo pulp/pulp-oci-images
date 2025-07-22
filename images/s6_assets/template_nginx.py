@@ -3,7 +3,10 @@ import json
 import os
 import django
 from django.core.exceptions import AppRegistryNotReady, ImproperlyConfigured
-from pulpcore.app.netutil import has_ipv6
+try:
+    from pulpcore.app.netutil import has_ipv6
+except ImportError:
+    has_ipv6 = lambda: False
 
 from jinja2 import Template
 
