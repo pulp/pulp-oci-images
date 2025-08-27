@@ -28,17 +28,18 @@ This deployment is a 2-step process:
 1st, create the directories for storage/configuration, and create the `settings.py` file:
 
 ```
-$ mkdir -p settings/certs pulp_storage pgsql containers
+$ mkdir -p settings/certs pulp_storage pgsql containers container_build
 $ echo "CONTENT_ORIGIN='http://$(hostname):8080'" >> settings/settings.py
 ```
 
 * For a complete list of available settings for `settings.py`, see
   [the Pulpcore Settings](site:pulpcore/docs/admin/reference/settings/).
 
-* These 4 directories `settings`, `pulp_storage`, `pgsql`, `containers` must be preserved. `settings`
-  has your settings, generated certificates, and generated database encrypted fields key. The
-  `pulp_storage pgsql containers` are the application data.
-
+* The 3 directories `settings`, `pulp_storage`, `pgsql`, must be preserved. `settings` has your settings,
+  generated certificates, and generated database encrypted fields key. The `pulp_storage`, and `pgsql` store
+  persistent application data.
+* The `containers`, and `container_build` directories are expected to be used for temporary `pulp_container`
+  application data. We recommend preserving these as well, but they are less critical.
 
 ### Starting the Container
 
@@ -52,6 +53,7 @@ $ podman run --detach \
              --volume "$(pwd)/pulp_storage":/var/lib/pulp:Z \
              --volume "$(pwd)/pgsql":/var/lib/pgsql:Z \
              --volume "$(pwd)/containers":/var/lib/containers:Z \
+             --volume "$(pwd)/container_build":/var/lib/pulp/.local/share/containers:Z \
              --device /dev/fuse \
              pulp/pulp
 ```
@@ -66,6 +68,7 @@ $ podman run --detach \
              --volume "$(pwd)/pulp_storage":/var/lib/pulp \
              --volume "$(pwd)/pgsql":/var/lib/pgsql \
              --volume "$(pwd)/containers":/var/lib/containers \
+             --volume "$(pwd)/container_build":/var/lib/pulp/.local/share/containers:Z \
              --device /dev/fuse \
              pulp/pulp
 ```
