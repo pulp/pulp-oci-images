@@ -52,7 +52,7 @@ runs:
       run: |
         for image in ${{ inputs.image_names }}; do
           echo "Create manifest for ${image}"
-          podman manifest create pulp/${image}:ci containers-storage:pulp/${image}:ci-arm64 containers-storage:pulp/${image}:ci-amd64
+          podman manifest create pulp/${image}:ci containers-storage:localhost/pulp/${image}:ci-arm64 containers-storage:localhost/pulp/${image}:ci-amd64
           for registry in ghcr.io docker.io quay.io; do
             echo "Pushing image to ${registry}"
             for tag in ${{ inputs.tags }}; do

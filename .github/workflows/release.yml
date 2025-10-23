@@ -171,9 +171,7 @@ jobs:
           if [[ ${{ matrix.image_variant }} == "stable" ]]; then
             TAG="${{ steps.app_version.outputs.stable_app_version }}-$ARCH"
           else
-            # Nightly never rebuilds the base images, but always rebuilds the app images
-            # So set tag to latest to ensure the base images are pulled correctly
-            TAG="latest-$ARCH"
+            TAG="nightly-$ARCH"
           fi
           echo "TAG=${TAG}" >> $GITHUB_ENV
           echo "ARCH=${ARCH}" >> $GITHUB_ENV
@@ -186,7 +184,12 @@ jobs:
             podman push pulp/pulp-ci-centos9:ci ghcr.io/pulp/pulp-ci-centos9:${TAG}
             image_names="ghcr.io/pulp/base:${TAG} ghcr.io/pulp/pulp-ci-centos9:${TAG}"
           else
-            image_names="ghcr.io/pulp/base:${trimmed_tag} ghcr.io/pulp/pulp-ci-centos9:${trimmed_tag}"
+            if [[ ${{ matrix.image_variant }} == "nightly" ]]; then
+              # Nightly never rebuilds the base images so there isn't a nightly tag to pull from
+              image_names="ghcr.io/pulp/base:latest-${ARCH} ghcr.io/pulp/pulp-ci-centos9:latest-${ARCH}"
+            else
+              image_names="ghcr.io/pulp/base:${trimmed_tag} ghcr.io/pulp/pulp-ci-centos9:${trimmed_tag}"
+            fi
           fi
           if [[ ${{ steps.build_pulp_minimal_image.outputs.rebuilt_images }} == "true" ]]; then
             podman push pulp/pulp-minimal:ci ghcr.io/pulp/pulp-minimal:${TAG}
