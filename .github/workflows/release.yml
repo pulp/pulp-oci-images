@@ -333,7 +333,7 @@ jobs:
           fi
           tags=$(echo "${tags}" | xargs -n1 | sort -u | xargs)
           echo "Set tags to: $tags"
-          echo "TAGS=${tags}" >> $GITHUB_OUTPUT
+          echo "TAGS=${tags}" >> $GITHUB_ENV
 
       - name: Publish images
         if: ${{ env.IMAGES }}
