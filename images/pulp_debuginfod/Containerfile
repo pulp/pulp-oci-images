@@ -16,7 +16,7 @@ ARG PULP_CLI_VERSION=""
 # Additional debuginfod arguments such as -d DATABASE or -t SECONDS. See man debuginfod for the full argument list
 ARG DEBUGINFOD_OPTIONS=""
 
-RUN pip install --upgrade \
+RUN pip3 install --upgrade \
   pulpcore${PULPCORE_VERSION} \
   pulp-ansible${PULP_ANSIBLE_VERSION} \
   pulp-certguard${PULP_CERTGUARD_VERSION} \

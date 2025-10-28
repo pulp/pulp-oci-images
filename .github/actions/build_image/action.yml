@@ -99,7 +99,7 @@ runs:
       id: image_version_branch
       run: |
         if [[ "${{ steps.rebuild_needed.outputs.build }}" == "true" ]]; then
-          app_version=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci bash -c "pip show pulpcore | sed -n -e 's/Version: //p'")
+          app_version=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci bash -c "pip3 show pulpcore | sed -n -e 's/Version: //p'")
         else
           app_version=$(grep pulpcore versions.freeze | sed -n -e 's/pulpcore==//p')
         fi
@@ -114,7 +114,7 @@ runs:
     - name: Label image with metadata
       if: steps.rebuild_needed.outputs.build == 'true'
       run: |
-        packages=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci bash -c "pip list --format json")
+        packages=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci bash -c "pip3 list --format json")
         plugin_versions=$(echo $packages | jq -r '.[] | select(.name | contains("pulp")) | .name + "==" + .version')
         postgres=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci bash -c "postgres --version | sed -n -e 's/postgres (PostgreSQL) //p'")
         python_version=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci bash -c "python3 --version | sed -n -e 's/Python //p'")

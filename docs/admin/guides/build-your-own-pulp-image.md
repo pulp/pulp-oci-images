@@ -41,7 +41,7 @@ FROM pulp/pulp-ci-centos9:${FROM_TAG}
 COPY images/assets/requirements.extra.txt /requirements.extra.txt
 
 # Here you customize the plugins and their versions that you want to install
-RUN pip install --upgrade \
+RUN pip3 install --upgrade \
   pulpcore[s3,google,azure] \
   pulp-custom-plugin \
   -r /requirements.extra.txt \
@@ -55,7 +55,7 @@ RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
 USER root:root
 
 # If you plugin has extra API routes you need to link them here into /etc/nginx/pulp/
-RUN ln $(pip show pulp_custom_plugin | sed -n -e 's/Location: //p')/pulp_custom_plugin/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_custom_plugin.conf
+RUN ln $(pip3 show pulp_custom_plugin | sed -n -e 's/Location: //p')/pulp_custom_plugin/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_custom_plugin.conf
 
 # Add pulp-ui to the image, specified using a build-arg PULP_UI_URL 
 ARG PULP_UI_URL
@@ -88,7 +88,7 @@ COPY images/assets/requirements.extra.txt /requirements.extra.txt
 COPY images/assets/requirements.minimal.txt /requirements.minimal.txt
 
 # Here you customize the plugins and their versions that you want to install
-RUN pip install --upgrade \
+RUN pip3 install --upgrade \
   pulpcore[s3,google,azure] \
   pulp-custom-plugin \
   -r /requirements.extra.txt \
@@ -128,7 +128,7 @@ RUN mkdir -p /etc/nginx/pulp \
 
 # Here you should link every plugin that offers extra API routes to the
 # /etc/nginx/pulp/ directory
-RUN ln $(pip show pulp_custom_plugin | sed -n -e 's/Location: //p')/pulp_custom_plugin/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_custom_plugin.conf
+RUN ln $(pip3 show pulp_custom_plugin | sed -n -e 's/Location: //p')/pulp_custom_plugin/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_custom_plugin.conf
 
 # The rest should be left untouched unless you want a different nginx image/configuration
 FROM docker.io/centos/nginx-116-centos7:1.16
