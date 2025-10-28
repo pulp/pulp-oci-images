@@ -20,29 +20,13 @@ ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=1
 # https://github.com/just-containers/s6-overlay/issues/467
 ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0
 
-RUN dnf -y install "https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-$(arch)/pgdg-redhat-repo-latest.noarch.rpm" && \
-    dnf -qy module disable postgresql && \
-    dnf -y install postgresql16 \
-      postgresql16-server \
-      postgresql16-contrib \
+RUN dnf -y install postgresql \
+      postgresql-contrib \
+      postgresql-server \
+      postgresql-upgrade \
       nginx \
       redis && \
     dnf clean all
-
-RUN alternatives --install /usr/bin/postgres postgres /usr/pgsql-16/bin/postgres 160 \
-      --follower /usr/bin/pg_dump pg_dump /usr/pgsql-16/bin/pg_dump \
-      --follower /usr/bin/pg_dumpall pg_dumpall /usr/pgsql-16/bin/pg_dumpall \
-      --follower /usr/bin/pg_restore pg_restore /usr/pgsql-16/bin/pg_restore \
-      --follower /usr/bin/psql psql /usr/pgsql-16/bin/psql \
-      --follower /usr/bin/createdb createdb /usr/pgsql-16/bin/createdb \
-      --follower /usr/bin/dropdb dropdb /usr/pgsql-16/bin/dropdb \
-      --follower /usr/bin/createuser createuser /usr/pgsql-16/bin/createuser \
-      --follower /usr/bin/dropuser dropuser /usr/pgsql-16/bin/dropuser \
-      --follower /usr/bin/pg_isready pg_isready /usr/pgsql-16/bin/pg_isready \
-      --follower /usr/bin/pg_basebackup pg_basebackup /usr/pgsql-16/bin/pg_basebackup \
-      --follower /usr/bin/pg_ctl pg_ctl /usr/pgsql-16/bin/pg_ctl \
-      --follower /usr/bin/initdb initdb /usr/pgsql-16/bin/initdb \
-      --follower /usr/bin/pg_upgrade pg_upgrade /usr/pgsql-16/bin/pg_upgrade
 
 COPY images/s6_assets/openssl.cnf /etc/ssl/pulp/openssl.cnf
 COPY images/s6_assets/v3.cnf /etc/ssl/pulp/v3.cnf

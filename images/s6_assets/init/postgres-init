@@ -16,7 +16,6 @@ export C037="\e[37m"
 PGVERSION=$(postgres --version | egrep -o "1[0-9]" | head -n1)
 PGHOME="/var/lib/pgsql"
 PGDATA="${PGHOME}/data"
-PGDATA_NEW="${PGHOME}/data_new"
 PGDATA_OLD="${PGHOME}/data_old"
 PGDATA_OLD_RENAMED="${PGHOME}/data_old.$(date --rfc-3339=seconds)"
 
@@ -25,51 +24,23 @@ if [ -d "${PGDATA}/base" -a -f "${PGDATA}/PG_VERSION" ]; then
   if [ "${PGDATA_VERSION}" != "${PGVERSION}" ]; then
     echo -e "${PREFIX} ${ORANGE} Postgresql database exists but will be upgraded from ${PGDATA_VERSION} to ${PGVERSION}${ENDCOLOR}"
     if [ -d ${PGDATA_OLD} ]; then
-      echo -e "${PREFIX} ${ORANGE} Renaming ${PGDATA_OLD} to ${PGDATA_OLD_RENAMED}${ENDCOLOR}"
-      mv "${PGDATA_OLD}" "${PGDATA_OLD_RENAMED}"
+      echo -e "${PREFIX} ${ORANGE} Renaming ${PGDATA_OLD} ${PGDATA_OLD} to ${PGDATA_OLD_RENAMED}${ENDCOLOR}"
+      mv ${PGDATA_OLD} "${PGDATA_OLD_RENAMED}"
     fi
-    # Install the old version of postgresql for pg_upgrade
-    dnf -y install "postgresql${PGDATA_VERSION}" "postgresql${PGDATA_VERSION}-server" "postgresql${PGDATA_VERSION}-contrib"
+
     # We have to check the encoding and the locale because pulp/pulp-oci-images #307 (1da694c) means it may differ.
     # In order to check the encoding and the locale, we have to start the postgresql server,
-    # and we have to do so with the old binaries we just installed.
+    # and we have to do so with the v12 binaries from the "postgresql-upgrade" RPM package.
+    # (We only support upgrading from v12 because that's all that the pulp single (s6) container has ever used previously.)
     # This particular command `pg_ctl start` does not block.
-    su postgres -c "/usr/pgsql-${PGDATA_VERSION}/bin/pg_ctl start -D ${PGDATA}"
-    ENCODING=$(psql -U postgres -t -c 'SHOW server_encoding' | xargs)
-    LOCALE=$(psql -U postgres -t -c 'SHOW lc_collate' | xargs)
-    su postgres -c "/usr/pgsql-${PGDATA_VERSION}/bin/pg_ctl stop -D ${PGDATA}"
-    # Initialize the new cluster
-    echo -e "${PREFIX} ${ORANGE}initdb -D ${PGDATA_NEW} -E ${ENCODING} --locale=${LOCALE} --auth=trust${ENDCOLOR}"
-    su postgres -c "initdb -D ${PGDATA_NEW} -E ${ENCODING} --locale=${LOCALE} --auth=trust" || { echo -e "${PREFIX} ${RED} failed to initialize the new database${ENDCOLOR}" ; exit 1; }
-    # Run the upgrade (pg_upgrade needs to have permissions to write in the current directory)
-    cd "${PGHOME}"
-    echo -e "${PREFIX} ${ORANGE}Running pg_upgrade --check${ENDCOLOR}"
-    su postgres -c "pg_upgrade \
-        --old-datadir=${PGDATA} \
-        --new-datadir=${PGDATA_NEW} \
-        --old-bindir=/usr/pgsql-${PGDATA_VERSION}/bin \
-        --new-bindir=/usr/pgsql-${PGVERSION}/bin \
-        --check" \
-      || { echo -e "${PREFIX} ${RED} upgrade check failed${ENDCOLOR}" ; exit 1; }
-    echo -e "${PREFIX} ${ORANGE}Running pg_upgrade${ENDCOLOR}"
-    su postgres -c "pg_upgrade \
-        --old-datadir=${PGDATA} \
-        --new-datadir=${PGDATA_NEW} \
-        --old-bindir=/usr/pgsql-${PGDATA_VERSION}/bin \
-        --new-bindir=/usr/pgsql-${PGVERSION}/bin" \
-      || { echo -e "${PREFIX} ${RED} failed to upgrade the database${ENDCOLOR}" ; exit 1; }
-    # Now swap the data directories
-    echo -e "${PREFIX} ${ORANGE}Moving ${PGDATA} to ${PGDATA_OLD}${ENDCOLOR}"
-    mv "${PGDATA}" "${PGDATA_OLD}"
-    echo -e "${PREFIX} ${ORANGE}Moving ${PGDATA_NEW} to ${PGDATA}${ENDCOLOR}"
-    mv "${PGDATA_NEW}" "${PGDATA}"
-    # Check if there is a update_extensions.sql to run
-    if [ -f "${PGHOME}/update_extensions.sql" ]; then
-      echo -e "${PREFIX} ${ORANGE}Running psql -U postgres -f ${PGHOME}/update_extensions.sql${ENDCOLOR}"
-      su postgres -c "pg_ctl start -D ${PGDATA}"
-      psql -U postgres -f "${PGHOME}/update_extensions.sql" || { echo -e "${PREFIX} ${RED} failed to run update_extensions.sql${ENDCOLOR}" ; exit 1; }
-      su postgres -c "pg_ctl stop -D ${PGDATA}"
-    fi
+    su postgres -c "/usr/lib64/pgsql/postgresql-12/bin/pg_ctl start -D ${PGDATA}"
+    # The v12 binary listens on a non-standard socket under /tmp. So let's just use localhost (IP) instead.
+    ENCODING=$(su postgres -c "psql --host=localhost postgres -t -c 'SHOW server_encoding' | xargs")
+    LOCALE=$(su postgres -c "psql --host=localhost postgres -t -c 'SHOW lc_collate' | xargs")
+    su postgres -c "/usr/lib64/pgsql/postgresql-12/bin/pg_ctl stop -D ${PGDATA}"
+
+    echo -e "${PREFIX} ${ORANGE}PGSETUP_INITDB_OPTIONS=\"-E ${ENCODING} --locale=${LOCALE} --auth=trust\" postgresql-upgrade ${PGDATA}${ENDCOLOR}"
+    su postgres -c "PGSETUP_INITDB_OPTIONS=\"-E ${ENCODING} --locale=${LOCALE} --auth=trust\" postgresql-upgrade ${PGDATA}" || { echo -e "${PREFIX} ${RED} Failed to upgrade the postgresql database${ENDCOLOR}" ; exit 1; }
   fi
 else
   echo -e "${PREFIX} ${GREEN}initdb -E UTF8 --locale=C.UTF-8 --pgdata ${PGDATA}${ENDCOLOR}"
