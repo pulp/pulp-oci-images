@@ -3,6 +3,7 @@ import requests
 from urllib.parse import urljoin
 from packaging.version import parse
 from packaging.requirements import Requirement
+from packaging.specifiers import SpecifierSet
 
 PACKAGES = [
     "pulp-ansible",
@@ -17,6 +18,11 @@ PACKAGES = [
 ]
 
 INDEX = "https://pypi.org"
+
+PYTHON_VERSIONS = {
+    Requirement("pulpcore>=3.22,<3.85"): "3.9",
+    Requirement("pulpcore>=3.85"): "3.11"
+}
 
 def check_update(branch, current_versions, should_exit=True):
     """
@@ -49,9 +55,16 @@ def check_update(branch, current_versions, should_exit=True):
                 break
             version_pypi_response = requests.get(urljoin(INDEX, f"pypi/{plugin}/{version}/json"))
             assert version_pypi_response.status_code == 200
-            deps = version_pypi_response.json()["info"]["requires_dist"]
+            version_python_response_json = version_pypi_response.json()
+            deps = version_python_response_json["info"]["requires_dist"]
+            required_python_version = version_python_response_json["info"]["requires_python"]
             core_dep = next(filter(lambda dep: dep.startswith("pulpcore"), deps))
             if core_version in Requirement(core_dep).specifier:
+                for core_spread, core_python in PYTHON_VERSIONS.items():
+                    if core_version in core_spread.specifier:
+                        break
+                if required_python_version and not SpecifierSet(required_python_version).contains(core_python):
+                    continue
                 new_versions[plugin] = version
                 break
 
