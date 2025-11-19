@@ -178,31 +178,26 @@ jobs:
 
       - name: Temp upload images to ghcr.io
         run: |
-          trimmed_tag="${TAG::-4}"
+          branch=${{ github.base_ref || github.ref_name }}
           if [[ ${{ steps.build_base_images.outputs.rebuilt_images }} == "true" ]]; then
             podman push pulp/base:ci ghcr.io/pulp/base:${TAG}
             podman push pulp/pulp-ci-centos9:ci ghcr.io/pulp/pulp-ci-centos9:${TAG}
             image_names="ghcr.io/pulp/base:${TAG} ghcr.io/pulp/pulp-ci-centos9:${TAG}"
           else
-            if [[ ${{ matrix.image_variant }} == "nightly" ]]; then
-              # Nightly never rebuilds the base images so there isn't a nightly tag to pull from
-              image_names="ghcr.io/pulp/base:latest ghcr.io/pulp/pulp-ci-centos9:latest"
-            else
-              image_names="ghcr.io/pulp/base:${trimmed_tag} ghcr.io/pulp/pulp-ci-centos9:${trimmed_tag}"
-            fi
+            image_names="ghcr.io/pulp/base:${branch} ghcr.io/pulp/pulp-ci-centos9:${branch}"
           fi
           if [[ ${{ steps.build_pulp_minimal_image.outputs.rebuilt_images }} == "true" ]]; then
             podman push pulp/pulp-minimal:ci ghcr.io/pulp/pulp-minimal:${TAG}
             podman push pulp/pulp-web:ci ghcr.io/pulp/pulp-web:${TAG}
             image_names="${image_names} ghcr.io/pulp/pulp-minimal:${TAG} ghcr.io/pulp/pulp-web:${TAG}"
           else
-            image_names="${image_names} ghcr.io/pulp/pulp-minimal:${trimmed_tag} ghcr.io/pulp/pulp-web:${trimmed_tag}"
+            image_names="${image_names} ghcr.io/pulp/pulp-minimal:${branch} ghcr.io/pulp/pulp-web:${branch}"
           fi
           if [[ ${{ steps.build_pulp_image.outputs.rebuilt_images }} == "true" ]]; then
             podman push pulp/pulp:ci ghcr.io/pulp/pulp:${TAG}
             image_names="${image_names} ghcr.io/pulp/pulp:${TAG}"
           else
-            image_names="${image_names} ghcr.io/pulp/pulp:${trimmed_tag}"
+            image_names="${image_names} ghcr.io/pulp/pulp:${branch}"
           fi
           echo "Image names: ${image_names}"
           echo "image_names=${image_names}" >> $GITHUB_ENV
