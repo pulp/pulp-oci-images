@@ -29,6 +29,24 @@ if [ -d "${PGDATA}/base" -a -f "${PGDATA}/PG_VERSION" ]; then
       mv "${PGDATA_OLD}" "${PGDATA_OLD_RENAMED}"
     fi
     # Install the old version of postgresql for pg_upgrade
+    # PostgreSQL 13 is EOL and no longer in standard repos, so we need to add the EOL repository
+    if [ "${PGDATA_VERSION}" = "13" ]; then
+      ARCH=$(uname -m)
+      if [ "${ARCH}" != "x86_64" -a "${ARCH}" != "aarch64" ]; then
+        echo -e "${PREFIX} ${RED}Unsupported architecture ${ARCH} for PostgreSQL 13 EOL repository${ENDCOLOR}"
+        exit 1
+      fi
+      echo -e "${PREFIX} ${ORANGE}PostgreSQL 13 is EOL, adding EOL repository for ${ARCH}${ENDCOLOR}"
+      REPO_FILE="/etc/yum.repos.d/pgdg-13-eol.repo"
+      cat > "${REPO_FILE}" <<EOF
+[pgdg13-eol]
+name=PostgreSQL 13 EOL for RHEL 9 - ${ARCH}
+baseurl=https://download.postgresql.org/pub/repos/yum/13/redhat/rhel-9-${ARCH}/
+enabled=1
+gpgcheck=0
+EOF
+      echo -e "${PREFIX} ${ORANGE}Created repository file ${REPO_FILE}${ENDCOLOR}"
+    fi
     dnf -y install "postgresql${PGDATA_VERSION}" "postgresql${PGDATA_VERSION}-server" "postgresql${PGDATA_VERSION}-contrib"
     # We have to check the encoding and the locale because pulp/pulp-oci-images #307 (1da694c) means it may differ.
     # In order to check the encoding and the locale, we have to start the postgresql server,
