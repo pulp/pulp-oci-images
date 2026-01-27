@@ -15,6 +15,7 @@ RUN pip install \
   git+https://github.com/pulp/pulp_python.git \
   git+https://github.com/pulp/pulp_rpm.git \
   git+https://github.com/pulp/pulp_npm.git \
+  git+https://github.com/pulp/pulp_hugging_face@main \
   -r /requirements.extra.txt \
   -r /requirements.minimal.txt \
   -c /constraints.txt && \

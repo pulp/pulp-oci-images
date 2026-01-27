@@ -14,6 +14,7 @@ RUN pip install --upgrade \
   git+https://github.com/pulp/pulp_python@main \
   git+https://github.com/pulp/pulp_rpm@main \
   git+https://github.com/pulp/pulp_npm@main \
+  git+https://github.com/pulp/pulp_hugging_face@main \
   -r /requirements.extra.txt \
   -c /constraints.txt && \
   rm -rf /root/.cache/pip
