@@ -123,7 +123,7 @@ jobs:
         with:
           image_name: "pulp-minimal"
           image_variant: ${{ matrix.image_variant }}
-          latest_ui: ${{ github.base_ref == 'latest' }}
+          latest_ui: ${{ github.base_ref == 'latest' || github.ref_name == 'latest' }}
           rebuilt_base_images: ${{ steps.build_base_images.outputs.rebuilt_images }}
 
       - name: Build pulp image
@@ -132,7 +132,7 @@ jobs:
         with:
           image_name: "pulp"
           image_variant: ${{ matrix.image_variant }}
-          latest_ui: ${{ github.base_ref == 'latest' }}
+          latest_ui: ${{ github.base_ref == 'latest' || github.ref_name == 'latest' }}
           rebuilt_base_images: ${{ steps.build_base_images.outputs.rebuilt_images }}
       
       - name: Set app version
