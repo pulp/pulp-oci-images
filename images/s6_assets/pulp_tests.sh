@@ -75,4 +75,4 @@ podman exec -u pulp pulp podman build /tmp
 podman exec -u pulp pulp podman pull docker.io/library/busybox
 
 echo "Run all CLI tests"
-make test
+make paralleltest
