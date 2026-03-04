@@ -1,16 +1,16 @@
 ---
 name: Build Base Images
 description: Build the base images (pulp/base & pulp/pulp-ci-centos9) if needed
-# Both ARM64 & x86-64 versions of each are built
-# Use hashFiles(base_image_files, pulp-ci_image_files) + python_version as the key to the cache
+# Use hashFiles(base_image_files, pulp-ci_image_files) for rebuild check
 inputs:
-  python_version:
+  image_variants:
+    description: "Whether build is nightly or stable, nightly never rebuilds"
+    default: "stable"
     required: true
-    description: "Python Version to use to build, e.g '3.9'"
 outputs:
-  base_cache_key:
-    value: ${{ steps.hash_key.outputs.base_cache_key }}
-    description: "The cache key the built images were uploaded to."
+  rebuilt_images:
+    value: ${{ steps.rebuild_needed.outputs.build }}
+    description: "true/false if the base images were rebuilt"
 
 runs:
   using: "composite"
@@ -18,100 +18,53 @@ runs:
     - uses: actions/checkout@v4
 
     - name: Calculate base images hash
-      id: hash_key
       run: |
         hash=${{ hashFiles('images/Containerfile.core.base', 'images/pulp_ci_centos/Containerfile', 'images/assets/**', 'images/s6_assets/**') }}
-        echo "base image hash is ${hash}, python version is ${{ inputs.python_version }}"
-        echo "base_cache_key=${hash}-${{ inputs.python_version }}" >> $GITHUB_OUTPUT
+        echo "base image hash is ${hash}"
+        echo "HASH=${hash}" >> $GITHUB_ENV
       shell: bash
 
-    - name: Restore previously cached images
-      id: cache
-      uses: actions/cache/restore@v3
-      with:
-        key: base-images=${{ steps.hash_key.outputs.base_cache_key }}
-        path: base-images.tar.gz
+    - name: Set up oras
+      uses: oras-project/setup-oras@v1
 
-    - name: Extract images if cached
-      if: steps.cache.outputs.cache-hit == 'true'
+    - name: Check for updates on base images
+      id: rebuild_needed
       run: |
-        echo "Base Images were in cache"
-        podman load -i base-images.tar.gz
-      shell: bash
-
-    - name: Check for updates on cached images
-      if: steps.cache.outputs.cache-hit == 'true'
-      run: |
-        # Enable running/building ARM64 images: https://github.com/multiarch/qemu-user-static
-        sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
-        IMAGES=()
-        for ARCH in arm64 amd64; do
-          echo "Checking if rebuild needed for base:${ARCH} & pulp-ci-centos9:${ARCH}"
-          if ! podman run --pull=never pulp/base:ci-${ARCH} bash -c "dnf check-upgrade"; then
-            echo "Rebuild needed for base:${ARCH} & pulp-ci-centos9:${ARCH}"
-            IMAGES+=("base:${ARCH}" "pulp-ci-centos9:${ARCH}")
-          elif ! podman run --pull=never pulp/pulp-ci-centos9:ci-${ARCH} bash -c "dnf check-upgrade"; then
-            echo "Rebuild needed for just pulp-ci-centos9:${ARCH}"
-            IMAGES+=("pulp-ci-centos9:${ARCH}")
-          fi
-        done
-        if [ ${#IMAGES[@]} -eq 0 ]; then
-          echo "No rebuilds needed :)"
+        if [[ "${{ inputs.image_variants }}" == "nightly" ]]; then
+          build=false
         else
-          echo "BUILD_IMAGES=[$(echo ${IMAGES[@]@Q} | sed 's/ /, /g')]" >> $GITHUB_ENV
+          branch=${{ github.base_ref || github.ref_name }}
+          config=$(oras manifest fetch-config --platform linux/amd64 ghcr.io/pulp/pulp-ci-centos9:${branch} | jq -r '.config.Labels')
+          latest_hash=$(echo "${config}" | jq -r '."org.pulp.basefiles-hash"')
+          build=true
+          echo "Checking hash for ${branch}: ${latest_hash}"
+          if [[ "${latest_hash}" == "${HASH}" ]]; then
+            if podman run ghcr.io/pulp/pulp-ci-centos9:${branch} bash -c "dnf check-upgrade"; then
+              echo "No base images rebuild needed :)"
+              build=false
+            fi
+          fi
         fi
+        echo "build=${build}" >> "$GITHUB_OUTPUT"
+        echo "Going to rebuild: ${build}"
       shell: bash
 
-    - name: Set images to build on cache miss
-      if: steps.cache.outputs.cache-hit != 'true'
+    - name: Download base images if no rebuild needed
+      if: steps.rebuild_needed.outputs.build == 'false'
       run: |
-        echo "BUILD_IMAGES=['base:arm64', 'base:amd64', 'pulp-ci-centos9:arm64', 'pulp-ci-centos9:amd64']" >> $GITHUB_ENV
-        sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
+        echo "Downloading base images"
+        branch=${{ github.base_ref || github.ref_name }}
+        podman pull ghcr.io/pulp/base:${branch}
+        podman pull ghcr.io/pulp/pulp-ci-centos9:${branch}
+        podman tag ghcr.io/pulp/base:${branch} pulp/base:ci
+        podman tag ghcr.io/pulp/pulp-ci-centos9:${branch} pulp/pulp-ci-centos9:ci
       shell: bash
 
     - name: Build images
-      if: env.BUILD_IMAGES
+      if: steps.rebuild_needed.outputs.build == 'true'
       run: |
-        IMAGES=(${{ join(fromJSON(env.BUILD_IMAGES), ' ') }})
-        echo "Going to build images: ${IMAGES[@]}"
         podman version
         buildah version
-        for IMAGE in "${IMAGES[@]}"; do
-          echo "Building image ${IMAGE}"
-          ARCH=${IMAGE##*:}
-          case $IMAGE in
-            base:*)
-              podman build --platform "linux/${ARCH}" --format docker --file images/Containerfile.core.base --tag "pulp/base:ci-${ARCH}" --build-arg PYTHON_VERSION=${{ inputs.python_version }} .
-              ;;
-            pulp-ci-centos9:*)
-              podman build --platform "linux/${ARCH}" --format docker --file images/pulp_ci_centos/Containerfile --tag "pulp/pulp-ci-centos9:ci-${ARCH}" --build-arg FROM_TAG="ci-${ARCH}" .
-              ;;
-          esac
-        done
+        podman build --format docker --file images/Containerfile.core.base --tag "pulp/base:ci" --label "org.pulp.basefiles-hash=${HASH}" .
+        podman build --format docker --file images/pulp_ci_centos/Containerfile --tag "pulp/pulp-ci-centos9:ci" --build-arg FROM_TAG="ci" .
       shell: bash
-    # we use the docker format (default), even though it may not be the fastest,
-    # because it supports saving both images at once.
-    # However, it seems to export the common layers twice.
-    # We should look into whether its possible to export just pulp-ci-centos,
-    # and tag the base image manually.
-    - name: Save podman images to tarball
-      if: env.BUILD_IMAGES
-      run: |
-        rm -f base-images.tar.gz
-        podman save -m -o base-images.tar pulp/base:ci-arm64 pulp/base:ci-amd64 pulp/pulp-ci-centos9:ci-arm64 pulp/pulp-ci-centos9:ci-amd64
-        gzip base-images.tar
-      shell: bash
-
-    - name: Clear cache for next upload
-      if: env.BUILD_IMAGES && steps.cache.outputs.cache-hit == 'true' && github.event_name != 'pull_request'
-      run: |
-        echo "Deleting existing cache for ${{ steps.hash_key.outputs.base_cache_key }}"
-        gh cache delete "base-images=${{ steps.hash_key.outputs.base_cache_key }}" -R ${{ github.repository }}
-      shell: bash
-
-    - name: Cache podman images
-      if: env.BUILD_IMAGES
-      uses: actions/cache/save@v3
-      with:
-        key: base-images=${{ steps.hash_key.outputs.base_cache_key }}
-        path: base-images.tar.gz

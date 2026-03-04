@@ -19,18 +19,15 @@ runs:
         pip install httpie podman-compose==1.1.0
       shell: bash
 
-    - name: Test image with upgrade in s6 mode (pulp)
+    - name: Test image in s6 mode (pulp)
       if: inputs.image_name == 'pulp'
       run: |
-        # 3.20 has postgres 12 rather than 13
-        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:ci-amd64" http "quay.io/pulp/all-in-one-pulp:3.20"
-        podman stop pulp
-        podman rm pulp
+        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:ci" "http"
       shell: bash
 
     - name: Test Compose up
       if: inputs.image_name == 'pulp-minimal'
       run: |
         base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
-        images/compose/test.sh "${{ inputs.image_name }}:ci-amd64" "${base_image}-web:ci-amd64" "compose.yml"
+        images/compose/test.sh "${{ inputs.image_name }}:ci" "${base_image}-web:ci" "compose.yml"
       shell: bash

@@ -16,6 +16,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  docs:
+    # The workflow tag and the pulpdocs_ref must match.
+    uses: "pulp/pulp-docs/.github/workflows/docs-ci.yml@main"
+    with:
+      pulpdocs_ref: "main"
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -47,48 +53,51 @@ jobs:
           done
         shell: bash
 
-  base-images:
-    runs-on: ubuntu-latest
-    outputs:
-      base_cache_key: "${{ steps.build_base_images.outputs.base_cache_key }}"
+  build-and-test-images:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Build base images
         id: build_base_images
         uses: "./.github/actions/base_images"
-        with:
-          python_version: "3.9"
 
-  app-images:
-    needs: base-images
-    runs-on: ubuntu-latest
-    outputs:
-      app_version: ${{ steps.build_image.outputs.app_version }}
-      app_branch: ${{ steps.build_image.outputs.app_branch }}
-    strategy:
-      fail-fast: false
-      matrix:
-        image_name:
-          - pulp-minimal
-          - pulp
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build App Image
-        id: build_image
+      - name: Build pulp-minimal image
+        id: build_pulp_minimal_image
         uses: "./.github/actions/build_image"
         with:
-          image_name: ${{ matrix.image_name }}
+          image_name: "pulp-minimal"
           image_variant: "stable"
-          image_cache_key: ${{ needs.base-images.outputs.base_cache_key }}
           latest_ui: ${{ github.base_ref == 'latest' }}
+          rebuilt_base_images: ${{ steps.build_base_images.outputs.rebuilt_images }}
 
-      - name: Test App Image
+      - name: Build pulp image
+        id: build_pulp_image
+        uses: "./.github/actions/build_image"
+        with:
+          image_name: "pulp"
+          image_variant: "stable"
+          latest_ui: ${{ github.base_ref == 'latest' }}
+          rebuilt_base_images: ${{ steps.build_base_images.outputs.rebuilt_images }}
+
+      - name: Test pulp-minimal image
         uses: "./.github/actions/test_image"
         with:
-          image_name: ${{ matrix.image_name }}
-          app_branch: ${{ steps.build_image.outputs.app_branch }}
+          image_name: "pulp-minimal"
+          app_branch: ${{ steps.build_pulp_minimal_image.outputs.app_branch }}
+
+      - name: Test pulp image
+        uses: "./.github/actions/test_image"
+        with:
+          image_name: "pulp"
+          app_branch: ${{ steps.build_pulp_image.outputs.app_branch }}
 
       - name: Logs
         if: always()
@@ -108,3 +117,4 @@ jobs:
           sudo ls -al $VOLUME_PATH
           sudo tree $VOLUME_PATH
           http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true
+

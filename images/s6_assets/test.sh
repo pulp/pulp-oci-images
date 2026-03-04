@@ -27,7 +27,8 @@ start_container_and_wait() {
              -e PULP_DEFAULT_ADMIN_PASSWORD=password \
              -e PULP_HTTPS=${pulp_https} \
              "$1"
-  sleep 10
+  sleep 3  # Wait for the container to start
+  podman exec pulp s6-rc -ba list
   for _ in $(seq 30)
   do
     sleep 3
