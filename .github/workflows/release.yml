@@ -5,12 +5,11 @@
 name: Release Image
 on:
   workflow_dispatch:
-    inputs:
-      python_version:
-        description: 'The Python version the images will be built on'
-        required: false
-        default: '3.9'
-        type: string
+  schedule:
+    - cron: '0 1 * * *'
+  push:
+    branches:
+      - latest
 
 concurrency:
   group: ${{ github.ref_name }}-${{ github.workflow }}
@@ -32,6 +31,9 @@ jobs:
         with:
           python-version: 3.11
 
+      - name: Set up oras
+        uses: oras-project/setup-oras@v1
+
       - name: Update to the latest pip
         run: python -m pip install --upgrade pip
 
@@ -40,29 +42,21 @@ jobs:
           echo ::group::PYDEPS
           pip install gitpython requests packaging jinja2 pyyaml
           echo ::endgroup::
-          python .ci/scripts/update_ci_branches.py
+          if [[ $(date +%u) -eq 7 ]]; then
+            # Run CI for all branches on Sunday
+            python .ci/scripts/release_ci_branches.py
+          else
+            python .ci/scripts/release_ci_branches.py --optimize
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
-  base-images:
+  base:
     runs-on: ubuntu-latest
     outputs:
-      pulp_ci_centos_id: ${{ steps.build_base_images.outputs.pulp_ci_centos_id }}
       image_variants: ${{ steps.image_variants.outputs.image_variants }}
 
     steps:
-      - name: Set Python Version variable
-        run: |
-          python_version=${{ inputs.python_version && inputs.python_version || '3.9' }}
-          echo "Using Python Version $python_version"
-          echo "PYTHON_VERSION=${python_version}" >> $GITHUB_ENV
-
-      - name: Check valid Python version
-        if: ${{ ! contains(fromJSON('["3.9", "3.10", "3.11", "3.12"]'), env.PYTHON_VERSION) }}
-        run: |
-          echo "Invalid Python Version (${{ env.PYTHON_VERSION }}), must be 3.9-3.12"
-          exit 1
-
       - uses: actions/checkout@v4
 
       - name: Set up Python
@@ -82,138 +76,144 @@ jobs:
         id: image_variants
         run: |
           if [ "${{ github.base_ref }}" == "latest" ] || [ "${{ github.ref_name }}" == "latest" ]; then
-            echo "image_variants=[\"nightly\",\"stable\"]" >> "$GITHUB_OUTPUT"
+            if [ "${{ github.event_name }}" == "schedule" ]; then
+              echo "image_variants=[\"nightly\",\"stable\"]" >> "$GITHUB_OUTPUT"
+            else
+              echo "image_variants=[\"stable\"]" >> "$GITHUB_OUTPUT"
+            fi
           else
             echo "image_variants=[\"stable\"]" >> "$GITHUB_OUTPUT"
           fi
+
+  build-and-test-images:
+    needs: base
+    continue-on-error: ${{ matrix.image_variant == 'nightly' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image_variant: ${{ fromJSON(needs.base.outputs.image_variants) }}
+        os:
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+    runs-on: ${{ matrix.os }}
+    outputs:
+      # repo_digests format: [
+      #   rebuilt-base-images bool, rebuilt-minimal-images bool, rebuilt-pulp-image bool
+      #   base sha, pulp-ci-centos9 sha, pulp-minimal sha, pulp-web sha, pulp sha,
+      # ]
+      stable_arm: ${{ steps.repo_digests.outputs.stable_arm }}
+      stable_amd: ${{ steps.repo_digests.outputs.stable_amd }}
+      nightly_arm: ${{ steps.repo_digests.outputs.nightly_arm }}
+      nightly_amd: ${{ steps.repo_digests.outputs.nightly_amd }}
+      stable_app_version: ${{ steps.app_version.outputs.stable_app_version }}
+      nightly_app_version: ${{ steps.app_version.outputs.nightly_app_version }}
+    
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Build base images
         id: build_base_images
         uses: "./.github/actions/base_images"
         with:
-          python_version: ${{ env.PYTHON_VERSION }}
+          image_variants: ${{ matrix.image_variant }}
 
-      # The published base images are tagged with the pulpcore version + python version, however
-      # the base images don't have Pulp installed. Will need to use our context clues of this run
-      # to figure out which pulpcore version will be installed.
-      - name: Find pulpcore versions
-        run: |
-          pulpcore_version=$(python .ci/scripts/find_pulpcore_version.py --branch "${{ github.ref_name }}")
-          pulpcore_branch=$(echo ${pulpcore_version} | grep -oP '\d+\.\d+')
-          echo "Found pulpcore version $pulpcore_version on branch $pulpcore_branch"
-          echo "PULPCORE_VERSION=${pulpcore_version}" >> $GITHUB_ENV
-          echo "PULPCORE_BRANCH=${pulpcore_branch}" >> $GITHUB_ENV
-          if [ "${{ github.ref_name }}" == "latest" ]; then
-            # We also tag the latest base images with the nightly(main-branch) version of pulpcore
-            nightly_version=$(python .ci/scripts/find_pulpcore_version.py --branch main)
-            nightly_branch=$(echo ${nightly_version} | grep -oP '\d+\.\d+')
-            echo "Found nightly pulpcore version $nightly_version on branch $nightly_branch"
-            echo "NIGHTLY_VERSION=${nightly_version}" >> $GITHUB_ENV
-            echo "NIGHTLY_BRANCH=${nightly_branch}" >> $GITHUB_ENV
-          fi
-
-      # Base images on latest will also publish under the next pulpcore version on main.
-      # If python_version==3.9 (our default python) then publish with just the pulpcore version
-      # to maintain our prior tagging scheme before customizable python versions
-      - name: Set image tags
-        run: |
-          python_version=${{ env.PYTHON_VERSION }}
-          python_version="python${python_version//.}"
-          tags="${PULPCORE_VERSION}-${python_version} ${PULPCORE_BRANCH}-${python_version}"
-          if [ "${{ github.ref_name }}" == "latest" ]; then
-            tags="${tags} ${NIGHTLY_VERSION}-${python_version} ${NIGHTLY_BRANCH}-${python_version}"
-          fi
-          if [ "${{ env.PYTHON_VERSION }}" == "3.9" ]; then
-            tags="${tags} ${PULPCORE_VERSION} ${PULPCORE_BRANCH}"
-            if [ "${{ github.ref_name }}" == "latest" ]; then
-              tags="${tags} ${NIGHTLY_VERSION} ${NIGHTLY_BRANCH} latest"
-            fi
-          fi
-          echo "Set tags to: $tags"
-          echo "TAGS=${tags}" >> $GITHUB_ENV
-
-      - name: Publish base images
-        uses: "./.github/actions/publish_images"
-        with:
-          image_names: "base pulp-ci-centos9"
-          tags: ${{ env.TAGS }}
-          build_tag: ${{ github.ref_name }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          docker_bot_username: ${{ secrets.DOCKER_BOT_USERNAME }}
-          docker_bot_password: ${{ secrets.DOCKER_BOT_PASSWORD }}
-          quay_bot_username: ${{ secrets.QUAY_BOT_USERNAME }}
-          quay_bot_password: ${{ secrets.QUAY_BOT_PASSWORD }}
-
-  app-images:
-    needs: base-images
-    runs-on: ubuntu-latest
-    outputs:
-      app_version: ${{ steps.build_image.outputs.app_version }}
-      app_branch: ${{ steps.build_image.outputs.app_branch }}
-      app_arch_tag: ${{ steps.build_image.outputs.app_arch_tag }}
-    strategy:
-      fail-fast: false
-      matrix:
-        image_variant: ${{ fromJSON(needs.base-images.outputs.image_variants) }}
-        image_name:
-          - pulp-minimal
-          - pulp
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build App Image
-        id: build_image
+      - name: Build pulp-minimal image
+        id: build_pulp_minimal_image
         uses: "./.github/actions/build_image"
         with:
-          image_name: ${{ matrix.image_name }}
+          image_name: "pulp-minimal"
           image_variant: ${{ matrix.image_variant }}
-          image_cache_key: ${{ needs.base-images.outputs.pulp_ci_centos_id }}
+          latest_ui: ${{ github.base_ref == 'latest' }}
+          rebuilt_base_images: ${{ steps.build_base_images.outputs.rebuilt_images }}
 
-      - name: Test App Image
+      - name: Build pulp image
+        id: build_pulp_image
+        uses: "./.github/actions/build_image"
+        with:
+          image_name: "pulp"
+          image_variant: ${{ matrix.image_variant }}
+          latest_ui: ${{ github.base_ref == 'latest' }}
+          rebuilt_base_images: ${{ steps.build_base_images.outputs.rebuilt_images }}
+      
+      - name: Set app version
+        id: app_version
+        run: |
+          echo "${{ matrix.image_variant }}_app_version=${{ steps.build_pulp_image.outputs.app_version }}" >> $GITHUB_OUTPUT
+
+      - name: Test pulp-minimal image
+        if: ${{ matrix.image_variant != 'nightly' && steps.build_pulp_minimal_image.outputs.rebuilt_images == 'true' }}
         uses: "./.github/actions/test_image"
         with:
-          image_name: ${{ matrix.image_name }}
-          image_variant: ${{ matrix.image_variant }}
-          app_branch: ${{ steps.build_image.outputs.app_branch }}
-          app_arch_tag: ${{ steps.build_image.outputs.app_arch_tag }}
+          image_name: "pulp-minimal"
+          app_branch: ${{ steps.build_pulp_minimal_image.outputs.app_branch }}
 
-      - name: Set tags
-        run: |
-          base_image=$(echo ${{ matrix.image_name }} | cut -d '-' -f1)
-          if [[ "${{ matrix.image_name }}" == "pulp" || "${{ matrix.image_name }}" == "galaxy" ]]; then
-            images="${{ matrix.image_name }}"
-          else
-            images="${{ matrix.image_name }} ${base_image}-web"
-          fi
-          echo "Going to publish app images: $images"
-          echo "IMAGES=${images}" >> $GITHUB_ENV
-          
-          if [ "${{ matrix.image_variant }}" == "stable" ]; then
-            app_branch=${{ steps.build_image.outputs.app_branch }}
-            app_version=${{ steps.build_image.outputs.app_version }}
-            # latest branch stable variant gets tagged as both "latest" and "stable"
-            if [ "${GITHUB_REF_NAME%/*}" == "latest" ]; then
-              tags="${app_branch} ${app_version} stable latest"
-            else
-              tags="${app_branch} ${app_version}"
-            fi
-          else
-            tags="nightly"
-          fi
-          echo "Going to publish with tags: $tags"
-          echo "TAGS=${tags}" >> $GITHUB_ENV
-
-      - name: Publish App Image
-        uses: "./.github/actions/publish_images"
+      - name: Test pulp image
+        if: ${{ matrix.image_variant != 'nightly' && steps.build_pulp_image.outputs.rebuilt_images == 'true' }}
+        uses: "./.github/actions/test_image"
         with:
-          image_names: ${{ env.IMAGES }}
-          tags: ${{ env.TAGS }}
-          build_tag: ${{ matrix.image_variant == 'nightly' && 'nightly' || github.ref_name }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          docker_bot_username: ${{ secrets.DOCKER_BOT_USERNAME }}
-          docker_bot_password: ${{ secrets.DOCKER_BOT_PASSWORD }}
-          quay_bot_username: ${{ secrets.QUAY_BOT_USERNAME }}
-          quay_bot_password: ${{ secrets.QUAY_BOT_PASSWORD }}
+          image_name: "pulp"
+          app_branch: ${{ steps.build_pulp_image.outputs.app_branch }}
+
+      # We are doing a temporary upload of the arm or amd images to ghcr.io for the next job to use
+      - name: Login to ghcr.io
+        env:
+          PULP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PULP_GITHUB_USERNAME: ${{ github.actor }}
+        run: echo "$PULP_GITHUB_TOKEN" | podman login -u "$PULP_GITHUB_USERNAME" --password-stdin ghcr.io
+
+      - name: Set tags for temp upload
+        run: |
+          if [[ "${{ runner.arch }}" == "ARM64" ]]; then
+            ARCH="arm"
+          else
+            ARCH="amd"
+          fi
+          if [[ ${{ matrix.image_variant }} == "stable" ]]; then
+            TAG="${{ steps.app_version.outputs.stable_app_version }}-$ARCH"
+          else
+            TAG="nightly-$ARCH"
+          fi
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+          echo "ARCH=${ARCH}" >> $GITHUB_ENV
+
+      - name: Temp upload images to ghcr.io
+        run: |
+          branch=${{ github.base_ref || github.ref_name }}
+          if [[ ${{ steps.build_base_images.outputs.rebuilt_images }} == "true" ]]; then
+            podman push pulp/base:ci ghcr.io/pulp/base:${TAG}
+            podman push pulp/pulp-ci-centos9:ci ghcr.io/pulp/pulp-ci-centos9:${TAG}
+            image_names="ghcr.io/pulp/base:${TAG} ghcr.io/pulp/pulp-ci-centos9:${TAG}"
+          else
+            image_names="ghcr.io/pulp/base:${branch} ghcr.io/pulp/pulp-ci-centos9:${branch}"
+          fi
+          if [[ ${{ steps.build_pulp_minimal_image.outputs.rebuilt_images }} == "true" ]]; then
+            podman push pulp/pulp-minimal:ci ghcr.io/pulp/pulp-minimal:${TAG}
+            podman push pulp/pulp-web:ci ghcr.io/pulp/pulp-web:${TAG}
+            image_names="${image_names} ghcr.io/pulp/pulp-minimal:${TAG} ghcr.io/pulp/pulp-web:${TAG}"
+          else
+            image_names="${image_names} ghcr.io/pulp/pulp-minimal:${branch} ghcr.io/pulp/pulp-web:${branch}"
+          fi
+          if [[ ${{ steps.build_pulp_image.outputs.rebuilt_images }} == "true" ]]; then
+            podman push pulp/pulp:ci ghcr.io/pulp/pulp:${TAG}
+            image_names="${image_names} ghcr.io/pulp/pulp:${TAG}"
+          else
+            image_names="${image_names} ghcr.io/pulp/pulp:${branch}"
+          fi
+          echo "Image names: ${image_names}"
+          echo "image_names=${image_names}" >> $GITHUB_ENV
+
+      - name: Set output of repo digests of uploaded images
+        id: repo_digests
+        run: |
+          repo_digests="${{ steps.build_base_images.outputs.rebuilt_images }}"
+          repo_digests="${repo_digests} ${{ steps.build_pulp_minimal_image.outputs.rebuilt_images }}"
+          repo_digests="${repo_digests} ${{ steps.build_pulp_image.outputs.rebuilt_images }}"
+          for img in ${image_names}; do
+            # This takes advantage of the fact that skopeo will choose the correct platform for the image
+            repo_digests="${repo_digests} $(skopeo inspect --format='{{ .Digest }}' docker://${img} )"
+          done
+          echo "Repo digests: ${repo_digests}"
+          echo "${{ matrix.image_variant }}_${ARCH}=${repo_digests}" >> $GITHUB_OUTPUT
 
       - name: Logs
         if: always()
@@ -233,3 +233,111 @@ jobs:
           sudo ls -al $VOLUME_PATH
           sudo tree $VOLUME_PATH
           http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true
+
+  publish-images:
+    needs: [base,build-and-test-images]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image_variant: ${{ fromJSON(needs.base.outputs.image_variants) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Nightly is allowed to fail the build step, so check if we need to publish
+      - name: Check nightly passed
+        if: ${{ matrix.image_variant == 'nightly' }}
+        run: |
+          arm=(${{ needs.build-and-test-images.outputs.nightly_arm }})
+          amd=(${{ needs.build-and-test-images.outputs.nightly_amd }})
+          if [[ ${#arm[@]} -ne 8 || ${#amd[@]} -ne 8 ]]; then
+            echo "Nightly build failed, check previous steps"
+            echo "arm digests: ${arm[@]}"
+            echo "amd digests: ${amd[@]}"
+            exit 1
+          fi
+
+      # Merging the arm & amd images together and determining if they need to be published
+      - name: Get previous output
+        run: |
+          repo_digests_arm=(${{ needs.build-and-test-images.outputs[format('{0}_arm', matrix.image_variant)] }})
+          repo_digests_amd=(${{ needs.build-and-test-images.outputs[format('{0}_amd', matrix.image_variant)] }})
+          rebuilt_base_images="${repo_digests_arm[0]} ${repo_digests_amd[0]}"
+          rebuilt_minimal_images="${repo_digests_arm[1]} ${repo_digests_amd[1]}"
+          rebuilt_pulp_image="${repo_digests_arm[2]} ${repo_digests_amd[2]}"
+          base_digests="${repo_digests_arm[3]} ${repo_digests_amd[3]}"
+          pulp_ci_centos9_digests="${repo_digests_arm[4]} ${repo_digests_amd[4]}"
+          pulp_minimal_digests="${repo_digests_arm[5]} ${repo_digests_amd[5]}"
+          pulp_web_digests="${repo_digests_arm[6]} ${repo_digests_amd[6]}"
+          pulp_digests="${repo_digests_arm[7]} ${repo_digests_amd[7]}"
+          echo "rebuilt_base_images=${rebuilt_base_images}" >> $GITHUB_ENV
+          echo "rebuilt_minimal_images=${rebuilt_minimal_images}" >> $GITHUB_ENV
+          echo "rebuilt_pulp_image=${rebuilt_pulp_image}" >> $GITHUB_ENV
+          echo "base_digests=${base_digests}" >> $GITHUB_ENV
+          echo "pulp_ci_centos9_digests=${pulp_ci_centos9_digests}" >> $GITHUB_ENV
+          echo "pulp_minimal_digests=${pulp_minimal_digests}" >> $GITHUB_ENV
+          echo "pulp_web_digests=${pulp_web_digests}" >> $GITHUB_ENV
+          echo "pulp_digests=${pulp_digests}" >> $GITHUB_ENV
+
+      - name: Pull images if needed
+        run: |
+          if [[ ${{ contains(env.rebuilt_base_images, 'true') }} == 'true' ]]; then
+            base_digests=(${{ env.base_digests }})
+            pulp_ci_centos9_digests=(${{ env.pulp_ci_centos9_digests }})
+            podman pull "ghcr.io/pulp/base@${base_digests[0]}" "ghcr.io/pulp/base@${base_digests[1]}"
+            podman tag "ghcr.io/pulp/base@${base_digests[0]}" pulp/base:ci-arm64
+            podman tag "ghcr.io/pulp/base@${base_digests[1]}" pulp/base:ci-amd64
+            podman pull "ghcr.io/pulp/pulp-ci-centos9@${pulp_ci_centos9_digests[0]}" "ghcr.io/pulp/pulp-ci-centos9@${pulp_ci_centos9_digests[1]}"
+            podman tag "ghcr.io/pulp/pulp-ci-centos9@${pulp_ci_centos9_digests[0]}" pulp/pulp-ci-centos9:ci-arm64
+            podman tag "ghcr.io/pulp/pulp-ci-centos9@${pulp_ci_centos9_digests[1]}" pulp/pulp-ci-centos9:ci-amd64
+            images="base pulp-ci-centos9"
+          fi
+          if [[ ${{ contains(env.rebuilt_minimal_images, 'true') }} == 'true' ]]; then
+            pulp_minimal_digests=(${{ env.pulp_minimal_digests }})
+            pulp_web_digests=(${{ env.pulp_web_digests }})
+            podman pull "ghcr.io/pulp/pulp-minimal@${pulp_minimal_digests[0]}" "ghcr.io/pulp/pulp-minimal@${pulp_minimal_digests[1]}"
+            podman pull "ghcr.io/pulp/pulp-web@${pulp_web_digests[0]}" "ghcr.io/pulp/pulp-web@${pulp_web_digests[1]}"
+            podman tag "ghcr.io/pulp/pulp-minimal@${pulp_minimal_digests[0]}" pulp/pulp-minimal:ci-arm64
+            podman tag "ghcr.io/pulp/pulp-minimal@${pulp_minimal_digests[1]}" pulp/pulp-minimal:ci-amd64
+            podman tag "ghcr.io/pulp/pulp-web@${pulp_web_digests[0]}" pulp/pulp-web:ci-arm64
+            podman tag "ghcr.io/pulp/pulp-web@${pulp_web_digests[1]}" pulp/pulp-web:ci-amd64
+            images="${images} pulp-minimal pulp-web"
+          fi
+          if [[ ${{ contains(env.rebuilt_pulp_image, 'true') }} == 'true' ]]; then
+            pulp_digests=(${{ env.pulp_digests }})
+            podman pull "ghcr.io/pulp/pulp@${pulp_digests[0]}" "ghcr.io/pulp/pulp@${pulp_digests[1]}"
+            podman tag "ghcr.io/pulp/pulp@${pulp_digests[0]}" pulp/pulp:ci-arm64
+            podman tag "ghcr.io/pulp/pulp@${pulp_digests[1]}" pulp/pulp:ci-amd64
+            images="${images} pulp"
+          fi
+          podman images -a
+          echo "Images to publish: $images"
+          echo "IMAGES=${images}" >> $GITHUB_ENV
+
+      - name: Set image tags
+        run: |
+          version="${{ needs.build-and-test-images.outputs[format('{0}_app_version', matrix.image_variant)] }}"
+          branch=$(echo ${version} | grep -oP '\d+\.\d+')
+          tags="${branch} ${version}"
+          if [[ ${{ matrix.image_variant }} == "stable" ]]; then
+            if [ "${{ github.ref_name }}" == "latest" ]; then
+              tags="${tags} latest stable"
+            fi
+          else
+            tags="${tags} nightly"
+          fi
+          tags=$(echo "${tags}" | xargs -n1 | sort -u | xargs)
+          echo "Set tags to: $tags"
+          echo "TAGS=${tags}" >> $GITHUB_ENV
+
+      - name: Publish images
+        if: ${{ env.IMAGES }}
+        uses: "./.github/actions/publish_images"
+        with:
+          image_names: ${{ env.IMAGES }}
+          tags: ${{ env.TAGS }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          docker_bot_username: ${{ secrets.DOCKER_BOT_USERNAME }}
+          docker_bot_password: ${{ secrets.DOCKER_BOT_PASSWORD }}
+          quay_bot_username: ${{ secrets.QUAY_BOT_USERNAME }}
+          quay_bot_password: ${{ secrets.QUAY_BOT_PASSWORD }}

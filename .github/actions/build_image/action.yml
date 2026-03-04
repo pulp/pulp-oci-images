@@ -9,8 +9,12 @@ inputs:
   image_name:
     description: 'Name of the image to be built'
     required: true
-  image_cache_key:
-    description: 'The key value used to store the base images in the cache'
+  latest_ui:
+    description: 'Use the latest pulp-ui when building the image'
+    default: 'false'
+    required: false
+  rebuilt_base_images:
+    description: 'true/false if the base images were rebuilt prior'
     required: true
 outputs:
   app_version:
@@ -19,9 +23,9 @@ outputs:
   app_branch:
     value: ${{ steps.image_version_branch.outputs.app_branch }}
     description: 'The pulpcore version branch that the built image matches'
-  app_arch_tag:
-    value: ${{ steps.image_tags.outputs.app_arch_tag }}
-    description: 'The temporary amd64 arch tag of the app image'
+  rebuilt_images:
+    value: ${{ steps.rebuild_needed.outputs.build }}
+    description: 'true/false if the app image was rebuilt'
 
 runs:
   using: "composite"
@@ -48,45 +52,85 @@ runs:
       with:
         python-version: 3.11
 
-    - name: Restore podman images from cache
-      uses: actions/cache/restore@v4
-      with:
-        key: base-images=${{ inputs.image_cache_key }}
-        path: base-images.tar
+    - name: Install python deps
+      run: pip install httpie jq packaging requests pyyaml
+      shell: bash
 
-    - name: Load podman images from tarball
+    - name: Set up oras
+      uses: oras-project/setup-oras@v1
+
+    - name: Find latest ui version
+      if: inputs.latest_ui != 'false'
       run: |
-        podman load -i base-images.tar
+        echo "Requesting the latest pulp-ui release"
+        URL=$(http --verify=no GET https://api.github.com/repos/pulp/pulp-ui/releases/latest | jq -r '.assets[0].browser_download_url')
+        if [[ -n "${URL}" && ("${URL}" != "null") ]]; then
+          echo "Found UI url ${URL}"
+          echo "BUILD_UI_ARG=--build-arg PULP_UI_URL=${URL}" >> $GITHUB_ENV
+        else
+          echo "Failed to find the latest pulp-ui release"
+        fi
+      shell: bash
+
+    - name: Generate plugin version constraints
+      run: |
+        branch=${{ github.base_ref || github.ref_name }}
+        if [[ "${branch}" != "latest" ]]; then
+          echo "Generating supported-branch constraints for branch ${branch}"
+          python .ci/scripts/get_supported_specifiers.py >> images/assets/constraints.txt
+          echo "Plugin constraints:"
+          cat images/assets/constraints.txt
+        else
+          echo "Latest branch: no plugin constraints needed"
+        fi
+      shell: bash
+
+    - name: Check if rebuild is needed
+      id: rebuild_needed
+      run: |
+        # Rebuilds are needed for 
+        # 1. CI is being ran in a PR or is a nightly run
+        # 2. Base images were rebuilt
+        # 3. New pulp versions were released
+        build=true
+        if [[ "${{ github.event_name }}" != "pull_request" && "${{ inputs.image_variant }}" != "nightly" && "${{ inputs.rebuilt_base_images }}" == "false" ]]; then
+          # Fetch the latest plugin versions from the last published built image
+          branch=${{ github.base_ref || github.ref_name }}
+          config=$(oras manifest fetch-config --platform linux/amd64 ghcr.io/pulp/${{ inputs.image_name }}:${branch} | jq -r '.config.Labels')
+          echo -e "${config}" | jq -r '."org.pulp.plugins"' > versions.freeze
+          # Script returns non-zero (100) when new versions are available
+          cat versions.freeze
+          if python .ci/scripts/check_up_to_date.py $branch versions.freeze --plugin-specifiers images/assets/constraints.txt; then
+            build=false
+          fi
+        fi
+        echo "build=${build}" >> "$GITHUB_OUTPUT"
+        echo "Going to rebuild: ${build}"
       shell: bash
 
     - name: Build images
+      if: steps.rebuild_needed.outputs.build == 'true'
       run: |
         podman version
         buildah version
-        sudo podman run --rm --privileged multiarch/qemu-user-static --reset -p yes
-        for ARCH in arm64 amd64
-        do
-          if [[ "${{ inputs.image_name }}" == "pulp-minimal" || "${{ inputs.image_name }}" == "galaxy-minimal" ]]; then
-            base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
-            podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile.core --tag pulp/${{ inputs.image_name }}:${TEMP_APP_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_BASE_TAG}-${ARCH} .
-            podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile.webserver --tag pulp/${base_image}-web:${TEMP_APP_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_APP_TAG}-${ARCH} .
-          else
-            podman build --platform linux/${ARCH} --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile --tag pulp/${{ inputs.image_name }}:${TEMP_APP_TAG}-${ARCH} --build-arg FROM_TAG=${TEMP_BASE_TAG}-${ARCH} .
-          fi
-        done
+        if [[ "${{ inputs.image_name }}" == "pulp-minimal" ]]; then
+          base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
+          podman build --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile.core --tag pulp/${{ inputs.image_name }}:ci --build-arg FROM_TAG=ci .
+          podman build --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile.webserver --tag pulp/${base_image}-web:ci --build-arg FROM_TAG=ci .
+        else
+          podman build --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile --tag pulp/${{ inputs.image_name }}:ci --build-arg FROM_TAG=ci ${{ env.BUILD_UI_ARG }} .
+        fi
         podman images -a
       shell: bash
 
     - name: Set version and branch image tags
       id: image_version_branch
       run: |
-        base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
-        if [[ "${base_image}" == "pulp" ]]; then
-          pip_name="pulpcore"
+        if [[ "${{ steps.rebuild_needed.outputs.build }}" == "true" ]]; then
+          app_version=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci bash -c "pip3 show pulpcore | sed -n -e 's/Version: //p'")
         else
-          pip_name="galaxy-ng"
+          app_version=$(grep pulpcore versions.freeze | sed -n -e 's/pulpcore==//p')
         fi
-        app_version=$(podman run --pull=never pulp/${{ inputs.image_name }}:${TEMP_APP_TAG}-amd64 bash -c "pip3 show ${pip_name} | sed -n -e 's/Version: //p'")
         app_branch=$(echo ${app_version} | grep -oP '\d+\.\d+')
 
         echo "APP_VERSION: ${app_version}"
@@ -96,16 +140,15 @@ runs:
       shell: bash
 
     - name: Label image with metadata
+      if: steps.rebuild_needed.outputs.build == 'true'
       run: |
-        packages=$(podman run --pull=never pulp/${{ inputs.image_name }}:${TEMP_APP_TAG}-amd64 bash -c "pip3 list --format json")
+        packages=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci bash -c "pip3 list --format json")
         plugin_versions=$(echo $packages | jq -r '.[] | select(.name | contains("pulp")) | .name + "==" + .version')
-        postgres=$(podman run --pull=never pulp/${{ inputs.image_name }}:${TEMP_APP_TAG}-amd64 bash -c "postgres --version | sed -n -e 's/postgres (PostgreSQL) //p'")
-        python_version=$(podman run --pull=never pulp/${{ inputs.image_name }}:${TEMP_APP_TAG}-amd64 bash -c "python3 --version | sed -n -e 's/Python //p'")
+        postgres=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci bash -c "postgres --version | sed -n -e 's/postgres (PostgreSQL) //p'")
+        python_version=$(podman run --pull=never pulp/${{ inputs.image_name }}:ci bash -c "python3 --version | sed -n -e 's/Python //p'")
         files_hash="${{ hashFiles(format('images/{0}/{1}/**', inputs.image_name, inputs.image_variant), 'images/Containerfile.core.base', 'images/pulp_ci_centos/Containerfile', 'images/assets/**', 'images/s6_assets/**') }}"
-        for ARCH in arm64 amd64
-        do
-          tag="pulp/${{ inputs.image_name }}:${TEMP_APP_TAG}-${ARCH}"
-          echo "FROM ${tag}" | podman build --pull=false --platform linux/${ARCH} --format docker --label "org.pulp.plugins=${plugin_versions}" --label "org.pulp.postgres-version=${postgres}" --label "org.pulp.python-version=${python_version}" --label "org.pulp.containerfiles-hash=${files_hash}" --tag ${tag} -
-        done
-        podman image inspect pulp/${{ inputs.image_name }}:${TEMP_APP_TAG}-amd64 --format='{{ .Config.Labels }}'
+
+        tag="pulp/${{ inputs.image_name }}:ci"
+        echo "FROM ${tag}" | podman build --pull=false --format docker --label "org.pulp.plugins=${plugin_versions}" --label "org.pulp.postgres-version=${postgres}" --label "org.pulp.python-version=${python_version}" --label "org.pulp.containerfiles-hash=${files_hash}" --tag ${tag} -
+        podman image inspect ${tag} --format='{{ .Config.Labels }}'
       shell: bash
