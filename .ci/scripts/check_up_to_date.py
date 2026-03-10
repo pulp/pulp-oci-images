@@ -46,6 +46,9 @@ def check_update(branch, current_versions, plugin_specifiers=None, should_exit=T
                     continue
             core_version = cur_version
             new_versions["pulpcore"] = core_version
+    for core_spread, core_python in PYTHON_VERSIONS.items():
+        if core_version in core_spread.specifier:
+            break
 
     # Now check each plugin to see if they need updates
     for plugin in PACKAGES:
@@ -56,12 +59,8 @@ def check_update(branch, current_versions, plugin_specifiers=None, should_exit=T
         assert plugin_pypi_response.status_code == 200
         plugin_versions = sorted((parse(v) for v in plugin_pypi_response.json()["releases"].keys()), reverse=True)
         for version in plugin_versions:
-            if version <= plugin_version:
-                # Temp check for released images that are using non-supported plugin versions
-                if plugin in plugin_specifiers and plugin_version not in SpecifierSet(plugin_specifiers[plugin]):
-                    pass
-                else:
-                    break
+            if plugin in plugin_specifiers and version not in SpecifierSet(plugin_specifiers[plugin]):
+                continue
             version_pypi_response = requests.get(urljoin(INDEX, f"pypi/{plugin}/{version}/json"))
             assert version_pypi_response.status_code == 200
             version_python_response_json = version_pypi_response.json()
@@ -72,16 +71,12 @@ def check_update(branch, current_versions, plugin_specifiers=None, should_exit=T
             required_python_version = version_python_response_json["info"]["requires_python"]
             core_dep = next(filter(lambda dep: dep.startswith("pulpcore"), deps))
             if core_version in Requirement(core_dep).specifier:
-                for core_spread, core_python in PYTHON_VERSIONS.items():
-                    if core_version in core_spread.specifier:
-                        break
                 if required_python_version and not SpecifierSet(required_python_version).contains(core_python):
                     continue
-                if plugin in plugin_specifiers:
-                    if version not in SpecifierSet(plugin_specifiers[plugin]):
-                        continue
                 new_versions[plugin] = version
                 break
+        if plugin in new_versions and version == plugin_version:
+            del new_versions[plugin]
 
     if new_versions:
         print("Updates needed for:")
@@ -112,6 +107,8 @@ if __name__ == '__main__':
         with open(opts.plugin_specifiers) as f:
             lines = f.readlines()
             for line in lines:
+                if line.startswith("#"):
+                    continue
                 plugin, ge, specifier = line.rstrip("\n").partition(">=")
                 plugin_specifiers[plugin] = ge + specifier
     check_update(opts.branch, versions, plugin_specifiers=plugin_specifiers)
