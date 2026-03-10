@@ -57,19 +57,6 @@ runs:
         fi
       shell: bash
 
-    - name: Generate plugin version constraints
-      run: |
-        branch=${{ github.base_ref || github.ref_name }}
-        if [[ "${branch}" != "latest" ]]; then
-          echo "Generating supported-branch constraints for branch ${branch}"
-          python .ci/scripts/get_supported_specifiers.py >> images/assets/constraints.txt
-          echo "Plugin constraints:"
-          cat images/assets/constraints.txt
-        else
-          echo "Latest branch: no plugin constraints needed"
-        fi
-      shell: bash
-
     - name: Check if rebuild is needed
       id: rebuild_needed
       run: |
