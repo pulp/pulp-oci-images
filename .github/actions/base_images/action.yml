@@ -22,7 +22,7 @@ runs:
         branch=${{ github.base_ref || github.ref_name }}
         if [[ "${branch}" != "latest" ]]; then
           echo "Generating supported-branch constraints for branch ${branch}"
-          python .ci/scripts/get_supported_specifiers.py >> images/assets/constraints.txt
+          python .ci/scripts/get_supported_specifiers.py --pulpcore-version ${branch} >> images/assets/constraints.txt
           echo "Plugin constraints:"
           cat images/assets/constraints.txt
         else
