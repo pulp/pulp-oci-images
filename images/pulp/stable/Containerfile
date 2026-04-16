@@ -19,7 +19,7 @@ ARG PULP_HUGGING_FACE_VERSION=""
 ENV PULP_UI=${PULP_UI_URL:-false}
 COPY images/assets/requirements.extra.txt /requirements.extra.txt
 
-RUN pip install --upgrade \
+RUN uv pip install --upgrade \
   pulpcore[s3,google,azure]${PULPCORE_VERSION} \
   pulp-ansible${PULP_ANSIBLE_VERSION} \
   pulp-certguard${PULP_CERTGUARD_VERSION} \
@@ -35,7 +35,7 @@ RUN pip install --upgrade \
   pulp-hugging-face${PULP_HUGGING_FACE_VERSION} \
   -r /requirements.extra.txt \
   -c /constraints.txt && \
-  rm -rf /root/.cache/pip
+  rm -rf /root/.cache/uv
 
 USER pulp:pulp
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \

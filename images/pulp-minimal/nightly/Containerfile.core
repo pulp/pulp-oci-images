@@ -4,7 +4,7 @@ FROM pulp/base:${FROM_TAG}
 COPY images/assets/requirements.extra.txt /requirements.extra.txt
 COPY images/assets/requirements.minimal.txt /requirements.minimal.txt
 
-RUN pip install \
+RUN uv pip install \
   pulpcore[s3,google,azure]@git+https://github.com/pulp/pulpcore.git \
   git+https://github.com/pulp/pulp_ansible.git \
   git+https://github.com/pulp/pulp_container.git \
@@ -19,7 +19,7 @@ RUN pip install \
   -r /requirements.extra.txt \
   -r /requirements.minimal.txt \
   -c /constraints.txt && \
-  rm -rf /root/.cache/pip
+  rm -rf /root/.cache/uv
 
 USER pulp:pulp
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \

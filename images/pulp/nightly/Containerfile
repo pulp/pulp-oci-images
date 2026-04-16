@@ -3,7 +3,7 @@ FROM pulp/pulp-ci-centos9:${FROM_TAG}
 
 COPY images/assets/requirements.extra.txt /requirements.extra.txt
 
-RUN pip install --upgrade \
+RUN uv pip install --upgrade \
   pulpcore[s3,google,azure]@git+https://github.com/pulp/pulpcore@main \
   git+https://github.com/pulp/pulp_ansible@main \
   git+https://github.com/pulp/pulp_container@main \
@@ -17,7 +17,7 @@ RUN pip install --upgrade \
   git+https://github.com/pulp/pulp_hugging_face@main \
   -r /requirements.extra.txt \
   -c /constraints.txt && \
-  rm -rf /root/.cache/pip
+  rm -rf /root/.cache/uv
 
 USER pulp:pulp
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
