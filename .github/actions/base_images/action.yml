@@ -32,7 +32,7 @@ runs:
 
     - name: Calculate base images hash
       run: |
-        hash=${{ hashFiles('images/Containerfile.core.base', 'images/pulp_ci_centos/Containerfile', 'images/assets/**', 'images/s6_assets/**') }}
+        hash=${{ hashFiles('images/Containerfile.core.base', 'images/Containerfile.core.base.cs10', 'images/pulp_ci_centos/Containerfile', 'images/pulp_ci_centos/Containerfile.cs10', 'images/assets/**', 'images/s6_assets/**') }}
         echo "base image hash is ${hash}"
         echo "HASH=${hash}" >> $GITHUB_ENV
       shell: bash
@@ -71,6 +71,10 @@ runs:
         podman pull ghcr.io/pulp/pulp-ci-centos9:${branch}
         podman tag ghcr.io/pulp/base:${branch} pulp/base:ci
         podman tag ghcr.io/pulp/pulp-ci-centos9:${branch} pulp/pulp-ci-centos9:ci
+        podman pull ghcr.io/pulp/base-cs10:${branch} || true
+        podman pull ghcr.io/pulp/pulp-ci-centos10:${branch} || true
+        podman tag ghcr.io/pulp/base-cs10:${branch} pulp/base-cs10:ci || true
+        podman tag ghcr.io/pulp/pulp-ci-centos10:${branch} pulp/pulp-ci-centos10:ci || true
       shell: bash
 
     - name: Build images
@@ -80,4 +84,6 @@ runs:
         buildah version
         podman build --format docker --file images/Containerfile.core.base --tag "pulp/base:ci" --label "org.pulp.basefiles-hash=${HASH}" .
         podman build --format docker --file images/pulp_ci_centos/Containerfile --tag "pulp/pulp-ci-centos9:ci" --build-arg FROM_TAG="ci" .
+        podman build --format docker --file images/Containerfile.core.base.cs10 --tag "pulp/base-cs10:ci" --label "org.pulp.basefiles-hash=${HASH}" .
+        podman build --format docker --file images/pulp_ci_centos/Containerfile.cs10 --tag "pulp/pulp-ci-centos10:ci" --build-arg FROM_TAG="ci" .
       shell: bash

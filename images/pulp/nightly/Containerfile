@@ -1,5 +1,6 @@
 ARG FROM_TAG="latest"
-FROM pulp/pulp-ci-centos9:${FROM_TAG}
+ARG BASE_IMAGE="pulp/pulp-ci-centos9"
+FROM ${BASE_IMAGE}:${FROM_TAG}
 
 COPY images/assets/requirements.extra.txt /requirements.extra.txt
 
