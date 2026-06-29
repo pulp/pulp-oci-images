@@ -29,10 +29,13 @@ RUN dnf -y install "https://download.postgresql.org/pub/repos/yum/reporpms/EL-10
     dnf clean all
 
 # Valkey compatibility: s6 service scripts expect redis-server, redis user, and /etc/redis/redis.conf
+# Also create runtime directories that tmpfiles.d would normally handle via systemd
 RUN ln -s /usr/bin/valkey-server /usr/bin/redis-server && \
     ln -s /etc/valkey /etc/redis && \
     ln -s /etc/valkey/valkey.conf /etc/valkey/redis.conf && \
-    useradd -o -u $(id -u valkey) -g $(id -g valkey) -M -N redis || true
+    useradd -o -u $(id -u valkey) -g $(id -g valkey) -M -N redis || true && \
+    install -d -m 0755 -o valkey -g valkey /run/valkey && \
+    install -d -m 0750 -o valkey -g valkey /var/log/valkey
 
 RUN alternatives --install /usr/bin/postgres postgres /usr/pgsql-16/bin/postgres 160 \
       --follower /usr/bin/pg_dump pg_dump /usr/pgsql-16/bin/pg_dump \
