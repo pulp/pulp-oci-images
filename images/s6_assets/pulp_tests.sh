@@ -13,6 +13,8 @@ grep "127.0.0.1   pulp" /etc/hosts || echo "127.0.0.1   pulp" | sudo tee -a /etc
 
 echo "Installing Pulp-CLI"
 pip install pulp-cli
+echo "Installing uv"
+pip install uv
 
 # Retreive installed pulp-cli version
 PULP_CLI_VERSION=$(python3 -c \
@@ -30,7 +32,12 @@ else
   cd pulp-cli
 fi
 
-pip install -r test_requirements.txt || pip install --no-build-isolation -r test_requirements.txt
+# Newer pulp-cli versions (>= 0.39) removed test_requirements.txt and use uv
+# dependency groups instead; `make paralleltest` below calls `uv run` which
+# handles installing test deps automatically.
+if [ -f test_requirements.txt ]; then
+  pip install -r test_requirements.txt || pip install --no-build-isolation -r test_requirements.txt
+fi
 
 if [ -e tests/cli.toml ]; then
   mv tests/cli.toml "tests/cli.toml.bak.$(date -R)"
