@@ -30,7 +30,12 @@ else
   cd pulp-cli
 fi
 
-pip install -r test_requirements.txt || pip install --no-build-isolation -r test_requirements.txt
+if [ -f test_requirements.txt ]; then
+  pip install -r test_requirements.txt || pip install --no-build-isolation -r test_requirements.txt
+else
+  # pulp-cli >= 0.40 moved test deps into pyproject.toml dependency groups
+  pip install --group test
+fi
 
 if [ -e tests/cli.toml ]; then
   mv tests/cli.toml "tests/cli.toml.bak.$(date -R)"
