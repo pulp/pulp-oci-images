@@ -4,7 +4,7 @@ FROM pulp/base:${FROM_TAG}
 ARG PULPCORE_VERSION=""
 ARG GALAXY_NG_VERSION=""
 
-RUN pip3 install --upgrade \
+RUN pip install --upgrade \
   galaxy-ng${GALAXY_NG_VERSION} \
   pulpcore${PULPCORE_VERSION} \
   -c /constraints.txt && \

@@ -21,8 +21,7 @@ PACKAGES = [
 INDEX = "https://pypi.org"
 
 PYTHON_VERSIONS = {
-    Requirement("pulpcore>=3.22,<3.85"): "3.9",
-    Requirement("pulpcore>=3.85"): "3.11"
+    Requirement("pulpcore>=3.22"): "3.11",
 }
 
 def check_update(branch, current_versions, plugin_specifiers=None, should_exit=True):

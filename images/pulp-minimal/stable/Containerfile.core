@@ -12,7 +12,7 @@ ARG PULP_PYTHON_VERSION=""
 ARG PULP_RPM_VERSION=""
 ARG PULP_OSTREE_VERSION=""
 
-RUN pip3 install --upgrade \
+RUN pip install --upgrade \
   pulpcore${PULPCORE_VERSION} \
   pulp-ansible${PULP_ANSIBLE_VERSION} \
   pulp-certguard${PULP_CERTGUARD_VERSION} \
