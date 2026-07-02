@@ -15,7 +15,7 @@ ARG PULP_OSTREE_VERSION=""
 COPY images/assets/requirements.extra.txt /requirements.extra.txt
 COPY images/assets/requirements.minimal.txt /requirements.minimal.txt
 
-RUN pip3 install --upgrade \
+RUN pip install --upgrade \
   pulpcore[s3,google,azure]${PULPCORE_VERSION} \
   pulp-ansible${PULP_ANSIBLE_VERSION} \
   pulp-certguard${PULP_CERTGUARD_VERSION} \

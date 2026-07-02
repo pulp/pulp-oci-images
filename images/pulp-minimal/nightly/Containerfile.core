@@ -4,7 +4,7 @@ FROM pulp/base:${FROM_TAG}
 COPY images/assets/requirements.extra.txt /requirements.extra.txt
 COPY images/assets/requirements.minimal.txt /requirements.minimal.txt
 
-RUN pip3 install \
+RUN pip install \
   pulpcore[s3,google,azure]@git+https://github.com/pulp/pulpcore.git \
   git+https://github.com/pulp/pulp_ansible.git \
   git+https://github.com/pulp/pulp_container.git \
