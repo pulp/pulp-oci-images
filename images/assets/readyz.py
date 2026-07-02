@@ -53,7 +53,7 @@ gunicorn: master \[pulp-{content,api}\]
 OR
 ```
 # RPM installation
-/usr/bin/python3.9/usr/bin/gunicorn--bind[::]:2481{6,7}pulpcore.app.wsgi:application--namepulp-{api,content}--timeout90--workers2
+/usr/bin/python3.11/usr/bin/gunicorn--bind[::]:2481{6,7}pulpcore.app.wsgi:application--namepulp-{api,content}--timeout90--workers2
 ```
 """
 with open("/proc/1/cmdline", "r") as f:
