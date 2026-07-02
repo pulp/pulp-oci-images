@@ -2,8 +2,10 @@
 set -euo pipefail
 
 cleanup() {
-  echo ::group::INFO
-  podman exec pulp bash -c "pip3 list && pip3 install pipdeptree && pipdeptree"
+  echo ::group::PIP_LIST
+  podman exec pulp bash -c "pip list && pip install pipdeptree && pipdeptree"
+  echo ::endgroup::
+  echo ::group::PODMAN_LOGS
   podman logs pulp
   echo ::endgroup::
   podman stop pulp
@@ -26,7 +28,9 @@ start_container_and_wait() {
              --device /dev/fuse \
              -e PULP_DEFAULT_ADMIN_PASSWORD=password \
              -e PULP_HTTPS=${pulp_https} \
+             -e PULP_DOMAIN_ENABLED=${domain_enabled} \
              "$1"
+
   sleep 3  # Wait for the container to start
   podman exec pulp s6-rc -ba list
   for _ in $(seq 30)
@@ -57,6 +61,7 @@ else
   port=443
   pulp_https=true
 fi
+domain_enabled=false
 
 # Configure the GHA host for buildah/skopeo running within the pulp container
 # Default range is 165536-231071, 64K long
@@ -74,6 +79,9 @@ echo "TASK_DIAGNOSTICS = ['memory']" >> settings/settings.py
 if [ "$old_image" != "" ]; then
   start_container_and_wait $old_image
   podman rm -f pulp
+fi
+if [[ "$image" == "pulp/pulp:ci" ]]; then
+  domain_enabled=true
 fi
 start_container_and_wait $image
 
