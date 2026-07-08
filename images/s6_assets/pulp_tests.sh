@@ -13,6 +13,8 @@ grep "127.0.0.1   pulp" /etc/hosts || echo "127.0.0.1   pulp" | sudo tee -a /etc
 
 echo "Installing Pulp-CLI"
 pip install pulp-cli
+echo "Installing uv"
+pip install uv
 
 # Retreive installed pulp-cli version
 PULP_CLI_VERSION=$(python3 -c \
@@ -30,7 +32,12 @@ else
   cd pulp-cli
 fi
 
-pip install -r test_requirements.txt || pip install --no-build-isolation -r test_requirements.txt
+# Newer pulp-cli versions (>= 0.39) removed test_requirements.txt and use uv
+# dependency groups instead; `make paralleltest` below calls `uv run` which
+# handles installing test deps automatically.
+if [ -f test_requirements.txt ]; then
+  pip install -r test_requirements.txt || pip install --no-build-isolation -r test_requirements.txt
+fi
 
 if [ -e tests/cli.toml ]; then
   mv tests/cli.toml "tests/cli.toml.bak.$(date -R)"
@@ -58,10 +65,12 @@ echo "Setup ansible signing service"
 podman exec -u pulp -i pulp bash -c "cat > /var/lib/pulp/scripts/sign_detached.sh" < "${PWD}/tests/assets/sign_detached.sh"
 podman exec -u pulp pulp chmod a+rx /var/lib/pulp/scripts/sign_detached.sh
 podman exec -u pulp pulp bash -c "pulpcore-manager add-signing-service --class core:AsciiArmoredDetachedSigningService sign_ansible /var/lib/pulp/scripts/sign_detached.sh 'pulp-fixture-signing-key'"
-echo "Setup deb release signing service"
-podman exec -u pulp -i pulp bash -c "cat > /var/lib/pulp/scripts/sign_deb_release.sh" < "${PWD}/tests/assets/sign_deb_release.sh"
-podman exec -u pulp pulp chmod a+rx /var/lib/pulp/scripts/sign_deb_release.sh
-podman exec -u pulp pulp bash -c "pulpcore-manager add-signing-service --class deb:AptReleaseSigningService sign_deb_release /var/lib/pulp/scripts/sign_deb_release.sh 'pulp-fixture-signing-key'"
+if podman exec -u pulp pulp bash -c "pip show pulp-deb" > /dev/null 2>&1; then
+  echo "Setup deb release signing service"
+  podman exec -u pulp -i pulp bash -c "cat > /var/lib/pulp/scripts/sign_deb_release.sh" < "${PWD}/tests/assets/sign_deb_release.sh"
+  podman exec -u pulp pulp chmod a+rx /var/lib/pulp/scripts/sign_deb_release.sh
+  podman exec -u pulp pulp bash -c "pulpcore-manager add-signing-service --class deb:AptReleaseSigningService sign_deb_release /var/lib/pulp/scripts/sign_deb_release.sh 'pulp-fixture-signing-key'"
+fi
 
 # Test buildah for pulp_container's usage
 podman exec -u pulp pulp podman system migrate
