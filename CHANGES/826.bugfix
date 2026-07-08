@@ -1,1 +1,1 @@
-Skip installing pulp-deb and pulp-maven on 3.49 images where no domain-compatible versions exist.
+Skip installing pulp-deb and pulp-maven on 3.49 images where no supported versions exist, and only run domain-enabled s6 tests on the latest branch.
