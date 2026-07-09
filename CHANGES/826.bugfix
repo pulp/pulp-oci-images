@@ -1,1 +1,0 @@
-Skip installing pulp-deb and pulp-maven on 3.49 images where no supported versions exist, only run domain-enabled s6 tests on the latest branch, and support pulp-cli releases without test_requirements.txt.
