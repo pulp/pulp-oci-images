@@ -22,10 +22,10 @@ runs:
     - name: Test image with upgrade in s6 mode (pulp)
       if: inputs.image_name == 'pulp'
       run: |
-        # Pin to 3.49.62 so the upgrade source always has PostgreSQL 13,
-        # even after the floating 3.49 tag moves to PostgreSQL 16.
+        # Pin to 3.49.61 so the upgrade source always has PostgreSQL 13,
+        # even after the floating 3.49 / latest 3.49.z tags move to PostgreSQL 16.
         # Avoid older 3.49.z tags (e.g. 3.49.0) that fail to start on arm64.
-        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:ci" http "quay.io/pulp/pulp:3.49.62" "${{ inputs.app_branch }}"
+        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:ci" http "quay.io/pulp/pulp:3.49.61" "${{ inputs.app_branch }}"
         podman stop pulp
         podman rm pulp
       shell: bash
