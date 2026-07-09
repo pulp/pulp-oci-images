@@ -54,6 +54,7 @@ BASEDIR=$(dirname "$0")
 image=${1:-pulp/pulp:latest}
 scheme=${2:-http}
 old_image=${3:-""}
+app_branch=${4:-latest}
 if [[ "$scheme" == "http" ]]; then
   port=80
   pulp_https=false
@@ -80,7 +81,7 @@ if [ "$old_image" != "" ]; then
   start_container_and_wait $old_image
   podman rm -f pulp
 fi
-if [[ "$image" == "pulp/pulp:ci" ]]; then
+if [[ "$image" == "pulp/pulp:ci" && "$app_branch" == "latest" ]]; then
   domain_enabled=true
 fi
 start_container_and_wait $image
