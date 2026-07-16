@@ -35,7 +35,10 @@ RUN ln -s /usr/bin/valkey-server /usr/bin/redis-server && \
     ln -s /etc/valkey/valkey.conf /etc/valkey/redis.conf && \
     useradd -o -u $(id -u valkey) -g $(id -g valkey) -M -N redis || true && \
     install -d -m 0755 -o valkey -g valkey /run/valkey && \
-    install -d -m 0750 -o valkey -g valkey /var/log/valkey
+    install -d -m 0750 -o valkey -g valkey /var/log/valkey && \
+    # Valkey defaults to writing dump files to ./ which fails if cwd is not writable
+    install -d -m 0750 -o valkey -g valkey /var/lib/valkey && \
+    sed -i 's|^[# ]*dir .*|dir /var/lib/valkey|' /etc/valkey/valkey.conf
 
 RUN alternatives --install /usr/bin/postgres postgres /usr/pgsql-16/bin/postgres 160 \
       --follower /usr/bin/pg_dump pg_dump /usr/pgsql-16/bin/pg_dump \
