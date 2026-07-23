@@ -33,8 +33,8 @@ PACKAGES = [
 ]
 
 PYTHON_VERSIONS = {
-    Requirement("pulpcore>=3.22,<3.85"): "3.9",
-    Requirement("pulpcore>=3.85"): "3.11"
+    Requirement("pulpcore>=3.22,<3.49"): "3.9",
+    Requirement("pulpcore>=3.49"): "3.11"
 }
 
 
