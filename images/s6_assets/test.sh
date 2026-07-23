@@ -3,7 +3,7 @@ set -euo pipefail
 
 cleanup() {
   echo ::group::PIP_LIST
-  podman exec pulp bash -c "pip list && pip install pipdeptree && pipdeptree"
+  podman exec pulp bash -c "pip list && pip install pipdeptree<4 && pipdeptree" || true
   echo ::endgroup::
   echo ::group::PODMAN_LOGS
   podman logs pulp
