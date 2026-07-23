@@ -22,8 +22,8 @@ runs:
     - name: Test image with upgrade in s6 mode (pulp)
       if: inputs.image_name == 'pulp'
       run: |
-        # 3.73 has postgres 13 rather than 16
-        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:ci" http "quay.io/pulp/pulp:3.73" "${{ inputs.app_branch }}"
+        # 3.73.35 has postgres 13 rather than 16
+        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:ci" http "quay.io/pulp/pulp:3.73.35" "${{ inputs.app_branch }}"
         podman stop pulp
         podman rm pulp
       shell: bash
