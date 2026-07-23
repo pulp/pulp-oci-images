@@ -22,7 +22,8 @@ runs:
     - name: Test image in s6 mode (pulp)
       if: inputs.image_name == 'pulp'
       run: |
-        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:ci" "http"
+        # 3.63.39 has PG 13 to test the pgupgrade path
+        images/s6_assets/test.sh "pulp/${{ inputs.image_name }}:ci" "http" 3.63.39 "${{ inputs.app_branch }}"
       shell: bash
 
     - name: Test Compose up
