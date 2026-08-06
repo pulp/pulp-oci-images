@@ -110,3 +110,5 @@ COPY images/assets/constraints.txt /constraints.txt
 RUN touch /var/log/galaxy_api_access.log && \
     chown pulp:pulp /var/log/galaxy_api_access.log && \
     chmod u+rw /var/log/galaxy_api_access.log
+
+USER pulp:pulp

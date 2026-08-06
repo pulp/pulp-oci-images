@@ -2,6 +2,8 @@ ARG FROM_TAG="latest"
 ARG BASE_IMAGE="pulp/base"
 FROM ${BASE_IMAGE}:${FROM_TAG}
 
+USER root:root
+
 ARG PULPCORE_VERSION=""
 ARG PULP_ANSIBLE_VERSION=""
 ARG PULP_CERTGUARD_VERSION=""
@@ -41,13 +43,12 @@ RUN uv pip install --upgrade \
 # our /usr/bin/pulp-content script.
 RUN rm -f /usr/local/bin/pulp-content
 
+RUN chmod 2775 /var/lib/pulp/{scripts,media,tmp,assets}
+RUN chown pulp:root /var/lib/pulp/{scripts,media,tmp,assets}
+
 USER pulp:pulp
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
        /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link
-USER root:root
-
-RUN chmod 2775 /var/lib/pulp/{scripts,media,tmp,assets}
-RUN chown :root /var/lib/pulp/{scripts,media,tmp,assets}
 
 RUN \
   if [ -n "$PULP_UI_URL" ]; then \
