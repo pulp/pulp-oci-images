@@ -48,12 +48,6 @@ RUN pip install --upgrade \
   -c /constraints.txt && \
   rm -rf /root/.cache/pip
 
-# collectstatic makes the api browsable in a web browser
-USER pulp:pulp
-RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
-       /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link
-USER root:root
-
 # If you plugin has extra API routes you need to link them here into /etc/nginx/pulp/
 RUN ln $(pip show pulp_custom_plugin | sed -n -e 's/Location: //p')/pulp_custom_plugin/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_custom_plugin.conf
 
@@ -64,7 +58,13 @@ RUN \
   if [ -n "$PULP_UI_URL" ]; then \
     mkdir -p "${PULP_STATIC_ROOT}pulp_ui"; \
     curl -Ls $PULP_UI_URL | tar -xzv -C "${PULP_STATIC_ROOT}pulp_ui"; \
+    chown -R pulp:pulp "${PULP_STATIC_ROOT}pulp_ui"; \
   fi
+
+# collectstatic makes the api browsable in a web browser
+USER pulp:pulp
+RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
+       /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link
 ```
 
 Build your custom `pulp` image
@@ -100,15 +100,14 @@ RUN pip install --upgrade \
 # our /usr/bin/pulp-content script.
 RUN rm -f /usr/local/bin/pulp-content
 
+# Correct the permissions needed for Pulp folders
+RUN chmod 2775 /var/lib/pulp/{scripts,media,tmp,assets}
+RUN chown pulp:root /var/lib/pulp/{scripts,media,tmp,assets}
+
 # collectstatic makes the api browsable in a web browser
 USER pulp:pulp
 RUN PULP_STATIC_ROOT=/var/lib/operator/static/ PULP_CONTENT_ORIGIN=localhost \
        /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link
-USER root:root
-
-# Correct the permissions needed for Pulp folders
-RUN chmod 2775 /var/lib/pulp/{scripts,media,tmp,assets}
-RUN chown :root /var/lib/pulp/{scripts,media,tmp,assets}
 ```
 
 ### pulp-web customization
