@@ -2,8 +2,6 @@ ARG FROM_TAG="latest"
 ARG BASE_IMAGE="pulp/base"
 FROM ${BASE_IMAGE}:${FROM_TAG}
 
-USER root:root
-
 COPY images/assets/requirements.extra.txt /requirements.extra.txt
 COPY images/assets/requirements.minimal.txt /requirements.minimal.txt
 
