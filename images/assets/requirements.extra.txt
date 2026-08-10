@@ -1,4 +1,3 @@
-rhsm
 django-auth-ldap
 python-json-logger
 social-auth-core
