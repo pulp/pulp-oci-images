@@ -20,6 +20,10 @@ http {
     # to build optimal hash types.
     types_hash_max_size 4096;
 
+    # PQC (post-quantum) X.509 certificates can exceed the default 8k buffer
+    # when forwarded as HTTP headers (e.g. X-CLIENT-CERT).
+    large_client_header_buffers 4 16k;
+
     upstream pulp-content {
          server {{ '[::1]' if has_ipv6 else '127.0.0.1' }}:24816;
     }
