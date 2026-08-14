@@ -186,7 +186,7 @@ jobs:
 
     - name: Build pulp-minimal and pulp-web images
       run: |
-        docker build -f images/Containerfile.core.base -t pulp/base:latest .
+        docker build -f images/Containerfile.core.base.cs10 -t pulp/base-cs10:latest .
         docker build -f images/pulp-minimal/stable/Containerfile.core -t localhost/pulp/pulp-minimal:ci .
         docker build -f images/pulp-minimal/stable/Containerfile.webserver -t localhost/pulp/pulp-web:ci .
         docker images

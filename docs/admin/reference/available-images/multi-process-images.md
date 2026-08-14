@@ -287,67 +287,13 @@ Then repeat the original command in [Starting the Container](#starting-the-conta
 
 When using rootless podman, you cannot create the directories (settings pulp_storage pgsql containers) on [NFS](https://github.com/containers/podman/blob/master/rootless.md#shortcomings-of-rootless-podman), SSHFS, or certain other non-standard filesystems.
 
-### Podman on CentOS 7
-
-When using on CentOS 7, container-selinux has a
-limitation. [1](https://github.com/containers/podman/issues/9513)
-[2](https://github.com/containers/podman/issues/6414)
-SELinux denials will prevent Pulp from running. To
-overcome it, you must do one of the following:
-
-* Run the container with "--privileged"
-* Run the container as root
-* Disable SELinux
-
-Additionally, you will likely run into a limit on the number of open files (ulimit) in the
-container.
-One way to overcome this is to add `DefaultLimitNOFILE=65536` to `/etc/systemd/system.conf`.
-
-### Docker on CentOS 7
-
-While using the version of Docker that is provided with CentOS 7, there are known issues that cause the following errors to occur:
-
-* When starting the container:
-
-  `FATAL:  could not create lock file "/var/run/postgresql/.s.PGSQL.5432.lock": No such file or directory`
-
-* (If the preceding error is worked around,) when executing `docker exec -it pulp bash -c 'pulpcore-manager reset-admin-password'`:
-
-  ```
-  psycopg2.OperationalError: could not connect to server: No such file or directory
-        Is the server running locally and accepting
-        connections on Unix domain socket "/var/run/postgresql/.s.PGSQL.5432"?
-  ```
-
-* Pulp tasks are stuck in `waiting` status, and executing `docker exec -it pulp bash -c 'rq info'` returns `0 workers`:
-
-  ```
-  1 queues, 2 jobs total
-
-  0 workers, 1 queues
-  ```
-
-The version of Docker that is provided with CentOS 7 mounts `tmpfs` on `/run`. The Pulp Container recipe uses `/var/run`, which is a symlink to `/run`, and expects its contents to be available at container run time. You can work around this by specifying an additional `/run` volume, which suppresses this behavior of the Docker runtime. Docker will copy the image's contents to that volume and the container should start as expected.
-
-The `/run` volume will need to contain a `postgresql` directory (with permissions that the container's postgresql can write to) and a separate `pulpcore-*` directory for the rq manager and its workers to start:
-
-```console
-$ mkdir -p settings pulp_storage pgsql containers run/postgresql run/pulpcore-{resource-manager,worker-{1,2}}
-$ chmod a+w run/postgresql
-```
-
-### Upgrading from ``pulp/pulp-fedora31`` image
-
-The ``pulp/pulp-fedora31`` container vendored PostgreSQL 11. The ``pulp/pulp`` image vendors PostgreSQL 13, and only automatically upgrades from PostgreSQL 12. To upgrade the database from 11 to 12, refer to [PostgreSQL documentation](https://www.postgresql.org/docs/12/upgrading.html).
-
-
 ## Build instructions
 
 The Container file and all other assets used to build the container image are available on [GitHub](https://github.com/pulp/pulp-oci-images).
 
 ```bash
-$ <docker build | buildah bud> --file images/Containerfile.core.base --tag pulp/base:latest .
-$ <docker build | buildah bud> --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos9:latest .
+$ <docker build | buildah bud> --file images/Containerfile.core.base.cs10 --tag pulp/base-cs10:latest .
+$ <docker build | buildah bud> --file images/pulp_ci_centos/Containerfile.cs10 --tag pulp/pulp-ci-centos10:latest .
 $ <docker build | buildah bud> --file images/pulp/stable/Containerfile --tag pulp/pulp:latest .
 $ <docker build | buildah bud> --file images/galaxy/stable/Containerfile --tag pulp/galaxy:latest
 ```
@@ -358,8 +304,8 @@ By default, containers get built using the latest version of each Pulp component
 specify a version of a particular component, you can do so with args:
 
 ```bash
-$ <docker build | buildah bud> --build-arg PULPCORE_VERSION="==3.5.0" --file images/pulp/Containerfile
-$ <docker build | buildah bud> --build-arg PULP_FILE_VERSION=">=1.0.0" --file images/pulp/Containerfile
+$ <docker build | buildah bud> --build-arg PULPCORE_VERSION="==3.5.0" --file images/pulp/Containerfile.core.base.cs10
+$ <docker build | buildah bud> --build-arg PULP_FILE_VERSION=">=1.0.0" --file images/pulp/Containerfile.core.base.cs10
 ```
 
 ## Debugging instructions

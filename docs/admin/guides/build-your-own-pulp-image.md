@@ -2,7 +2,7 @@
 
 The Pulp images (`pulp/pulp` and `pulp/pulp-minimal`) come pre-installed with the set of plugins
 we officially support. However, these images can be easily customized to suit your specific content
-needs. 
+needs.
 
 ## Change the versions of the plugins
 
@@ -20,9 +20,9 @@ $ buildah bud --build-arg FROM_TAG="custom" --file images/pulp-minimal/Container
 ## Add/remove plugins
 
 If you want to build a custom image with a different set of plugins then the official images you are
-going to need to write a custom Containerfile. The Containerfiles for `pulp` and `pulp-minimal` 
-should be used as templates for creating your custom image. First clone and check out the 
-`pulp-oci-images` repository. Then create a new directory in the `images/` directory for your 
+going to need to write a custom Containerfile. The Containerfiles for `pulp` and `pulp-minimal`
+should be used as templates for creating your custom image. First clone and check out the
+`pulp-oci-images` repository. Then create a new directory in the `images/` directory for your
 custom image and copy over the corresponding Containerfile for the `pulp` or `pulp-minimal` image
 into your new directory. See [Available Images](site:pulp-oci-images/docs/admin/reference/available-images/)
 for more information on the difference between the two images.
@@ -57,7 +57,7 @@ USER root:root
 # If you plugin has extra API routes you need to link them here into /etc/nginx/pulp/
 RUN ln $(pip show pulp_custom_plugin | sed -n -e 's/Location: //p')/pulp_custom_plugin/app/webserver_snippets/nginx.conf /etc/nginx/pulp/pulp_custom_plugin.conf
 
-# Add pulp-ui to the image, specified using a build-arg PULP_UI_URL 
+# Add pulp-ui to the image, specified using a build-arg PULP_UI_URL
 ARG PULP_UI_URL
 ENV PULP_UI=${PULP_UI_URL:-false}
 RUN \
@@ -80,9 +80,9 @@ Here is an example of a customized Containerfile for the single-process image.
 
 ```dockerfile title="custom-minimal/Containerfile.core"
 ARG FROM_TAG="latest"
-# The single-process pulp-minimal image must inherit from pulp/base
+# The single-process pulp-minimal image must inherit from pulp/base-cs10
 # The tags follow pulpcore-versioning 3.Y(.Z), we recommend using "latest"
-FROM pulp/base:${FROM_TAG}
+FROM pulp/base-cs10:${FROM_TAG}
 
 COPY images/assets/requirements.extra.txt /requirements.extra.txt
 COPY images/assets/requirements.minimal.txt /requirements.minimal.txt
@@ -118,7 +118,7 @@ If you customize the `pulp-minimal` image you will also need to customize the `p
 ```dockerfile title="custom-minimal/Containerfile.webserver"
 ARG FROM_TAG="custom"
 # The web image must inherit from your custom pulp-minimal image, if you rename
-# the image then you should rename it here, else we recommend changing the 
+# the image then you should rename it here, else we recommend changing the
 # default FROM_TAG to your custom tag
 FROM pulp/pulp-minimal:${FROM_TAG} as builder
 
