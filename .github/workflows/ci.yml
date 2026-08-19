@@ -153,9 +153,22 @@ jobs:
           echo "INFO:
           Updating registries configuration
           "
-          echo "[registries.insecure]
-          registries = ['ingress.local','nodeport.local:30000']
-          " | sudo tee -a /etc/containers/registries.conf
+          # registries.conf v1 and v2 formats cannot be mixed in the same file;
+          # detect which format the runner uses and append matching syntax.
+          if grep -q "unqualified-search-registries" /etc/containers/registries.conf; then
+            echo '
+          [[registry]]
+          location = "ingress.local"
+          insecure = true
+
+          [[registry]]
+          location = "nodeport.local:30000"
+          insecure = true' | sed 's/^ *//' | sudo tee -a /etc/containers/registries.conf
+          else
+            echo '
+          [registries.insecure]
+          registries = ["ingress.local","nodeport.local:30000"]' | sed 's/^ *//' | sudo tee -a /etc/containers/registries.conf
+          fi
         fi
       shell: bash
 
@@ -182,6 +195,12 @@ jobs:
     - uses: actions/checkout@v6
       with:
         repository: pulp/pulp-operator
+
+    # Remove once https://github.com/pulp/pulp-operator/pull/1667 is merged
+    - name: Fix push repo type in operator test scripts
+      run: |
+        sed -i 's/repository -t push show/repository show/g' .ci/scripts/pulp_container/export_repository.sh
+      shell: bash
 
     - name: Setup Go environment
       uses: actions/setup-go@v6
