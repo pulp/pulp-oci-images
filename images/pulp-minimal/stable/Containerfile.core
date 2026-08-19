@@ -1,5 +1,5 @@
 ARG FROM_TAG="latest"
-ARG BASE_IMAGE="pulp/base-cs10"
+ARG BASE_IMAGE="pulp/base"
 FROM ${BASE_IMAGE}:${FROM_TAG}
 
 ARG PULPCORE_VERSION=""

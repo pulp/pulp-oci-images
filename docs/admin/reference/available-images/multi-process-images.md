@@ -292,8 +292,8 @@ When using rootless podman, you cannot create the directories (settings pulp_sto
 The Container file and all other assets used to build the container image are available on [GitHub](https://github.com/pulp/pulp-oci-images).
 
 ```bash
-$ <docker build | buildah bud> --file images/Containerfile.core.base.cs10 --tag pulp/base-cs10:latest .
-$ <docker build | buildah bud> --file images/pulp_ci_centos/Containerfile.cs10 --tag pulp/pulp-ci-centos10:latest .
+$ <docker build | buildah bud> --file images/Containerfile.core.base --tag pulp/base:latest .
+$ <docker build | buildah bud> --file images/pulp_ci_centos/Containerfile --tag pulp/pulp-ci-centos10:latest .
 $ <docker build | buildah bud> --file images/pulp/stable/Containerfile --tag pulp/pulp:latest .
 $ <docker build | buildah bud> --file images/galaxy/stable/Containerfile --tag pulp/galaxy:latest
 ```
@@ -304,8 +304,8 @@ By default, containers get built using the latest version of each Pulp component
 specify a version of a particular component, you can do so with args:
 
 ```bash
-$ <docker build | buildah bud> --build-arg PULPCORE_VERSION="==3.5.0" --file images/pulp/Containerfile.core.base.cs10
-$ <docker build | buildah bud> --build-arg PULP_FILE_VERSION=">=1.0.0" --file images/pulp/Containerfile.core.base.cs10
+$ <docker build | buildah bud> --build-arg PULPCORE_VERSION="==3.5.0" --file images/Containerfile.core.base
+$ <docker build | buildah bud> --build-arg PULP_FILE_VERSION=">=1.0.0" --file images/Containerfile.core.base
 ```
 
 ## Debugging instructions

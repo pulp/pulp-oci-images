@@ -33,9 +33,9 @@ Here is an example of a customized Containerfile for the multiprocess image.
 
 ```dockerfile title="custom/Containerfile"
 ARG FROM_TAG="latest"
-# The multiprocess pulp image must inherit from pulp/pulp-ci-centos9
+# The multiprocess pulp image must inherit from pulp/pulp-ci-centos10
 # The tags follow pulpcore-versioning 3.Y(.Z), we recommend using "latest"
-FROM pulp/pulp-ci-centos9:${FROM_TAG}
+FROM pulp/pulp-ci-centos10:${FROM_TAG}
 
 # These are extra pip requirements needed to run Pulp
 COPY images/assets/requirements.extra.txt /requirements.extra.txt
@@ -80,9 +80,9 @@ Here is an example of a customized Containerfile for the single-process image.
 
 ```dockerfile title="custom-minimal/Containerfile.core"
 ARG FROM_TAG="latest"
-# The single-process pulp-minimal image must inherit from pulp/base-cs10
+# The single-process pulp-minimal image must inherit from pulp/base
 # The tags follow pulpcore-versioning 3.Y(.Z), we recommend using "latest"
-FROM pulp/base-cs10:${FROM_TAG}
+FROM pulp/base:${FROM_TAG}
 
 COPY images/assets/requirements.extra.txt /requirements.extra.txt
 COPY images/assets/requirements.minimal.txt /requirements.minimal.txt

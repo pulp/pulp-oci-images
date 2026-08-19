@@ -99,7 +99,7 @@ jobs:
     outputs:
       # repo_digests format: [
       #   rebuilt-base-images bool, rebuilt-minimal-images bool, rebuilt-pulp-image bool
-      #   base sha, pulp-ci-centos9 sha, base-cs10 sha, pulp-ci-centos10 sha,
+      #   base sha, pulp-ci-centos10 sha,
       #   pulp-minimal sha, pulp-web sha, pulp sha,
       # ]
       stable_arm: ${{ steps.repo_digests.outputs.stable_arm }}
@@ -182,12 +182,10 @@ jobs:
           branch=${{ github.base_ref || github.ref_name }}
           if [[ ${{ steps.build_base_images.outputs.rebuilt_images }} == "true" ]]; then
             podman push pulp/base:ci ghcr.io/pulp/base:${TAG}
-            podman push pulp/pulp-ci-centos9:ci ghcr.io/pulp/pulp-ci-centos9:${TAG}
-            podman push pulp/base-cs10:ci ghcr.io/pulp/base-cs10:${TAG}
             podman push pulp/pulp-ci-centos10:ci ghcr.io/pulp/pulp-ci-centos10:${TAG}
-            image_names="ghcr.io/pulp/base:${TAG} ghcr.io/pulp/pulp-ci-centos9:${TAG} ghcr.io/pulp/base-cs10:${TAG} ghcr.io/pulp/pulp-ci-centos10:${TAG}"
+            image_names="ghcr.io/pulp/base:${TAG} ghcr.io/pulp/pulp-ci-centos10:${TAG}"
           else
-            image_names="ghcr.io/pulp/base:${branch} ghcr.io/pulp/pulp-ci-centos9:${branch} ghcr.io/pulp/base-cs10:${branch} ghcr.io/pulp/pulp-ci-centos10:${branch}"
+            image_names="ghcr.io/pulp/base:${branch} ghcr.io/pulp/pulp-ci-centos10:${branch}"
           fi
           if [[ ${{ steps.build_pulp_minimal_image.outputs.rebuilt_images }} == "true" ]]; then
             podman push pulp/pulp-minimal:ci ghcr.io/pulp/pulp-minimal:${TAG}
@@ -253,7 +251,7 @@ jobs:
         run: |
           arm=(${{ needs.build-and-test-images.outputs.nightly_arm }})
           amd=(${{ needs.build-and-test-images.outputs.nightly_amd }})
-          if [[ ${#arm[@]} -ne 10 || ${#amd[@]} -ne 10 ]]; then
+          if [[ ${#arm[@]} -ne 8 || ${#amd[@]} -ne 8 ]]; then
             echo "Nightly build failed, check previous steps"
             echo "arm digests: ${arm[@]}"
             echo "amd digests: ${amd[@]}"
@@ -269,18 +267,14 @@ jobs:
           rebuilt_minimal_images="${repo_digests_arm[1]} ${repo_digests_amd[1]}"
           rebuilt_pulp_image="${repo_digests_arm[2]} ${repo_digests_amd[2]}"
           base_digests="${repo_digests_arm[3]} ${repo_digests_amd[3]}"
-          pulp_ci_centos9_digests="${repo_digests_arm[4]} ${repo_digests_amd[4]}"
-          base_cs10_digests="${repo_digests_arm[5]} ${repo_digests_amd[5]}"
-          pulp_ci_centos10_digests="${repo_digests_arm[6]} ${repo_digests_amd[6]}"
-          pulp_minimal_digests="${repo_digests_arm[7]} ${repo_digests_amd[7]}"
-          pulp_web_digests="${repo_digests_arm[8]} ${repo_digests_amd[8]}"
-          pulp_digests="${repo_digests_arm[9]} ${repo_digests_amd[9]}"
+          pulp_ci_centos10_digests="${repo_digests_arm[4]} ${repo_digests_amd[4]}"
+          pulp_minimal_digests="${repo_digests_arm[5]} ${repo_digests_amd[5]}"
+          pulp_web_digests="${repo_digests_arm[6]} ${repo_digests_amd[6]}"
+          pulp_digests="${repo_digests_arm[7]} ${repo_digests_amd[7]}"
           echo "rebuilt_base_images=${rebuilt_base_images}" >> $GITHUB_ENV
           echo "rebuilt_minimal_images=${rebuilt_minimal_images}" >> $GITHUB_ENV
           echo "rebuilt_pulp_image=${rebuilt_pulp_image}" >> $GITHUB_ENV
           echo "base_digests=${base_digests}" >> $GITHUB_ENV
-          echo "pulp_ci_centos9_digests=${pulp_ci_centos9_digests}" >> $GITHUB_ENV
-          echo "base_cs10_digests=${base_cs10_digests}" >> $GITHUB_ENV
           echo "pulp_ci_centos10_digests=${pulp_ci_centos10_digests}" >> $GITHUB_ENV
           echo "pulp_minimal_digests=${pulp_minimal_digests}" >> $GITHUB_ENV
           echo "pulp_web_digests=${pulp_web_digests}" >> $GITHUB_ENV
@@ -290,22 +284,14 @@ jobs:
         run: |
           if [[ ${{ contains(env.rebuilt_base_images, 'true') }} == 'true' ]]; then
             base_digests=(${{ env.base_digests }})
-            pulp_ci_centos9_digests=(${{ env.pulp_ci_centos9_digests }})
-            base_cs10_digests=(${{ env.base_cs10_digests }})
             pulp_ci_centos10_digests=(${{ env.pulp_ci_centos10_digests }})
             podman pull "ghcr.io/pulp/base@${base_digests[0]}" "ghcr.io/pulp/base@${base_digests[1]}"
             podman tag "ghcr.io/pulp/base@${base_digests[0]}" pulp/base:ci-arm64
             podman tag "ghcr.io/pulp/base@${base_digests[1]}" pulp/base:ci-amd64
-            podman pull "ghcr.io/pulp/pulp-ci-centos9@${pulp_ci_centos9_digests[0]}" "ghcr.io/pulp/pulp-ci-centos9@${pulp_ci_centos9_digests[1]}"
-            podman tag "ghcr.io/pulp/pulp-ci-centos9@${pulp_ci_centos9_digests[0]}" pulp/pulp-ci-centos9:ci-arm64
-            podman tag "ghcr.io/pulp/pulp-ci-centos9@${pulp_ci_centos9_digests[1]}" pulp/pulp-ci-centos9:ci-amd64
-            podman pull "ghcr.io/pulp/base-cs10@${base_cs10_digests[0]}" "ghcr.io/pulp/base-cs10@${base_cs10_digests[1]}"
-            podman tag "ghcr.io/pulp/base-cs10@${base_cs10_digests[0]}" pulp/base-cs10:ci-arm64
-            podman tag "ghcr.io/pulp/base-cs10@${base_cs10_digests[1]}" pulp/base-cs10:ci-amd64
             podman pull "ghcr.io/pulp/pulp-ci-centos10@${pulp_ci_centos10_digests[0]}" "ghcr.io/pulp/pulp-ci-centos10@${pulp_ci_centos10_digests[1]}"
             podman tag "ghcr.io/pulp/pulp-ci-centos10@${pulp_ci_centos10_digests[0]}" pulp/pulp-ci-centos10:ci-arm64
             podman tag "ghcr.io/pulp/pulp-ci-centos10@${pulp_ci_centos10_digests[1]}" pulp/pulp-ci-centos10:ci-amd64
-            images="base pulp-ci-centos9 base-cs10 pulp-ci-centos10"
+            images="base pulp-ci-centos10"
           fi
           if [[ ${{ contains(env.rebuilt_minimal_images, 'true') }} == 'true' ]]; then
             pulp_minimal_digests=(${{ env.pulp_minimal_digests }})

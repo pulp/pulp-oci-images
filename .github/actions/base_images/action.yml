@@ -1,6 +1,6 @@
 ---
 name: Build Base Images
-description: Build the base images (pulp/base & pulp/pulp-ci-centos9) if needed
+description: Build the base images (pulp/base & pulp/pulp-ci-centos10) if needed
 # Use hashFiles(base_image_files, pulp-ci_image_files) for rebuild check
 inputs:
   image_variants:
@@ -32,7 +32,7 @@ runs:
 
     - name: Calculate base images hash
       run: |
-        hash=${{ hashFiles('images/Containerfile.core.base', 'images/Containerfile.core.base.cs10', 'images/pulp_ci_centos/Containerfile', 'images/pulp_ci_centos/Containerfile.cs10', 'images/assets/**', 'images/s6_assets/**') }}
+        hash=${{ hashFiles('images/Containerfile.core.base', 'images/pulp_ci_centos/Containerfile', 'images/assets/**', 'images/s6_assets/**') }}
         echo "base image hash is ${hash}"
         echo "HASH=${hash}" >> $GITHUB_ENV
       shell: bash
@@ -47,12 +47,12 @@ runs:
           build=false
         else
           branch=${{ github.base_ref || github.ref_name }}
-          config=$(oras manifest fetch-config --platform linux/amd64 ghcr.io/pulp/pulp-ci-centos9:${branch} | jq -r '.config.Labels')
+          config=$(oras manifest fetch-config --platform linux/amd64 ghcr.io/pulp/pulp-ci-centos10:${branch} | jq -r '.config.Labels')
           latest_hash=$(echo "${config}" | jq -r '."org.pulp.basefiles-hash"')
           build=true
           echo "Checking hash for ${branch}: ${latest_hash}"
           if [[ "${latest_hash}" == "${HASH}" ]]; then
-            if podman run ghcr.io/pulp/pulp-ci-centos9:${branch} bash -c "dnf check-upgrade"; then
+            if podman run ghcr.io/pulp/pulp-ci-centos10:${branch} bash -c "dnf check-upgrade"; then
               echo "No base images rebuild needed :)"
               build=false
             fi
@@ -68,13 +68,9 @@ runs:
         echo "Downloading base images"
         branch=${{ github.base_ref || github.ref_name }}
         podman pull ghcr.io/pulp/base:${branch}
-        podman pull ghcr.io/pulp/pulp-ci-centos9:${branch}
+        podman pull ghcr.io/pulp/pulp-ci-centos10:${branch}
         podman tag ghcr.io/pulp/base:${branch} pulp/base:ci
-        podman tag ghcr.io/pulp/pulp-ci-centos9:${branch} pulp/pulp-ci-centos9:ci
-        podman pull ghcr.io/pulp/base-cs10:${branch} || true
-        podman pull ghcr.io/pulp/pulp-ci-centos10:${branch} || true
-        podman tag ghcr.io/pulp/base-cs10:${branch} pulp/base-cs10:ci || true
-        podman tag ghcr.io/pulp/pulp-ci-centos10:${branch} pulp/pulp-ci-centos10:ci || true
+        podman tag ghcr.io/pulp/pulp-ci-centos10:${branch} pulp/pulp-ci-centos10:ci
       shell: bash
 
     - name: Build images
@@ -83,7 +79,5 @@ runs:
         podman version
         buildah version
         podman build --format docker --file images/Containerfile.core.base --tag "pulp/base:ci" --label "org.pulp.basefiles-hash=${HASH}" .
-        podman build --format docker --file images/pulp_ci_centos/Containerfile --tag "pulp/pulp-ci-centos9:ci" --build-arg FROM_TAG="ci" .
-        podman build --format docker --file images/Containerfile.core.base.cs10 --tag "pulp/base-cs10:ci" --label "org.pulp.basefiles-hash=${HASH}" .
-        podman build --format docker --file images/pulp_ci_centos/Containerfile.cs10 --tag "pulp/pulp-ci-centos10:ci" --build-arg FROM_TAG="ci" .
+        podman build --format docker --file images/pulp_ci_centos/Containerfile --tag "pulp/pulp-ci-centos10:ci" --build-arg FROM_TAG="ci" .
       shell: bash

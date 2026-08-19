@@ -1,4 +1,4 @@
-FROM quay.io/centos/centos:stream9
+FROM quay.io/centos/centos:stream10
 
 # https://superuser.com/questions/959380/how-do-i-install-generate-all-locales-on-fedora
 # This may not be necessary anymore because Fedora 30, unlike CentOS 7, has
@@ -26,16 +26,14 @@ ENV PULP_CONTENT_WORKERS_MAX_REQUESTS_JITTER=${PULP_CONTENT_WORKERS_MAX_REQUESTS
 
 # Install updates & dnf plugins
 RUN dnf -y install dnf-plugins-core && \
-    dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
+    dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm && \
     dnf config-manager --set-enabled crb && \
     dnf -y update
-
-RUN dnf -y module enable nginx:1.22
 
 # glibc-langpack-en is needed to provide the en_US.UTF-8 locale, which Pulp
 # seems to need.
 # cairo/gobject are needed for PyGObject, which pulp_ostree requires
-RUN dnf -y install python3.11 python3.11-pip python3.11-devel && \
+RUN dnf -y install python3 python3-pip python3-devel && \
     dnf -y install openssl openssl-devel && \
     dnf -y install openldap-devel --exclude selinux* && \
     dnf -y install wget git && \
@@ -44,6 +42,7 @@ RUN dnf -y install python3.11 python3.11-pip python3.11-devel && \
     dnf -y install podman fuse-overlayfs buildah --exclude container-selinux && \
     dnf -y install cairo-devel gobject-introspection-devel cairo-gobject-devel && \
     dnf -y install ostree-libs ostree && \
+    dnf -y install sequoia-sq && \
     dnf -y install skopeo && \
     dnf -y install sudo && \
     dnf -y install zstd && \
@@ -54,11 +53,6 @@ RUN dnf -y install python3.11 python3.11-pip python3.11-devel && \
     getcap /usr/bin/newuidmap  | grep cap_setuid || dnf -y reinstall -y shadow-utils && \
     dnf clean all
 
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 20
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 20
-RUN update-alternatives --install /usr/bin/pip pip /usr/bin/pip3.11 20
-RUN update-alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.11 20
-
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:0.11.7 /uv /uvx /bin/
 ENV UV_SYSTEM_PYTHON=1
@@ -68,7 +62,7 @@ RUN useradd -d /var/lib/pulp --system -u 700 -g pulp pulp
 
 # Rootless podman inside rootless podman/docker
 # https://www.redhat.com/sysadmin/podman-inside-container
-RUN sed 's|^#mount_program|mount_program|g' -i /etc/containers/storage.conf
+RUN sed 's|^#mount_program|mount_program|g' -i /usr/share/containers/storage.conf
 # We modified the example so that we have a UID range of upto 65535.
 # Because, for example, the image docker.io/library/busybox actually uses the user nobody(65534) for
 # /home rather than the traditional nobody/nfsnbody usage (not an owner on a permanent filesystem.)
