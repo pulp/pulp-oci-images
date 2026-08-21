@@ -88,7 +88,7 @@ runs:
         if [[ "${{ inputs.image_name }}" == "pulp-minimal" ]]; then
           base_image=$(echo ${{ inputs.image_name }} | cut -d '-' -f1)
           podman build --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile.core --tag pulp/${{ inputs.image_name }}:ci --build-arg FROM_TAG=ci .
-          podman build --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile.webserver --tag pulp/${base_image}-web:ci --build-arg FROM_TAG=ci .
+          podman build --format docker --pull=missing --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile.webserver --tag pulp/${base_image}-web:ci --build-arg FROM_TAG=ci .
         else
           podman build --format docker --pull=false --file images/${{ inputs.image_name }}/${{ inputs.image_variant }}/Containerfile --tag pulp/${{ inputs.image_name }}:ci --build-arg FROM_TAG=ci ${{ env.BUILD_UI_ARG }} .
         fi

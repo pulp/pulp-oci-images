@@ -19,7 +19,7 @@ trap cleanup EXIT
 
 start_container_and_wait() {
   podman run --detach \
-             --publish 8080:$port \
+             --publish 127.0.0.1:8080:$port \
              --name pulp \
              --volume "$(pwd)/settings":/etc/pulp:Z \
              --volume "$(pwd)/pulp_storage":/var/lib/pulp:Z \
