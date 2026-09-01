@@ -11,7 +11,6 @@ RUN uv pip install --upgrade \
   git+https://github.com/pulp/pulp_deb@main \
   git+https://github.com/pulp/pulp_gem@main \
   git+https://github.com/pulp/pulp_maven@main \
-  git+https://github.com/pulp/pulp_ostree@main \
   git+https://github.com/pulp/pulp_python@main \
   git+https://github.com/pulp/pulp_rpm@main \
   git+https://github.com/pulp/pulp_rust@main \

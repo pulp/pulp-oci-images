@@ -27,7 +27,6 @@ PACKAGES = [
     "pulp-hugging-face",
     "pulp-maven",
     "pulp-npm",
-    "pulp-ostree",
     "pulp-python",
     "pulp-rpm",
 ]
