@@ -12,7 +12,6 @@ RUN uv pip install \
   git+https://github.com/pulp/pulp_deb.git \
   git+https://github.com/pulp/pulp_gem.git \
   git+https://github.com/pulp/pulp_maven.git \
-  git+https://github.com/pulp/pulp_ostree.git \
   git+https://github.com/pulp/pulp_python.git \
   git+https://github.com/pulp/pulp_rpm.git \
   git+https://github.com/pulp/pulp_rust.git \

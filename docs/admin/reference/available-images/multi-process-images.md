@@ -28,7 +28,6 @@ This image contains [Pulp](https://github.com/pulp/pulpcore) and the following p
 - [pulp_maven](site:pulp_maven)
 - [pulp_python](site:pulp_python)
 - [pulp_rpm](site:pulp_rpm)
-- [pulp_ostree](site:pulp_ostree)
 
 This image can also function the same as the single-process image `pulp-minimal`.
 See the [Single-Process Images](../single-process-images/) page for usage.

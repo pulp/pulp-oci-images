@@ -10,7 +10,6 @@ ARG PULP_FILE_VERSION=""
 ARG PULP_MAVEN_VERSION=""
 ARG PULP_PYTHON_VERSION=""
 ARG PULP_RPM_VERSION=""
-ARG PULP_OSTREE_VERSION=""
 ARG PULP_NPM_VERSION=""
 ARG PULP_CLI_VERSION=""
 # Additional debuginfod arguments such as -d DATABASE or -t SECONDS. See man debuginfod for the full argument list
@@ -26,7 +25,6 @@ RUN uv pip install --upgrade \
   pulp-maven${PULP_MAVEN_VERSION} \
   pulp-python${PULP_PYTHON_VERSION} \
   pulp-rpm${PULP_RPM_VERSION} \
-  pulp-ostree${PULP_OSTREE_VERSION} \
   pulp-npm${PULP_NPM_VERSION} \
   pulp-cli${PULP_CLI_VERSION} \
   requests && \

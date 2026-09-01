@@ -11,7 +11,6 @@ ARG PULP_FILE_VERSION=""
 ARG PULP_MAVEN_VERSION=""
 ARG PULP_PYTHON_VERSION=""
 ARG PULP_RPM_VERSION=""
-ARG PULP_OSTREE_VERSION=""
 ARG PULP_NPM_VERSION=""
 ARG PULP_HUGGING_FACE_VERSION=""
 
@@ -29,7 +28,6 @@ RUN uv pip install --upgrade \
   pulp-maven${PULP_MAVEN_VERSION} \
   pulp-python${PULP_PYTHON_VERSION} \
   pulp-rpm${PULP_RPM_VERSION} \
-  pulp-ostree${PULP_OSTREE_VERSION} \
   pulp-npm${PULP_NPM_VERSION} \
   pulp-hugging-face${PULP_HUGGING_FACE_VERSION} \
   -r /requirements.extra.txt \
