@@ -1,4 +1,18 @@
 ARG FROM_TAG="latest"
+
+FROM quay.io/centos/centos:stream10 AS valkey-bloom-builder
+
+ARG VALKEY_BLOOM_VERSION="1.0.1"
+ARG VALKEY_BLOOM_SHA256="a6eaa9c908aa18e6cee0a378606571bdf37b6e37b37531d758d87be11554f5c4"
+
+RUN dnf -y install cargo clang curl gzip tar && \
+    curl --fail --location --output /tmp/valkey-bloom.tar.gz \
+      "https://api.github.com/repos/valkey-io/valkey-bloom/tarball/${VALKEY_BLOOM_VERSION}" && \
+    echo "${VALKEY_BLOOM_SHA256}  /tmp/valkey-bloom.tar.gz" | sha256sum --check && \
+    mkdir /src && \
+    tar --extract --gzip --file /tmp/valkey-bloom.tar.gz --directory /src --strip-components=1 && \
+    cargo build --release --manifest-path /src/Cargo.toml
+
 FROM pulp/base:${FROM_TAG}
 # https://ryandaniels.ca/blog/docker-dockerfile-arg-from-arg-trouble/
 
@@ -28,6 +42,9 @@ RUN dnf -y install "https://download.postgresql.org/pub/repos/yum/reporpms/EL-10
       valkey && \
     dnf clean all
 
+COPY --from=valkey-bloom-builder /src/target/release/libvalkey_bloom.so /usr/lib64/valkey/modules/libvalkey_bloom.so
+COPY --from=valkey-bloom-builder /src/LICENSE /usr/share/licenses/valkey-bloom/LICENSE
+
 # Valkey compatibility: s6 service scripts expect redis-server, redis user, and /etc/redis/redis.conf
 # Also create runtime directories that tmpfiles.d would normally handle via systemd
 RUN ln -s /usr/bin/valkey-server /usr/bin/redis-server && \
@@ -38,7 +55,8 @@ RUN ln -s /usr/bin/valkey-server /usr/bin/redis-server && \
     install -d -m 0750 -o valkey -g valkey /var/log/valkey && \
     # Valkey defaults to writing dump files to ./ which fails if cwd is not writable
     install -d -m 0750 -o valkey -g valkey /var/lib/valkey && \
-    sed -i 's|^[# ]*dir .*|dir /var/lib/valkey|' /etc/valkey/valkey.conf
+    sed -i 's|^[# ]*dir .*|dir /var/lib/valkey|' /etc/valkey/valkey.conf && \
+    echo 'loadmodule /usr/lib64/valkey/modules/libvalkey_bloom.so' > /etc/valkey/modules/bloom.conf
 
 RUN alternatives --install /usr/bin/postgres postgres /usr/pgsql-16/bin/postgres 160 \
       --follower /usr/bin/pg_dump pg_dump /usr/pgsql-16/bin/pg_dump \

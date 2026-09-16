@@ -86,4 +86,8 @@ if [[ "$image" == "pulp/pulp:ci" ]]; then
 fi
 start_container_and_wait $image
 
+test "$(podman exec pulp valkey-cli BF.RESERVE pulp-ci-smoke-test 0.01 1000)" = "OK"
+test "$(podman exec pulp valkey-cli BF.ADD pulp-ci-smoke-test pulp)" = "1"
+test "$(podman exec pulp valkey-cli BF.EXISTS pulp-ci-smoke-test pulp)" = "1"
+
 source "$BASEDIR/pulp_tests.sh" $scheme
