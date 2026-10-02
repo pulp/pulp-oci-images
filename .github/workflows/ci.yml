@@ -174,7 +174,7 @@ jobs:
 
     - name: Start minikube
       run: |
-        minikube start --memory=max --cpus=max --driver=docker --extra-config=apiserver.service-node-port-range=80-32000
+        minikube start --memory=max --cpus=max --driver=docker --container-runtime=docker --extra-config=apiserver.service-node-port-range=80-32000
         minikube addons enable ingress
       shell: bash
 
