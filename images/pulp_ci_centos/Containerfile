@@ -21,6 +21,9 @@ ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=1
 ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0
 
 RUN dnf -y install "https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-$(arch)/pgdg-redhat-repo-latest.noarch.rpm" && \
+    # CentosStream doesn't have a minor version, so drop it from the repo URL
+    sed -i 's/\$releasever_major\.\$releasever_minor/\$releasever_major/g' \
+      /etc/yum.repos.d/pgdg-redhat-all.repo && \
     dnf -qy module disable postgresql && \
     dnf -y install postgresql16 \
       postgresql16-server \
