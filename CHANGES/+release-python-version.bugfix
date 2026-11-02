@@ -1,0 +1,1 @@
+Use the published image's Python version and branch-specific constraints when checking for plugin updates, including downgrades required by changes to supported plugin branches.

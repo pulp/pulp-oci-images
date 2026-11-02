@@ -70,9 +70,10 @@ runs:
           branch=${{ github.base_ref || github.ref_name }}
           config=$(oras manifest fetch-config --platform linux/amd64 ghcr.io/pulp/${{ inputs.image_name }}:${branch} | jq -r '.config.Labels')
           echo -e "${config}" | jq -r '."org.pulp.plugins"' > versions.freeze
+          python_version=$(echo "${config}" | jq -r '."org.pulp.python-version"')
           # Script returns non-zero (100) when new versions are available
           cat versions.freeze
-          if python .ci/scripts/check_up_to_date.py $branch versions.freeze --plugin-specifiers images/assets/constraints.txt; then
+          if [[ "${python_version}" != "null" && -n "${python_version}" ]] && python .ci/scripts/check_up_to_date.py "$branch" versions.freeze --python-version "$python_version" --plugin-specifiers images/assets/constraints.txt; then
             build=false
           fi
         fi

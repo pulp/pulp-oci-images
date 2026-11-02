@@ -36,6 +36,11 @@ jobs:
         with:
           python-version: 3.11
 
+      - name: Test release scripts
+        run: |
+          pip install requests packaging pyyaml
+          python -m unittest discover -s .ci/scripts/tests -v
+
       - name: Check commit message
         env:
           GITHUB_CONTEXT: ${{ github.event.pull_request.commits_url }}
