@@ -19,14 +19,9 @@ PACKAGES = [
 
 INDEX = "https://pypi.org"
 
-PYTHON_VERSIONS = {
-    Requirement("pulpcore>=3.22,<3.85"): "3.9",
-    Requirement("pulpcore>=3.85"): "3.11"
-}
-
-def check_update(branch, current_versions, plugin_specifiers=None, should_exit=True):
+def check_update(branch, current_versions, python_version, plugin_specifiers=None, should_exit=True):
     """
-    Go through each of the image's main Pulp components and see if there is a new version available.
+    Compare installed Pulp components with the versions selected by the constraints.
     """
     new_versions = {}
     plugin_specifiers = plugin_specifiers or {}
@@ -45,10 +40,6 @@ def check_update(branch, current_versions, plugin_specifiers=None, should_exit=T
                     continue
             core_version = cur_version
             new_versions["pulpcore"] = core_version
-    for core_spread, core_python in PYTHON_VERSIONS.items():
-        if core_version in core_spread.specifier:
-            break
-
     # Now check each plugin to see if they need updates
     for plugin in PACKAGES:
         if plugin not in current_versions:
@@ -70,12 +61,12 @@ def check_update(branch, current_versions, plugin_specifiers=None, should_exit=T
             required_python_version = version_python_response_json["info"]["requires_python"]
             core_dep = next(filter(lambda dep: dep.startswith("pulpcore"), deps))
             if core_version in Requirement(core_dep).specifier:
-                if required_python_version and not SpecifierSet(required_python_version).contains(core_python):
+                if required_python_version and not SpecifierSet(required_python_version).contains(python_version):
                     continue
-                new_versions[plugin] = version
+                # A changed supported-branch selection can require a downgrade.
+                if version != plugin_version:
+                    new_versions[plugin] = version
                 break
-        if plugin in new_versions and version == plugin_version:
-            del new_versions[plugin]
 
     if new_versions:
         print("Updates needed for:")
@@ -93,6 +84,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("branch")
     parser.add_argument("versions", help="pip freeze like file for current installed versions")
+    parser.add_argument("--python-version", required=True, help="Python version in the published image")
     parser.add_argument("--plugin-specifiers", help="pip constraints file for plugin supported versions", required=False)
     opts = parser.parse_args()
     versions = {}
@@ -110,4 +102,4 @@ if __name__ == '__main__':
                     continue
                 plugin, ge, specifier = line.rstrip("\n").partition(">=")
                 plugin_specifiers[plugin] = ge + specifier
-    check_update(opts.branch, versions, plugin_specifiers=plugin_specifiers)
+    check_update(opts.branch, versions, opts.python_version, plugin_specifiers=plugin_specifiers)

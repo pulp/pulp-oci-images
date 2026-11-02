@@ -31,12 +31,6 @@ PACKAGES = [
     "pulp-rpm",
 ]
 
-PYTHON_VERSIONS = {
-    Requirement("pulpcore>=3.22,<3.49"): "3.9",
-    Requirement("pulpcore>=3.49"): "3.11"
-}
-
-
 def pip_to_repo(pip_name):
     return pip_name.replace("-", "_")
 
@@ -82,11 +76,8 @@ def build_specifier(branches):
     return ",".join(parts)
 
 
-def check_installable(pulpcore_version, plugin, specifier):
-    """Check if the plugin and its constraints are installable with the given pulpcore version."""
-    for core_spread, core_python in PYTHON_VERSIONS.items():
-        if pulpcore_version in core_spread.specifier:
-            break
+def check_installable(pulpcore_version, plugin, specifier, python_version):
+    """Check if the constraints allow a plugin compatible with pulpcore and image Python."""
     plugin_pypi_response = requests.get(urljoin(INDEX, f"pypi/{plugin}/json"))
     assert plugin_pypi_response.status_code == 200
     plugin_versions = sorted((parse(v) for v in plugin_pypi_response.json()["releases"].keys()), reverse=True)
@@ -102,7 +93,7 @@ def check_installable(pulpcore_version, plugin, specifier):
         required_python_version = version_python_response_json["info"]["requires_python"]
         core_dep = next(filter(lambda dep: dep.startswith("pulpcore"), deps))
         if pulpcore_version in Requirement(core_dep).specifier:
-            if required_python_version and not SpecifierSet(required_python_version).contains(core_python):
+            if required_python_version and not SpecifierSet(required_python_version).contains(python_version):
                 continue
             return True
     return False
@@ -120,7 +111,7 @@ def get_latest_plugin_z_version(plugin, branch):
     return None
 
 
-def get_specifiers(pulpcore_version=None, plugin_names=None):
+def get_specifiers(pulpcore_version=None, plugin_names=None, *, python_version):
     """Return dict of {pip_name: specifier_string} for plugins with known support."""
     if pulpcore_version is None:
         pulpcore_version = get_supported_branches("pulpcore")[-1]
@@ -136,7 +127,7 @@ def get_specifiers(pulpcore_version=None, plugin_names=None):
         branches = get_supported_branches(repo)
         if branches:
             spec = build_specifier(branches)
-            if spec and check_installable(pulpcore_version, pip_name, spec):
+            if spec and check_installable(pulpcore_version, pip_name, spec, python_version):
                 result[pip_name] = spec
     return result
 
@@ -145,7 +136,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--pulpcore-version", required=False)
     parser.add_argument("--plugin-names", required=False)
+    parser.add_argument("--python-version", required=True, help="Python version in the published image")
     opts = parser.parse_args()
-    specifiers = get_specifiers(opts.pulpcore_version, opts.plugin_names)
+    specifiers = get_specifiers(opts.pulpcore_version, opts.plugin_names, python_version=opts.python_version)
     for name, spec in sorted(specifiers.items()):
         print(f"{name}{spec}")

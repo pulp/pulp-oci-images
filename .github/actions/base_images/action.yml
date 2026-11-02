@@ -17,12 +17,16 @@ runs:
   steps:
     - uses: actions/checkout@v6
 
+    - name: Set up oras
+      uses: oras-project/setup-oras@v2
+
     - name: Generate plugin version constraints
       run: |
         branch=${{ github.base_ref || github.ref_name }}
         if [[ "${branch}" != "latest" ]]; then
           echo "Generating supported-branch constraints for branch ${branch}"
-          python .ci/scripts/get_supported_specifiers.py --pulpcore-version ${branch} >> images/assets/constraints.txt
+          python_version=$(oras manifest fetch-config --platform linux/amd64 ghcr.io/pulp/pulp:${branch} | jq -er '.config.Labels["org.pulp.python-version"]')
+          python .ci/scripts/get_supported_specifiers.py --pulpcore-version "$branch" --python-version "$python_version" >> images/assets/constraints.txt
           echo "Plugin constraints:"
           cat images/assets/constraints.txt
         else
@@ -36,9 +40,6 @@ runs:
         echo "base image hash is ${hash}"
         echo "HASH=${hash}" >> $GITHUB_ENV
       shell: bash
-
-    - name: Set up oras
-      uses: oras-project/setup-oras@v2
 
     - name: Check for updates on base images
       id: rebuild_needed

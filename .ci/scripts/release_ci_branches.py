@@ -40,21 +40,23 @@ def main():
 
     template = safe_load(request.content)
     branches = template.get("supported_release_branches", [])
-    plugin_specifiers = get_specifiers()
 
     for branch in branches:
         if args.optimize:
             cmd = ["oras", "manifest", "fetch-config", "--platform", "linux/amd64", f"ghcr.io/pulp/pulp:{branch}"]
             config = subprocess.check_output(cmd)
             config = json.loads(config)
-            plugins = config.get("config", {}).get("Labels", {}).get("org.pulp.plugins", "")
-            if plugins:
+            labels = config.get("config", {}).get("Labels", {})
+            plugins = labels.get("org.pulp.plugins", "")
+            python_version = labels.get("org.pulp.python-version")
+            if plugins and python_version:
+                plugin_specifiers = get_specifiers(branch, python_version=python_version)
                 versions = {plugin: v for part in plugins.split("\\n") for plugin, _, v in [part.partition("==")]}
-                if not check_update(branch, versions, plugin_specifiers=plugin_specifiers, should_exit=False):
+                if not check_update(branch, versions, python_version, plugin_specifiers=plugin_specifiers, should_exit=False):
                     print(f"No updates needed for {branch}")
                     continue
             else:
-                print(f"{branch} didn't have plugins label, running CI")
+                print(f"{branch} didn't have plugins or Python version labels, running CI")
 
         print(f"Updating {branch}")
         if isfloat(branch) and version.parse(branch) < version.parse("3.22"):
