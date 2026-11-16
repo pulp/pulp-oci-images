@@ -4,12 +4,16 @@
 ---
 name: Release Image
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 1 * * *'
+# TODO: Remove once PR complete
   push:
     branches:
-      - latest
+      - bypass
+  # workflow_dispatch:
+  # schedule:
+  #   - cron: '0 1 * * *'
+  # push:
+  #   branches:
+  #     - latest
 
 concurrency:
   group: ${{ github.ref_name }}-${{ github.workflow }}
