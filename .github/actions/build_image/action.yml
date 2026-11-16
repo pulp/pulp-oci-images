@@ -30,10 +30,10 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v6.1.0
 
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v6.3.0
       with:
         python-version: 3.11
 
@@ -42,7 +42,7 @@ runs:
       shell: bash
 
     - name: Set up oras
-      uses: oras-project/setup-oras@v2
+      uses: oras-project/setup-oras@v2.0.3
 
     - name: Find latest ui version
       if: inputs.latest_ui != 'false'
