@@ -15,7 +15,10 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v6.1.0
+    - name: Checkout pulp-oci-images
+      uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
 
     - name: Set up oras
       uses: oras-project/setup-oras@v2.0.3

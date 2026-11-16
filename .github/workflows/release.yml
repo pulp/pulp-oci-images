@@ -4,7 +4,7 @@
 ---
 name: Release Image
 on:
-# TODO: Remove once PR complete
+  # TODO: Remove once PR complete
   push:
     branches:
       - bypass
@@ -24,8 +24,10 @@ jobs:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.1.0
+      - name: Checkout pulp-oci-images
+        uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           # by default, it uses a depth of 1
           # this fetches all history so that we can read each commit
           fetch-depth: 0
@@ -61,7 +63,10 @@ jobs:
       image_variants: ${{ steps.image_variants.outputs.image_variants }}
 
     steps:
-      - uses: actions/checkout@v6.1.0
+      - name: Checkout pulp-oci-images
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v6.3.0
@@ -112,7 +117,7 @@ jobs:
       nightly_amd: ${{ steps.repo_digests.outputs.nightly_amd }}
       stable_app_version: ${{ steps.app_version.outputs.stable_app_version }}
       nightly_app_version: ${{ steps.app_version.outputs.nightly_app_version }}
-    
+
     steps:
       - uses: actions/checkout@v6.1.0
 
@@ -139,7 +144,7 @@ jobs:
           image_variant: ${{ matrix.image_variant }}
           latest_ui: ${{ github.base_ref == 'latest' || github.ref_name == 'latest' }}
           rebuilt_base_images: ${{ steps.build_base_images.outputs.rebuilt_images }}
-      
+
       - name: Set app version
         id: app_version
         run: |
@@ -240,7 +245,7 @@ jobs:
           http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true
 
   publish-images:
-    needs: [base,build-and-test-images]
+    needs: [base, build-and-test-images]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
