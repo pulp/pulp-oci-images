@@ -2,248 +2,248 @@ name: pulp-oci-images CI
 
 on:
   pull_request:
-    # paths:
-    #   - "images/**"
-    #   - ".github/**"
-    #   - ".ci/**"
+    paths:
+      - "images/**"
+      - ".github/**"
+      - ".ci/**"
 env:
-  COLORTERM: 'yes'
-  TERM: 'xterm-256color'
-  PYTEST_ADDOPTS: '--color=yes'
+  COLORTERM: "yes"
+  TERM: "xterm-256color"
+  PYTEST_ADDOPTS: "--color=yes"
 
 concurrency:
   group: ${{ github.ref_name }}-${{ github.workflow }}
   cancel-in-progress: true
 
 jobs:
-  # docs:
-  #   # The workflow tag and the pulpdocs_ref must match.
-  #   uses: "pulp/pulp-docs/.github/workflows/docs-ci.yml@main"
-  #   with:
-  #     pulpdocs_ref: "main"
+  docs:
+    # The workflow tag and the pulpdocs_ref must match.
+    uses: "pulp/pulp-docs/.github/workflows/docs-ci.yml@main"
+    with:
+      pulpdocs_ref: "main"
 
   workflow-lint:
     uses: $/.github/workflows/_workflow-lint.yml
 
-  # lint:
-  #   runs-on: ubuntu-latest
-  #   steps:
-      # - name: Checkout pulp-oci-images
-      #   uses: actions/checkout@v7.0.1
-      #   with:
-      #     persist-credentials: false
-      #     # NOTE: By default, it uses a depth of 1, this approach fetches all history so all commits are visable
-      #     fetch-depth: 0
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pulp-oci-images
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          # NOTE: By default, it uses a depth of 1, this approach fetches all history so all commits are visable
+          fetch-depth: 0
 
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v7.1.0
-  #       with:
-  #         python-version: 3.11
+      - name: Set up Python
+        uses: actions/setup-python@v7.1.0
+        with:
+          python-version: 3.11
 
-  #     - name: Test release scripts
-  #       run: |
-  #         pip install requests packaging pyyaml
-  #         python -m unittest discover -s .ci/scripts/tests -v
+      - name: Test release scripts
+        run: |
+          pip install requests packaging pyyaml
+          python -m unittest discover -s .ci/scripts/tests -v
 
-  #     - name: Check commit message
-  #       env:
-  #         GITHUB_CONTEXT: ${{ github.event.pull_request.commits_url }}
-  #       run: |
-  #         echo ::group::REQUESTS
-  #         pip install pygithub
-  #         echo ::endgroup::
-  #         for sha in $(curl $GITHUB_CONTEXT | jq '.[].sha' | sed 's/"//g')
-  #         do
-  #           python .ci/scripts/validate_commit_message.py $sha
-  #           VALUE=$?
-  #           if [ "$VALUE" -gt 0 ]; then
-  #             exit $VALUE
-  #           fi
-  #         done
-  #       shell: bash
+      - name: Check commit message
+        env:
+          GITHUB_CONTEXT: ${{ github.event.pull_request.commits_url }}
+        run: |
+          echo ::group::REQUESTS
+          pip install pygithub
+          echo ::endgroup::
+          for sha in $(curl $GITHUB_CONTEXT | jq '.[].sha' | sed 's/"//g')
+          do
+            python .ci/scripts/validate_commit_message.py $sha
+            VALUE=$?
+            if [ "$VALUE" -gt 0 ]; then
+              exit $VALUE
+            fi
+          done
+        shell: bash
 
-  # build-and-test-images:
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os:
-  #         - ubuntu-24.04
-  #         - ubuntu-24.04-arm
+  build-and-test-images:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
 
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-      # - name: Checkout pulp-oci-images
-      #   uses: actions/checkout@v7.0.1
-      #   with:
-      #     persist-credentials: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout pulp-oci-images
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
-  #     - name: Build base images
-  #       id: build_base_images
-  #       uses: "$/.github/actions/base_images"
+      - name: Build base images
+        id: build_base_images
+        uses: "$/.github/actions/base_images"
 
-  #     - name: Build pulp-minimal image
-  #       id: build_pulp_minimal_image
-  #       uses: "$/.github/actions/build_image"
-  #       with:
-  #         image_name: "pulp-minimal"
-  #         image_variant: "stable"
-  #         latest_ui: ${{ github.base_ref == 'latest' }}
-  #         rebuilt_base_images: ${{ steps.build_base_images.outputs.rebuilt_images }}
+      - name: Build pulp-minimal image
+        id: build_pulp_minimal_image
+        uses: "$/.github/actions/build_image"
+        with:
+          image_name: "pulp-minimal"
+          image_variant: "stable"
+          latest_ui: ${{ github.base_ref == 'latest' }}
+          rebuilt_base_images: ${{ steps.build_base_images.outputs.rebuilt_images }}
 
-  #     - name: Build pulp image
-  #       id: build_pulp_image
-  #       uses: "$/.github/actions/build_image"
-  #       with:
-  #         image_name: "pulp"
-  #         image_variant: "stable"
-  #         latest_ui: ${{ github.base_ref == 'latest' }}
-  #         rebuilt_base_images: ${{ steps.build_base_images.outputs.rebuilt_images }}
+      - name: Build pulp image
+        id: build_pulp_image
+        uses: "$/.github/actions/build_image"
+        with:
+          image_name: "pulp"
+          image_variant: "stable"
+          latest_ui: ${{ github.base_ref == 'latest' }}
+          rebuilt_base_images: ${{ steps.build_base_images.outputs.rebuilt_images }}
 
-  #     - name: Test pulp-minimal image
-  #       uses: "$/.github/actions/test_image"
-  #       with:
-  #         image_name: "pulp-minimal"
-  #         app_branch: ${{ steps.build_pulp_minimal_image.outputs.app_branch }}
+      - name: Test pulp-minimal image
+        uses: "$/.github/actions/test_image"
+        with:
+          image_name: "pulp-minimal"
+          app_branch: ${{ steps.build_pulp_minimal_image.outputs.app_branch }}
 
-  #     - name: Test pulp image
-  #       uses: "$/.github/actions/test_image"
-  #       with:
-  #         image_name: "pulp"
-  #         app_branch: ${{ steps.build_pulp_image.outputs.app_branch }}
+      - name: Test pulp image
+        uses: "$/.github/actions/test_image"
+        with:
+          image_name: "pulp"
+          app_branch: ${{ steps.build_pulp_image.outputs.app_branch }}
 
-  #     - name: Logs
-  #       if: always()
-  #       run: |
-  #         set +e
-  #         podman ps -a
-  #         podman images -a
-  #         podman logs pulp
-  #         cd images/compose
-  #         podman-compose logs
-  #         podman logs --tail=10000 compose_pulp_api_1
-  #         podman logs --tail=10000 compose_pulp_content_1
-  #         podman logs --tail=10000 compose_pulp_worker_1
-  #         podman logs --tail=10000 compose_pulp_worker_2
-  #         podman logs --tail=10000 compose_pulp_web_1
-  #         VOLUME_PATH=$(podman volume inspect pulpdev | jq -r .[].Mountpoint)
-  #         sudo ls -al $VOLUME_PATH
-  #         sudo tree $VOLUME_PATH
-  #         http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true
+      - name: Logs
+        if: always()
+        run: |
+          set +e
+          podman ps -a
+          podman images -a
+          podman logs pulp
+          cd images/compose
+          podman-compose logs
+          podman logs --tail=10000 compose_pulp_api_1
+          podman logs --tail=10000 compose_pulp_content_1
+          podman logs --tail=10000 compose_pulp_worker_1
+          podman logs --tail=10000 compose_pulp_worker_2
+          podman logs --tail=10000 compose_pulp_web_1
+          VOLUME_PATH=$(podman volume inspect pulpdev | jq -r .[].Mountpoint)
+          sudo ls -al $VOLUME_PATH
+          sudo tree $VOLUME_PATH
+          http --follow --timeout 30 --check-status --pretty format --print hb http://localhost:8080/pulp/api/v3/status/ || true
 
-  # pulp-operator:
-  #   runs-on: ubuntu-latest
-  #   steps:
-      # - name: Checkout pulp-oci-images
-      #   uses: actions/checkout@v7.0.1
-      #   with:
-      #     persist-credentials: false
+  pulp-operator:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pulp-oci-images
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
-  #   - name: Set up Python 3.11
-  #     uses: actions/setup-python@v7.1.0
-  #     with:
-  #       python-version: 3.11
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v7.1.0
+        with:
+          python-version: 3.11
 
-  #   - name: Install httpie
-  #     run: |
-  #       sudo apt-get update -yq
-  #       sudo -E apt-get -yq --no-install-suggests --no-install-recommends install httpie
-  #       echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
-  #     shell: bash
+      - name: Install httpie
+        run: |
+          sudo apt-get update -yq
+          sudo -E apt-get -yq --no-install-suggests --no-install-recommends install httpie
+          echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
+        shell: bash
 
-  #   - name: Updating registries configuration
-  #     run: |
-  #       if [ -f "/etc/docker/daemon.json" ] || sudo systemctl is-active --quiet docker
-  #       then
-  #         echo "INFO:
-  #         Updating docker configuration
-  #         "
-  #         echo "$(cat /etc/docker/daemon.json | jq -s '.[0] + {
-  #         "insecure-registries" : ["ingress.local","nodeport.local:30000"]
-  #         }')" | sudo tee /etc/docker/daemon.json
-  #         sudo service docker restart || true
-  #       fi
+      - name: Updating registries configuration
+        run: |
+          if [ -f "/etc/docker/daemon.json" ] || sudo systemctl is-active --quiet docker
+          then
+            echo "INFO:
+            Updating docker configuration
+            "
+            echo "$(cat /etc/docker/daemon.json | jq -s '.[0] + {
+            "insecure-registries" : ["ingress.local","nodeport.local:30000"]
+            }')" | sudo tee /etc/docker/daemon.json
+            sudo service docker restart || true
+          fi
 
-  #       if [ -f "/etc/containers/registries.conf" ]
-  #       then
-  #         echo "INFO:
-  #         Updating registries configuration
-  #         "
-  #         # registries.conf v1 and v2 formats cannot be mixed in the same file;
-  #         # detect which format the runner uses and append matching syntax.
-  #         if grep -q "unqualified-search-registries" /etc/containers/registries.conf; then
-  #           echo '
-  #         [[registry]]
-  #         location = "ingress.local"
-  #         insecure = true
+          if [ -f "/etc/containers/registries.conf" ]
+          then
+            echo "INFO:
+            Updating registries configuration
+            "
+            # registries.conf v1 and v2 formats cannot be mixed in the same file;
+            # detect which format the runner uses and append matching syntax.
+            if grep -q "unqualified-search-registries" /etc/containers/registries.conf; then
+              echo '
+            [[registry]]
+            location = "ingress.local"
+            insecure = true
 
-  #         [[registry]]
-  #         location = "nodeport.local:30000"
-  #         insecure = true' | sed 's/^ *//' | sudo tee -a /etc/containers/registries.conf
-  #         else
-  #           echo '
-  #         [registries.insecure]
-  #         registries = ["ingress.local","nodeport.local:30000"]' | sed 's/^ *//' | sudo tee -a /etc/containers/registries.conf
-  #         fi
-  #       fi
-  #     shell: bash
+            [[registry]]
+            location = "nodeport.local:30000"
+            insecure = true' | sed 's/^ *//' | sudo tee -a /etc/containers/registries.conf
+            else
+              echo '
+            [registries.insecure]
+            registries = ["ingress.local","nodeport.local:30000"]' | sed 's/^ *//' | sudo tee -a /etc/containers/registries.conf
+            fi
+          fi
+        shell: bash
 
-  #   - name: Start minikube
-  #     run: |
-  #       minikube start --memory=max --cpus=max --driver=docker --container-runtime=docker --extra-config=apiserver.service-node-port-range=80-32000
-  #       minikube addons enable ingress
-  #     shell: bash
+      - name: Start minikube
+        run: |
+          minikube start --memory=max --cpus=max --driver=docker --container-runtime=docker --extra-config=apiserver.service-node-port-range=80-32000
+          minikube addons enable ingress
+        shell: bash
 
-  #   - name: Try the cluster !
-  #     run: kubectl get pods -A
+      - name: Try the cluster !
+        run: kubectl get pods -A
 
-  #   - name: Setup a minikube docker env
-  #     run: minikube -p minikube docker-env | grep "export" | sed 's/export //' | sed 's/"//g' >> $GITHUB_ENV
+      - name: Setup a minikube docker env
+        run: minikube -p minikube docker-env | grep "export" | sed 's/export //' | sed 's/"//g' >> $GITHUB_ENV
 
-  #   - name: Build pulp-minimal and pulp-web images
-  #     run: |
-  #       docker build -f images/Containerfile.core.base -t pulp/base:latest .
-  #       docker build -f images/pulp-minimal/stable/Containerfile.core -t localhost/pulp/pulp-minimal:ci .
-  #       docker build -f images/pulp-minimal/stable/Containerfile.webserver -t localhost/pulp/pulp-web:ci .
-  #       docker images
-  #     shell: bash
+      - name: Build pulp-minimal and pulp-web images
+        run: |
+          docker build -f images/Containerfile.core.base -t pulp/base:latest .
+          docker build -f images/pulp-minimal/stable/Containerfile.core -t localhost/pulp/pulp-minimal:ci .
+          docker build -f images/pulp-minimal/stable/Containerfile.webserver -t localhost/pulp/pulp-web:ci .
+          docker images
+        shell: bash
 
-      # - name: Checkout pulp-oci-images
-      #   uses: actions/checkout@v7.0.1
-      #   with:
-      #     persist-credentials: false
-  #         repository: pulp/pulp-operator
+      - name: Checkout pulp-oci-images
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          repository: pulp/pulp-operator
 
-  #   - name: Setup Go environment
-  #     uses: actions/setup-go@v7.1.0
-  #     with:
-  #       # v6 sets GOTOOLCHAIN=local instead of auto-downloading, needs explicit version
-  #       go-version-file: go.mod
+      - name: Setup Go environment
+        uses: actions/setup-go@v7.1.0
+        with:
+          # v6 sets GOTOOLCHAIN=local instead of auto-downloading, needs explicit version
+          go-version-file: go.mod
 
-  #   - name: Run pulp-operator
-  #     run: |
-  #       make install
-  #       kubectl create namespace pulp-operator-system
-  #       kubectl config set-context --current --namespace=pulp-operator-system
-  #       kubectl apply -f .ci/assets/kubernetes/pulp-admin-password.secret.yaml
-  #       kubectl apply -f config/samples/k8s_versions_ci.yaml
-  #       kubectl patch pulp example-pulp --type=merge -p '{"spec":{"image": "localhost/pulp/pulp-minimal","image_version": "ci", "image_web": "localhost/pulp/pulp-web","image_web_version": "ci"}}'
-  #       make deploy
-  #     shell: bash
+      - name: Run pulp-operator
+        run: |
+          make install
+          kubectl create namespace pulp-operator-system
+          kubectl config set-context --current --namespace=pulp-operator-system
+          kubectl apply -f .ci/assets/kubernetes/pulp-admin-password.secret.yaml
+          kubectl apply -f config/samples/k8s_versions_ci.yaml
+          kubectl patch pulp example-pulp --type=merge -p '{"spec":{"image": "localhost/pulp/pulp-minimal","image_version": "ci", "image_web": "localhost/pulp/pulp-web","image_web_version": "ci"}}'
+          make deploy
+        shell: bash
 
-  #   - name: Check and wait pulp-operator deploy
-  #     run: |
-  #       sleep 10 # giving some time for the pod to start
-  #       kubectl logs -f -l app.kubernetes.io/component=operator -c manager &
-  #       kubectl wait --for condition=Pulp-Operator-Finished-Execution pulp/example-pulp --timeout=900s
-  #     shell: bash
+      - name: Check and wait pulp-operator deploy
+        run: |
+          sleep 10 # giving some time for the pod to start
+          kubectl logs -f -l app.kubernetes.io/component=operator -c manager &
+          kubectl wait --for condition=Pulp-Operator-Finished-Execution pulp/example-pulp --timeout=900s
+        shell: bash
 
-  #   - name: Test all components
-  #     run: |
-  #       export INGRESS_TYPE=nodeport
-  #       export CI_TEST=true
-  #       .ci/scripts/pulp_tests.sh -m
-  #     shell: bash
+      - name: Test all components
+        run: |
+          export INGRESS_TYPE=nodeport
+          export CI_TEST=true
+          .ci/scripts/pulp_tests.sh -m
+        shell: bash
 
-  #   - name: Logs
-  #     if: always()
-  #     run: .github/workflows/scripts/show_logs.sh
+      - name: Logs
+        if: always()
+        run: .github/workflows/scripts/show_logs.sh
