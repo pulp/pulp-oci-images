@@ -1,1 +1,2 @@
 Enable only the PostgreSQL 16 and common PGDG repositories so unrelated PostgreSQL repositories cannot block image builds.
+Use PostgreSQL 13 archive packages matching the image's EL version when upgrading existing databases.
