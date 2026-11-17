@@ -28,14 +28,15 @@ jobs:
   # lint:
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v6.1.0
-  #       with:
-  #         # by default, it uses a depth of 1
-  #         # this fetches all history so that we can read each commit
-  #         fetch-depth: 0
+      # - name: Checkout pulp-oci-images
+      #   uses: actions/checkout@v7.0.1
+      #   with:
+      #     persist-credentials: false
+      #     # NOTE: By default, it uses a depth of 1, this approach fetches all history so all commits are visable
+      #     fetch-depth: 0
 
   #     - name: Set up Python
-  #       uses: actions/setup-python@v6.3.0
+  #       uses: actions/setup-python@v7.1.0
   #       with:
   #         python-version: 3.11
 
@@ -71,7 +72,10 @@ jobs:
 
   #   runs-on: ${{ matrix.os }}
   #   steps:
-  #     - uses: actions/checkout@v6.1.0
+      # - name: Checkout pulp-oci-images
+      #   uses: actions/checkout@v7.0.1
+      #   with:
+      #     persist-credentials: false
 
   #     - name: Build base images
   #       id: build_base_images
@@ -129,10 +133,13 @@ jobs:
   # pulp-operator:
   #   runs-on: ubuntu-latest
   #   steps:
-  #   - uses: actions/checkout@v6.1.0
+      # - name: Checkout pulp-oci-images
+      #   uses: actions/checkout@v7.0.1
+      #   with:
+      #     persist-credentials: false
 
   #   - name: Set up Python 3.11
-  #     uses: actions/setup-python@v6.3.0
+  #     uses: actions/setup-python@v7.1.0
   #     with:
   #       python-version: 3.11
 
@@ -200,12 +207,14 @@ jobs:
   #       docker images
   #     shell: bash
 
-  #   - uses: actions/checkout@v6.1.0
-  #     with:
-  #       repository: pulp/pulp-operator
+      # - name: Checkout pulp-oci-images
+      #   uses: actions/checkout@v7.0.1
+      #   with:
+      #     persist-credentials: false
+  #         repository: pulp/pulp-operator
 
   #   - name: Setup Go environment
-  #     uses: actions/setup-go@v6.5.0
+  #     uses: actions/setup-go@v7.1.0
   #     with:
   #       # v6 sets GOTOOLCHAIN=local instead of auto-downloading, needs explicit version
   #       go-version-file: go.mod

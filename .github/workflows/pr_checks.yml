@@ -25,10 +25,12 @@ jobs:
     permissions:
       pull-requests: "write"
     steps:
-      - uses: "actions/checkout@v6.1.0"
+      - name: Checkout pulp-oci-images
+        uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
-      - uses: "actions/setup-python@v6.3.0"
+      - uses: "actions/setup-python@v7.1.0"
         with:
           python-version: "3.11"
       - name: "Determine PR labels"
@@ -36,7 +38,7 @@ jobs:
           pip install GitPython==3.1.42
           git fetch origin ${{ github.event.pull_request.head.sha }}
           python .ci/scripts/pr_labels.py "origin/${{ github.base_ref }}" "${{ github.event.pull_request.head.sha }}" >> "$GITHUB_ENV"
-      - uses: "actions/github-script@v7.1.0"
+      - uses: "actions/github-script@v9.0.0"
         name: "Apply PR Labels"
         with:
           script: |

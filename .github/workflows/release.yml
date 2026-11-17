@@ -28,12 +28,11 @@ jobs:
         uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-          # by default, it uses a depth of 1
-          # this fetches all history so that we can read each commit
+          # NOTE: By default, it uses a depth of 1, this approach fetches all history so all commits are visable
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v6.3.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version: 3.11
 
@@ -69,7 +68,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v6.3.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version: 3.11
 
@@ -119,7 +118,10 @@ jobs:
       nightly_app_version: ${{ steps.app_version.outputs.nightly_app_version }}
 
     steps:
-      - uses: actions/checkout@v6.1.0
+      - name: Checkout pulp-oci-images
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Build base images
         id: build_base_images
@@ -252,7 +254,10 @@ jobs:
       matrix:
         image_variant: ${{ fromJSON(needs.base.outputs.image_variants) }}
     steps:
-      - uses: actions/checkout@v6.1.0
+      - name: Checkout pulp-oci-images
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       # Nightly is allowed to fail the build step, so check if we need to publish
       - name: Check nightly passed
