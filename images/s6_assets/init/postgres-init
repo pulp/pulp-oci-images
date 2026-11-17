@@ -36,19 +36,21 @@ if [ -d "${PGDATA}/base" -a -f "${PGDATA}/PG_VERSION" ]; then
         echo -e "${PREFIX} ${RED}Unsupported architecture ${ARCH} for PostgreSQL 13 EOL repository${ENDCOLOR}"
         exit 1
       fi
-      echo -e "${PREFIX} ${ORANGE}PostgreSQL 13 is EOL, adding EOL repository for ${ARCH}${ENDCOLOR}"
+      EL_VERSION=$(rpm -E '%{rhel}')
+      echo -e "${PREFIX} ${ORANGE}PostgreSQL 13 is EOL, adding EOL repository for EL ${EL_VERSION} ${ARCH}${ENDCOLOR}"
       REPO_FILE="/etc/yum.repos.d/pgdg-13-eol.repo"
       cat > "${REPO_FILE}" <<EOF
 [pgdg13-eol]
-name=PostgreSQL 13 EOL for RHEL 9 - ${ARCH}
-baseurl=https://yum-archive.postgresql.org/13/redhat/rhel-9-${ARCH}/
+name=PostgreSQL 13 EOL for RHEL ${EL_VERSION} - ${ARCH}
+baseurl=https://yum-archive.postgresql.org/13/redhat/rhel-${EL_VERSION}-${ARCH}/
 enabled=1
 gpgcheck=1
 gpgkey=https://yum.postgresql.org/keys/PGDG-RPM-GPG-KEY-RHEL
 EOF
       echo -e "${PREFIX} ${ORANGE}Created repository file ${REPO_FILE}${ENDCOLOR}"
     fi
-    dnf -y install "postgresql${PGDATA_VERSION}" "postgresql${PGDATA_VERSION}-server" "postgresql${PGDATA_VERSION}-contrib"
+    dnf -y install "postgresql${PGDATA_VERSION}" "postgresql${PGDATA_VERSION}-server" "postgresql${PGDATA_VERSION}-contrib" \
+      || { echo -e "${PREFIX} ${RED} failed to install old PostgreSQL packages${ENDCOLOR}" ; exit 1; }
     # We have to check the encoding and the locale because pulp/pulp-oci-images #307 (1da694c) means it may differ.
     # In order to check the encoding and the locale, we have to start the postgresql server,
     # and we have to do so with the old binaries we just installed.
